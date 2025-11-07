@@ -119,10 +119,22 @@ TRANSCRIPTS: Final[dict[str, Transcript]] = _LOADED if _LOADED else DEFAULT_TRAN
 
 
 def get_transcript(transcript_id: str) -> Optional[Transcript]:
+    """
+    Get transcript from file-based storage.
+
+    Note: Database access is handled directly in converters.py for async contexts.
+    This function provides backward compatibility for file-based transcripts.
+    """
     return TRANSCRIPTS.get(transcript_id)
 
 
 def list_recent(limit: int = 10) -> List[Transcript]:
+    """
+    Get recent file-based transcripts.
+
+    Note: Database meetings are handled via the API endpoint /api/meetings/recent.
+    This function provides backward compatibility for file-based transcripts.
+    """
     # Return the last N entries in insertion order (most recently inserted last)
     items = list(TRANSCRIPTS.values())
     return items[-limit:]

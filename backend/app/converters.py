@@ -26,11 +26,32 @@ class TranscriptAwareConverter(ThreadItemConverter):
         # Attachments are not supported in this demo backend.
         raise RuntimeError("File attachments are not supported in this build.")
 
-    def tag_to_message_content(self, tag: UserMessageTagContent) -> ResponseInputContentParam:
+    async def tag_to_message_content(self, tag: UserMessageTagContent) -> ResponseInputContentParam:
         # Only transcripts (doc_*) are supported for now.
-        transcript = (
-            transcripts_store.get_transcript(tag.id) if tag.id and tag.id.startswith("doc_") else None
-        )
+        transcript = None
+        if tag.id and tag.id.startswith("doc_"):
+            # Try database first, then fall back to files
+            from .database import async_session_maker, get_meeting_by_doc_id
+
+            try:
+                async with async_session_maker() as session:
+                    meeting = await get_meeting_by_doc_id(session, tag.id)
+                    if meeting:
+                        transcript = transcripts_store.Transcript(
+                            id=meeting.doc_id,
+                            title=meeting.title,
+                            date=meeting.date,
+                            content=meeting.formatted_content,
+                            summary=None,
+                        )
+            except Exception:
+                # Fall through to file-based lookup
+                pass
+
+            # Fall back to file-based transcripts
+            if transcript is None:
+                transcript = transcripts_store.get_transcript(tag.id)
+
         if transcript is None:
             text = f"Transcript not found for id: {tag.id}"
             return ResponseInputTextParam(type="input_text", text=text)
@@ -92,9 +113,10 @@ class TranscriptAwareConverter(ThreadItemConverter):
                 if len(uniq) >= 5:
                     break
 
-            tag_contents: list[ResponseInputContentParam] = [
-                self.tag_to_message_content(tag) for tag in uniq
-            ]
+            tag_contents: list[ResponseInputContentParam] = []
+            for tag in uniq:
+                content = await self.tag_to_message_content(tag)
+                tag_contents.append(content)
 
             if tag_contents:
                 context_items.append(

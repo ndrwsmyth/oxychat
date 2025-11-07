@@ -1,0 +1,23 @@
+[{
+  "id": 1234,
+  "name": "Event Venue Review",
+  "createdAt": "2023-07-25T20:30:57.926Z",
+  "duration": 1306.09,
+  "url": "https://meet.google.com/abc-defgh-xyz",
+  "recordingUrl": null,
+  "tags": ["Events"],
+  "icalUid": "1a2b3c@google.com",
+  "attendees": [
+    { "name": "John Appleseed", "email": "john@example.com" },
+    { "name": "Samantha Grey", "email": "sam@example.com" }
+  ],
+  "notes": "#### Overview\n*   Several options for event venues were reviewed...",
+  "actionItems": [],
+  "transcript": [
+    { "speaker": "John Appleseed", "text": "Hey, how's it going?", "timestamp": 4.56 },
+    { "speaker": "Samantha Grey", "text": "Going well, thanks for asking!", "timestamp": 18.32 },
+    { "speaker": "John Appleseed", "text": "Great! Let's discuss the venue options.", "timestamp": 25.10 }
+  ],
+  "insights": {}
+}]
+
