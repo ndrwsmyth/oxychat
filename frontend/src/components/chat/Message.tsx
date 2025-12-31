@@ -1,73 +1,48 @@
-/**
- * Individual chat message component.
- */
+"use client";
 
-import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
-import type { Message as MessageType } from "@/types/chat";
-import { Bot, User } from "lucide-react";
+import { useState } from "react";
+import { formatRelativeDate } from "@/lib/utils";
+import type { Message as MessageType } from "@/types";
 
 interface MessageProps {
   message: MessageType;
 }
 
 export function Message({ message }: MessageProps) {
+  const [showTimestamp, setShowTimestamp] = useState(false);
   const isUser = message.role === "user";
 
   return (
     <div
-      className={cn(
-        "flex gap-3 py-4",
-        isUser ? "flex-row-reverse" : "flex-row"
-      )}
+      className={`group flex flex-col gap-1 animate-fade-up ${
+        isUser ? "items-end" : "items-start"
+      }`}
+      onMouseEnter={() => setShowTimestamp(true)}
+      onMouseLeave={() => setShowTimestamp(false)}
     >
-      <Avatar className="h-8 w-8 shrink-0">
-        <AvatarFallback
-          className={cn(
-            isUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
-          )}
-        >
-          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-        </AvatarFallback>
-      </Avatar>
-
-      <Card
-        className={cn(
-          "max-w-[80%] px-4 py-3",
+      <div
+        className={`max-w-[85%] ${
           isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-foreground"
-        )}
+            ? "text-text-secondary"
+            : "text-text-primary"
+        }`}
       >
-        <div className="text-sm whitespace-pre-wrap break-words">
-          {message.content}
-          {message.isStreaming && (
-            <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
-          )}
-        </div>
-
-        {/* Show mentions if any */}
-        {message.mentions && message.mentions.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {message.mentions.map((mention) => (
-              <span
-                key={mention.id}
-                className={cn(
-                  "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-                  isUser
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-background text-muted-foreground"
-                )}
-              >
-                @{mention.title}
-              </span>
-            ))}
+        {!isUser && (
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-text-primary animate-dot-pulse" />
           </div>
         )}
-      </Card>
+        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+          {message.content}
+        </p>
+      </div>
+      <span
+        className={`text-xs text-text-faint transition-opacity duration-150 ${
+          showTimestamp ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {formatRelativeDate(message.timestamp)}
+      </span>
     </div>
   );
 }

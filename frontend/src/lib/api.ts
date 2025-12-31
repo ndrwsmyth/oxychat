@@ -1,141 +1,121 @@
-/**
- * API client for OxyChat backend.
- */
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-import type { Transcript, TranscriptDetail, StreamChunk } from "@/types/chat";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
-
-/**
- * Fetch all transcripts.
- */
-export async function fetchTranscripts(limit = 20): Promise<Transcript[]> {
-  const res = await fetch(`${API_BASE}/api/transcripts?limit=${limit}`);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch transcripts: ${res.statusText}`);
-  }
-  const data = await res.json();
-  return data.transcripts;
+export interface TranscriptResponse {
+  id: string;
+  title: string;
+  date: string;
+  summary?: string;
 }
 
-/**
- * Fetch a single transcript by ID.
- */
-export async function fetchTranscript(id: string): Promise<TranscriptDetail> {
-  const res = await fetch(`${API_BASE}/api/transcripts/${id}`);
-  if (!res.ok) {
-    if (res.status === 404) {
-      throw new Error("Transcript not found");
-    }
-    throw new Error(`Failed to fetch transcript: ${res.statusText}`);
-  }
-  return res.json();
+export interface ChatStreamOptions {
+  messages: Array<{ role: string; content: string }>;
+  mentions?: string[];
+  onChunk: (chunk: string) => void;
+  onComplete: () => void;
+  onError: (error: Error) => void;
 }
 
-/**
- * Upload a new transcript.
- */
-export async function uploadTranscript(
-  title: string,
-  date: string,
-  content: string
-): Promise<Transcript> {
-  const res = await fetch(`${API_BASE}/api/transcripts`, {
+export async function fetchTranscripts(): Promise<TranscriptResponse[]> {
+  const response = await fetch(`${API_BASE_URL}/api/transcripts`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch transcripts");
+  }
+  const data = await response.json();
+  return data.transcripts || [];
+}
+
+export async function searchTranscripts(query: string): Promise<TranscriptResponse[]> {
+  const response = await fetch(`${API_BASE_URL}/api/transcripts/search`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, date, content }),
+    body: JSON.stringify({ query }),
   });
-  if (!res.ok) {
-    throw new Error(`Failed to upload transcript: ${res.statusText}`);
+  if (!response.ok) {
+    throw new Error("Failed to search transcripts");
   }
-  return res.json();
+  return response.json();
 }
 
-/**
- * Delete a transcript by ID.
- */
-export async function deleteTranscript(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/api/transcripts/${id}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to delete transcript: ${res.statusText}`);
-  }
-}
-
-/**
- * Stream chat messages from the API.
- *
- * Yields StreamChunk objects as they arrive from the SSE stream.
- */
-export async function* streamChat(
-  messages: Array<{ role: string; content: string }>,
-  mentions: string[],
-  useRag = true
-): AsyncGenerator<StreamChunk> {
-  const res = await fetch(`${API_BASE}/api/chat/stream`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, mentions, use_rag: useRag }),
-  });
-
-  if (!res.ok) {
-    yield { type: "error", error: `Request failed: ${res.statusText}` };
-    return;
-  }
-
-  const reader = res.body?.getReader();
-  if (!reader) {
-    yield { type: "error", error: "No response body" };
-    return;
-  }
-
-  const decoder = new TextDecoder();
-  let buffer = "";
-
+export async function streamChat({
+  messages,
+  mentions = [],
+  onChunk,
+  onComplete,
+  onError,
+}: ChatStreamOptions): Promise<void> {
   try {
+    const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages,
+        mentions,
+        use_rag: false,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to send message");
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("No response body");
+    }
+
+    const decoder = new TextDecoder();
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
+      const text = decoder.decode(value);
+      const lines = text.split("\n");
 
-      // Parse SSE events (separated by double newlines)
-      const events = buffer.split("\n\n");
-      buffer = events.pop() ?? "";
-
-      for (const event of events) {
-        if (!event.trim()) continue;
-
-        // Each event starts with "data: "
-        for (const line of event.split("\n")) {
-          if (line.startsWith("data: ")) {
-            try {
-              const chunk = JSON.parse(line.slice(6)) as StreamChunk;
-              yield chunk;
-            } catch {
-              // Skip malformed JSON
-              console.warn("Failed to parse SSE chunk:", line);
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+          if (data === "[DONE]") {
+            onComplete();
+            return;
+          }
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "content" && parsed.content) {
+              onChunk(parsed.content);
+            } else if (parsed.type === "done") {
+              onComplete();
+              return;
+            } else if (parsed.type === "error") {
+              throw new Error(parsed.error || "Unknown error");
+            }
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              // Not JSON, treat as plain text
+              onChunk(data);
+            } else {
+              throw e;
             }
           }
         }
       }
     }
 
-    // Process any remaining buffer
-    if (buffer.trim()) {
-      for (const line of buffer.split("\n")) {
-        if (line.startsWith("data: ")) {
-          try {
-            const chunk = JSON.parse(line.slice(6)) as StreamChunk;
-            yield chunk;
-          } catch {
-            // Skip malformed JSON
-          }
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
+    onComplete();
+  } catch (error) {
+    onError(error instanceof Error ? error : new Error("Unknown error"));
   }
+}
+
+// Parse @mentions from message
+export function parseMentions(message: string): string[] {
+  const mentionRegex = /@([^@\s]+(?:\s+[^@\s]+)*?)(?=\s+@|\s*$)/g;
+  const mentions: string[] = [];
+  let match;
+
+  while ((match = mentionRegex.exec(message)) !== null) {
+    mentions.push(match[1].trim());
+  }
+
+  return mentions;
 }
