@@ -1,7 +1,7 @@
 [project]
-name = "chatkit-backend"
+name = "oxychat-backend"
 version = "0.1.0"
-description = "FastAPI backend service for ChatKit boilerplate"
+description = "FastAPI backend service for OxyChat - AI workspace for meeting transcripts"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -9,12 +9,12 @@ dependencies = [
     "httpx>=0.28,<0.29",
     "uvicorn[standard]>=0.36,<0.37",
     "openai>=1.40",
-    "openai-chatkit>=1.0.2,<2",
     "sqlalchemy>=2.0",
     "asyncpg>=0.29",
     "pydantic>=2.0",
     "python-dotenv>=1.0.0",
     "greenlet>=3.0.0",
+    "chromadb>=0.4.0",
 ]
 
 [project.optional-dependencies]

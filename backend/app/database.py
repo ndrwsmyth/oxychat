@@ -15,10 +15,12 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 DATABASE_URL = os.getenv("SUPABASE_DATABASE_URL")
 if not DATABASE_URL:
-    raise ValueError(
-        "SUPABASE_DATABASE_URL environment variable is required. "
+    import logging
+    logging.getLogger(__name__).warning(
+        "SUPABASE_DATABASE_URL not set. Database features will be unavailable. "
         "Get your connection string from Supabase Dashboard → Settings → Database → Connection Pooling → Direct Connection"
     )
+    DATABASE_URL = None
 
 
 class Base(DeclarativeBase):
@@ -54,16 +56,24 @@ class Meeting(Base):
     )
 
 
-# Create async engine for Supabase
-# SSL is handled automatically by asyncpg when connecting to Supabase
-engine = create_async_engine(DATABASE_URL, echo=False)
+# Create async engine for Supabase (if URL is configured)
+engine = None
+async_session_maker = None
 
-# Create async session factory
-async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+if DATABASE_URL:
+    # SSL is handled automatically by asyncpg when connecting to Supabase
+    engine = create_async_engine(DATABASE_URL, echo=False)
+    # Create async session factory
+    async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def init_db() -> None:
     """Initialize database by creating all tables."""
+    if not engine:
+        import logging
+        logging.getLogger(__name__).warning("Database not configured, skipping initialization")
+        return
+
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -77,6 +87,12 @@ async def init_db() -> None:
 
 async def get_db() -> AsyncSession:
     """Dependency for FastAPI routes to get database session."""
+    if not async_session_maker:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=503,
+            detail="Database not configured. Set SUPABASE_DATABASE_URL environment variable."
+        )
     async with async_session_maker() as session:
         yield session
 

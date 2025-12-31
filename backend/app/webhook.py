@@ -4,12 +4,13 @@ import os
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 import json
 
 from .database import get_db, save_meeting
 from .processor import process_meeting_data
+from .services.vector_store import get_vector_store
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -43,16 +44,33 @@ async def verify_webhook_secret(x_webhook_secret: str | None = Header(None)) -> 
         )
 
 
+def embed_transcript_background(doc_id: str, title: str, date: str, content: str) -> None:
+    """Background task to embed a transcript into the vector store."""
+    try:
+        vector_store = get_vector_store()
+        chunks = vector_store.add_transcript(
+            doc_id=doc_id,
+            title=title,
+            date=date,
+            content=content,
+        )
+        logger.info(f"Auto-embedded transcript {doc_id} into {chunks} chunks")
+    except Exception as e:
+        logger.error(f"Failed to auto-embed transcript {doc_id}: {e}")
+
+
 @router.post("/circleback")
 async def webhook_circleback(
     request: Request,
+    background_tasks: BackgroundTasks,
     _: None = Depends(verify_webhook_secret),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """
     Webhook endpoint to receive meeting data from CircleBack.
 
-    Accepts an array of meeting objects, processes each one, and stores them in the database.
+    Accepts an array of meeting objects, processes each one, stores them in the database,
+    and auto-embeds them into the vector store for RAG search.
     """
     # Read raw body to see what we're actually receiving
     try:
@@ -115,6 +133,17 @@ async def webhook_circleback(
             logger.info(f"Saving meeting {meeting_id} to database...")
             saved_meeting = await save_meeting(db, processed)
             logger.info(f"Successfully saved meeting {meeting_id} to database (DB ID: {saved_meeting.id})")
+
+            # Auto-embed into vector store (background task)
+            background_tasks.add_task(
+                embed_transcript_background,
+                doc_id=saved_meeting.doc_id,
+                title=saved_meeting.title,
+                date=saved_meeting.date,
+                content=saved_meeting.formatted_content,
+            )
+            logger.info(f"Scheduled background embedding for meeting {meeting_id}")
+
             processed_count += 1
 
         except Exception as e:

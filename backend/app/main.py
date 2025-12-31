@@ -1,66 +1,71 @@
-"""FastAPI entrypoint wiring the ChatKit server and REST endpoints."""
+"""FastAPI entrypoint for OxyChat backend."""
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from chatkit.server import StreamingResult
-from fastapi import Depends, FastAPI, HTTPException, Request, status
-from fastapi.responses import Response, StreamingResponse
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import JSONResponse
 
 # Load environment variables from .env file
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from .chat import (
-    AgentControllerServer,
-    create_chatkit_server,
-)
 from .database import get_db, get_recent_meetings, init_db
+from .routers import chat_router, transcripts_router
 from .webhook import router as webhook_router
 
-app = FastAPI(title="ChatKit API")
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-# Register webhook router
+app = FastAPI(
+    title="OxyChat API",
+    description="AI-powered chat with meeting transcript context",
+    version="1.0.0",
+)
+
+# CORS middleware for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Register routers
+app.include_router(chat_router)
+app.include_router(transcripts_router)
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
     """Initialize database on startup."""
-    await init_db()
-
-_chatkit_server: AgentControllerServer | None = create_chatkit_server()
-
-
-def get_chatkit_server() -> AgentControllerServer:
-    if _chatkit_server is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=(
-                "ChatKit dependencies are missing. Install the ChatKit Python "
-                "package to enable the conversational endpoint."
-            ),
-        )
-    return _chatkit_server
+    logger.info("Starting OxyChat API...")
+    try:
+        await init_db()
+        logger.info("Database initialized")
+    except Exception as e:
+        logger.warning(f"Database initialization failed: {e}")
+        logger.warning("Running without database - some features will be unavailable")
 
 
-@app.post("/chatkit")
-async def chatkit_endpoint(
-    request: Request, server: AgentControllerServer = Depends(get_chatkit_server)
-) -> Response:
-    payload = await request.body()
-    result = await server.process(payload, {"request": request})
-    if isinstance(result, StreamingResult):
-        return StreamingResponse(result, media_type="text/event-stream")
-    if hasattr(result, "json"):
-        return Response(content=result.json, media_type="application/json")
-    return JSONResponse(result)
-
-
+@app.get("/")
+async def root() -> dict[str, str]:
+    """Root endpoint with API info."""
+    return {
+        "name": "OxyChat API",
+        "version": "1.0.0",
+        "docs": "/docs",
+    }
 
 
 @app.post("/")
@@ -75,14 +80,22 @@ async def root_post() -> dict[str, str]:
 
 @app.get("/health")
 async def health_check() -> dict[str, str]:
+    """Health check endpoint."""
     return {"status": "healthy"}
 
 
+# Legacy endpoint for backwards compatibility
+# TODO: Remove once frontend is fully migrated
 @app.get("/api/meetings/recent")
 async def get_recent_meetings_endpoint(
-    limit: int = 10, db: AsyncSession = Depends(get_db)
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    """Get the most recent meetings."""
+    """
+    Get the most recent meetings.
+
+    Deprecated: Use GET /api/transcripts instead.
+    """
     meetings = await get_recent_meetings(db, limit=limit)
     return {
         "meetings": [
