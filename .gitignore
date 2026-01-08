@@ -26,3 +26,6 @@ dist/
 .vite/
 .coverage/
 coverage/
+
+# Chroma vector database
+backend/chroma_data/

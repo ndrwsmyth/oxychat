@@ -2,7 +2,9 @@
 
 import { useRef, useEffect, useState } from "react";
 import { OxyMentionPopover } from "@/components/mentions/OxyMentionPopover";
-import type { Transcript } from "@/types";
+import { ModelPicker } from "./ModelPicker";
+import type { Transcript, ModelOption } from "@/types";
+import { Paperclip } from "lucide-react";
 
 interface OxyComposerProps {
   value: string;
@@ -10,6 +12,8 @@ interface OxyComposerProps {
   onSend: () => void;
   disabled: boolean;
   transcripts: Transcript[];
+  model: ModelOption;
+  onModelChange: (model: ModelOption) => void;
 }
 
 export function OxyComposer({
@@ -18,18 +22,24 @@ export function OxyComposer({
   onSend,
   disabled,
   transcripts,
+  model,
+  onModelChange,
 }: OxyComposerProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [focusedInput, setFocusedInput] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
 
-  // Auto-resize textarea
+  // Auto-resize textarea (max 14 lines * 24px = 336px)
   useEffect(() => {
     const el = inputRef.current;
     if (el) {
       el.style.height = "auto";
-      el.style.height = Math.min(el.scrollHeight, 200) + "px";
+      const newHeight = Math.min(el.scrollHeight, 336);
+      el.style.height = newHeight + "px";
+
+      // Only show scrollbar when content exceeds max height
+      el.style.overflowY = el.scrollHeight > 336 ? "auto" : "hidden";
     }
   }, [value]);
 
@@ -80,27 +90,54 @@ export function OxyComposer({
         transcripts={filteredTranscripts}
         onSelect={selectMention}
       >
-        <div className={`oxy-input-wrap ${focusedInput ? "focused" : ""} ${value.trim() ? "has-text" : ""}`}>
-          <textarea
-            ref={inputRef}
-            value={value}
-            onChange={handleInput}
-            onKeyDown={onKeyDown}
-            onFocus={() => setFocusedInput(true)}
-            onBlur={() => setFocusedInput(false)}
-            placeholder="Ask anything..."
-            rows={1}
-          />
-          <div className="oxy-input-actions">
-            <span className="oxy-hint">
-              <kbd>@</kbd> to cite
-            </span>
-            <button className="oxy-send" onClick={onSend} disabled={!value.trim() || disabled}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M5 12h14" />
-                <path d="M12 5l7 7-7 7" />
-              </svg>
-            </button>
+        <div className={`oxy-composer-unified ${focusedInput ? "focused" : ""}`}>
+          {/* Upper Section: Textarea */}
+          <div className="oxy-composer-input">
+            <textarea
+              ref={inputRef}
+              value={value}
+              onChange={handleInput}
+              onKeyDown={onKeyDown}
+              onFocus={() => setFocusedInput(true)}
+              onBlur={() => setFocusedInput(false)}
+              placeholder="Ask anything..."
+              className="oxy-textarea"
+              rows={1}
+            />
+          </div>
+
+          {/* Lower Section: Toolbar */}
+          <div className="oxy-composer-toolbar">
+            <div className="oxy-toolbar-left">
+              <ModelPicker
+                model={model}
+                onModelChange={onModelChange}
+                disabled={disabled}
+              />
+              <button
+                className="oxy-attach-btn"
+                disabled
+                title="Attachments (coming soon)"
+              >
+                <Paperclip size={18} />
+              </button>
+            </div>
+
+            <div className="oxy-toolbar-right">
+              <span className="oxy-hint">
+                <kbd>@</kbd> to cite
+              </span>
+              <button
+                className="oxy-send"
+                onClick={onSend}
+                disabled={!value.trim() || disabled}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M5 12h14" />
+                  <path d="M12 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </OxyMentionPopover>

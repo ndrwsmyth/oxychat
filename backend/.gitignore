@@ -7,3 +7,8 @@ __pycache__/
 .pytest_cache/
 .coverage/
 *.log
+
+# Chroma vector store
+chroma_data/
+*.sqlite3
+*.parquet

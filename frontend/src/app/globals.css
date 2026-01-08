@@ -35,6 +35,27 @@
 
   --focus: rgba(0,0,0,0.85);
   --focus-ring: rgba(0,0,0,0.08);
+
+  /* Design Tokens - Typography Scale */
+  --font-xs: 11px;    /* Group labels, timestamps */
+  --font-sm: 12px;    /* Hints, metadata */
+  --font-base: 13px;  /* Sidebar items, search */
+  --font-md: 14px;    /* Buttons, mentions */
+  --font-lg: 15px;    /* Body text, composer */
+
+  /* Design Tokens - Spacing Scale */
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-base: 16px;
+  --spacing-md: 20px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  /* Design Tokens - Border Radius Scale */
+  --radius-sm: 6px;   /* Small elements */
+  --radius-base: 8px; /* Default */
+  --radius-md: 12px;  /* Medium containers */
+  --radius-lg: 16px;  /* Large containers */
 }
 
 .dark {
@@ -113,9 +134,15 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  max-width: 720px;
+  max-width: 1200px; /* 33% wider for better screen utilization */
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--spacing-lg);
+  transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Expanded content width when sidebar is collapsed */
+.oxy-app-layout.sidebar-collapsed .oxy-main {
+  max-width: 1600px; /* 14% wider when sidebar hidden */
 }
 
 /* Top bar */
@@ -260,57 +287,11 @@ body {
   max-width: 440px;
 }
 
-.oxy-starters {
-  display: flex;
-  gap: 12px;
-  padding-top: 32px;
-  border-top: 1px solid var(--border);
-}
-
-.oxy-starter {
-  flex: 1;
-  padding: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-  transition: all 0.25s ease;
-  animation: starterIn 0.4s ease backwards;
-}
-
-.oxy-starter:nth-child(1) { animation-delay: 0.25s; }
-.oxy-starter:nth-child(2) { animation-delay: 0.31s; }
-.oxy-starter:nth-child(3) { animation-delay: 0.37s; }
-
-@keyframes starterIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.oxy-starter:hover {
-  border-color: var(--text-primary);
-  transform: translateY(-2px);
-}
-
-.oxy-starter-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.oxy-starter-detail {
-  display: block;
-  font-size: 13px;
-  color: var(--text-tertiary);
-}
-
 /* Thread */
 .oxy-thread {
-  padding: 32px 0;
+  padding: var(--spacing-xl) 0;
+  max-width: 800px; /* Align better with new main width */
+  margin: 0 auto;
 }
 
 .oxy-msg {
@@ -410,16 +391,14 @@ body {
 }
 
 .oxy-mentions {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  margin-bottom: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.06);
   padding: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 1000;
   animation: mentionsIn 0.2s ease;
 }
 
@@ -436,9 +415,9 @@ body {
   padding: 10px 14px;
   background: none;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-base); /* 8px */
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--font-md); /* 14px */
   color: var(--text-primary);
   cursor: pointer;
   transition: background 0.12s ease;
@@ -449,64 +428,55 @@ body {
 }
 
 .oxy-mention-when {
-  font-size: 12px;
+  font-size: var(--font-sm); /* 12px */
   color: var(--text-faint);
 }
 
-.oxy-input-wrap {
+/* Unified composer box with border */
+.oxy-composer-unified {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 6px 6px 6px 20px;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg); /* 16px - keep large for emphasis */
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
-.oxy-input-wrap.focused {
+.oxy-composer-unified.focused {
   border-color: var(--focus);
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-.oxy-input-wrap textarea {
+/* Upper section: textarea */
+.oxy-composer-input {
+  padding: var(--spacing-base) var(--spacing-md); /* 16px 20px (symmetric top/bottom) */
   flex: 1;
+}
+
+.oxy-textarea {
+  width: 100%;
   border: none;
   background: none;
   font-family: inherit;
-  font-size: 15px;
+  font-size: var(--font-lg); /* 15px */
   line-height: 1.55;
   color: var(--text-primary);
   resize: none;
-  padding: 10px 0;
-  max-height: 200px;
-  overflow: hidden;
-}
-
-.oxy-input-wrap textarea:focus {
+  max-height: 336px;
+  overflow-y: hidden; /* Start hidden, JS enables when needed */
   outline: none;
 }
 
-.oxy-input-wrap textarea::placeholder {
-  color: var(--text-faint);
+.oxy-textarea::placeholder {
+  color: var(--text-tertiary);
 }
 
-.oxy-input-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 4px;
-}
-
+/* Hint styling */
 .oxy-hint {
-  font-size: 12px;
-  color: var(--text-faint);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.oxy-input-wrap.focused .oxy-hint {
-  opacity: 1;
+  font-size: var(--font-sm); /* 12px */
+  color: var(--text-tertiary);
+  font-style: italic;
 }
 
 .oxy-hint kbd {
@@ -525,14 +495,15 @@ body {
   margin-right: 2px;
 }
 
+/* Send button */
 .oxy-send {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--gray-100);
   color: var(--gray-400);
-  cursor: pointer;
+  cursor: not-allowed;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -540,17 +511,14 @@ body {
   flex-shrink: 0;
 }
 
-.oxy-input-wrap.has-text .oxy-send {
+.oxy-send:not(:disabled) {
+  cursor: pointer;
   background: var(--text-primary);
   color: var(--surface);
 }
 
-.oxy-input-wrap.has-text .oxy-send:hover {
-  transform: scale(1.04);
-}
-
-.oxy-send:disabled {
-  cursor: default;
+.oxy-send:not(:disabled):hover {
+  transform: scale(1.05);
 }
 
 /* Backdrop */
@@ -700,4 +668,995 @@ body {
 
 .dark ::selection {
   background: rgba(255,255,255,0.12);
+}
+
+/* ========================================
+   APP LAYOUT (Multi-Conversation)
+   ======================================== */
+
+.oxy-app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.oxy-sidebar {
+  width: 280px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: width;
+  z-index: 10;
+}
+
+.oxy-sidebar.collapsed {
+  width: 0;
+  border-right: none;
+  pointer-events: none;
+}
+
+.oxy-main-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--surface); /* Match sidebar background for consistency */
+}
+
+/* Responsive sidebar widths */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .oxy-sidebar {
+    width: 240px;
+  }
+
+  .oxy-sidebar.collapsed {
+    width: 0;
+  }
+}
+
+/* Mobile: full-screen overlay */
+@media (max-width: 768px) {
+  .oxy-sidebar {
+    position: fixed;
+    inset: 0;
+    width: 100% !important; /* Override width animation */
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    will-change: transform;
+    border-right: none;
+  }
+
+  .oxy-sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+
+  /* Opacity transitions for mobile overlay sidebar */
+  .oxy-sidebar-content {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.2s ease, visibility 0s 0s;
+  }
+
+  .oxy-sidebar-content.collapsed {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0s 0.2s;
+  }
+}
+
+/* ========================================
+   SIDEBAR COMPONENTS
+   ======================================== */
+
+.oxy-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* Opacity/visibility removed on desktop - parent width animation handles visibility */
+}
+
+.oxy-sidebar-content.collapsed {
+  /* Only disable pointer events - parent overflow: hidden handles visibility */
+  pointer-events: none;
+}
+
+.oxy-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-base); /* 20px 16px - keep generous */
+  gap: var(--spacing-xs);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.oxy-new-chat-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px var(--spacing-base);
+  background: var(--text-primary);
+  color: var(--surface);
+  border: none;
+  border-radius: var(--radius-base); /* 8px */
+  font-family: inherit;
+  font-size: var(--font-md); /* 14px */
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oxy-new-chat-btn:hover {
+  transform: scale(1.02);
+}
+
+.oxy-new-chat-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.oxy-sidebar-toggle {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.oxy-sidebar-toggle:hover {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+}
+
+/* Sidebar search */
+.oxy-sidebar-search {
+  position: relative;
+  padding: var(--spacing-sm) var(--spacing-base); /* 12px 16px - consistent with header */
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.oxy-search-icon {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.oxy-search-input {
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) 32px;
+  background: var(--surface-overlay);
+  border: 1px solid transparent;
+  border-radius: var(--radius-base);
+  font-family: inherit;
+  font-size: var(--font-base); /* 13px - matches sidebar items */
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.oxy-search-input:focus {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+
+.oxy-search-input::placeholder {
+  color: var(--text-faint);
+}
+
+/* Sidebar list */
+.oxy-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Conversation groups */
+.oxy-conversation-group {
+  padding: var(--spacing-base) var(--spacing-sm); /* 16px 12px */
+}
+
+.oxy-conversation-group.pinned {
+  border-bottom: 1px solid var(--border);
+}
+
+.oxy-conversation-group-title {
+  font-size: var(--font-xs); /* 11px */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  padding: 0 var(--spacing-xs) var(--spacing-xs);
+}
+
+.oxy-conversation-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Conversation items */
+.oxy-conversation-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm); /* 12px all around - more breathing room */
+  background: none;
+  border-radius: var(--radius-base); /* 8px */
+  cursor: pointer;
+  transition: background 0.15s ease;
+  animation: conversationIn 0.3s ease backwards;
+}
+
+@keyframes conversationIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.oxy-conversation-item:hover {
+  background: var(--surface-overlay);
+}
+
+.oxy-conversation-item.active {
+  background: var(--surface-overlay);
+}
+
+.oxy-conversation-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: var(--text-primary);
+  border-radius: 0 2px 2px 0;
+}
+
+.oxy-pin-indicator {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.oxy-conversation-title {
+  flex: 1;
+  font-size: var(--font-base); /* 13px */
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.oxy-conversation-title-input {
+  flex: 1;
+  padding: 2px 4px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.oxy-conversation-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.oxy-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.oxy-action-btn:hover {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.oxy-action-btn.confirm {
+  color: var(--text-primary);
+}
+
+.oxy-action-btn.cancel {
+  color: var(--text-tertiary);
+}
+
+/* ========================================
+   FLOATING TOGGLE BUTTON & MOBILE BACKDROP
+   ======================================== */
+
+.oxy-sidebar-floating-toggle {
+  position: fixed;
+  top: 20px;
+  left: 16px;
+  z-index: 50;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  animation: fadeInSlide 0.3s ease 0.3s backwards;
+}
+
+.oxy-sidebar-floating-toggle:hover {
+  background: var(--surface-overlay);
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.oxy-sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .oxy-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    animation: fadeIn 0.3s ease;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   SIDEBAR FOOTER & IOS THEME TOGGLE
+   ======================================== */
+
+.oxy-sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* iOS-style theme toggle */
+.ios-theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ios-toggle-track {
+  position: relative;
+  width: 64px;
+  height: 32px;
+  background: var(--surface-overlay);
+  border-radius: 16px;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  transition: background 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ios-toggle-track.light {
+  background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+}
+
+.ios-toggle-track.dark {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+}
+
+/* Background icons */
+.ios-toggle-icons {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  pointer-events: none;
+}
+
+.ios-icon-light,
+.ios-icon-dark {
+  color: rgba(255, 255, 255, 0.6);
+  transition: opacity 0.3s ease;
+}
+
+.ios-toggle-track.light .ios-icon-light {
+  opacity: 0.3;
+}
+
+.ios-toggle-track.dark .ios-icon-dark {
+  opacity: 0.3;
+}
+
+/* Sliding thumb */
+.ios-toggle-thumb {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  background: white;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+  color: var(--text-primary);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+
+.ios-toggle-thumb.light {
+  transform: translateX(0);
+}
+
+.ios-toggle-thumb.dark {
+  transform: translateX(32px);
+}
+
+/* Icon inside thumb */
+.ios-toggle-thumb svg {
+  transition: transform 0.3s ease;
+}
+
+.ios-toggle-track.light .ios-toggle-thumb svg {
+  color: #f59e0b;
+}
+
+.ios-toggle-track.dark .ios-toggle-thumb svg {
+  color: #3b82f6;
+}
+
+/* Hover effect */
+.ios-theme-toggle:hover .ios-toggle-thumb {
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Active press effect */
+.ios-theme-toggle:active .ios-toggle-thumb {
+  transform: scale(0.95) translateX(0);
+}
+
+.ios-theme-toggle:active .ios-toggle-thumb.dark {
+  transform: scale(0.95) translateX(32px);
+}
+
+/* ========================================
+   COMPOSER TOOLBAR
+   ======================================== */
+
+/* Lower section: toolbar */
+.oxy-composer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) var(--spacing-base); /* 8px 16px (symmetric) */
+  min-height: 48px;
+  border-top: 1px solid var(--border); /* Use defined variable */
+}
+
+.oxy-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.oxy-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Inline model picker trigger */
+.oxy-model-picker-trigger-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.oxy-model-picker-trigger-inline:hover {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.oxy-model-picker-trigger-inline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.oxy-model-label {
+  font-weight: 500;
+}
+
+.oxy-model-picker-content {
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  padding: 6px;
+  z-index: 1000;
+  animation: popoverIn 0.2s ease;
+  margin-bottom: 8px;
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.oxy-model-picker-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.oxy-model-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.12s ease;
+  text-align: left;
+}
+
+.oxy-model-option:hover {
+  background: var(--surface-overlay);
+}
+
+.oxy-model-option.active {
+  background: var(--surface-overlay);
+}
+
+.oxy-model-option-label {
+  font-weight: 500;
+}
+
+.oxy-model-option-check {
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+/* Attach button */
+.oxy-attach-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: var(--gray-400);
+  cursor: not-allowed;
+  transition: all 0.2s ease;
+}
+
+.oxy-attach-btn:not(:disabled) {
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.oxy-attach-btn:not(:disabled):hover {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+}
+
+/* ========================================
+   THINKING INDICATOR
+   ======================================== */
+
+.oxy-thinking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  animation: fadeUp 0.35s ease;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.oxy-thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  animation: dotPulse 1.5s ease infinite;
+}
+
+.oxy-thinking span {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ========================================
+   UPDATED COMPOSER MAX-HEIGHT
+   ======================================== */
+
+.oxy-input-wrap textarea {
+  max-height: 336px; /* 14 lines * 24px */
+}
+
+/* ========================================
+   CLICKABLE LOGO
+   ======================================== */
+
+.oxy-mark.clickable:hover {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+/* ========================================
+   PERSISTENT SIDEBAR BAR
+   ======================================== */
+
+.oxy-persistent-bar {
+  width: 56px;
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+  z-index: 11;
+}
+
+.oxy-persistent-bar-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.oxy-persistent-bar-btn:hover {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+}
+
+/* Update sidebar to slide next to persistent bar */
+.oxy-sidebar {
+  width: 280px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: margin-left;
+  z-index: 10;
+}
+
+.oxy-sidebar.collapsed {
+  margin-left: -280px;
+  border-right: none;
+  pointer-events: none;
+}
+
+/* Mobile: hide persistent bar, show full-screen overlay */
+@media (max-width: 768px) {
+  .oxy-persistent-bar {
+    display: none;
+  }
+
+  .oxy-sidebar {
+    position: fixed;
+    inset: 0;
+    width: 100% !important;
+    margin-left: 0 !important;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    will-change: transform;
+    border-right: none;
+  }
+
+  .oxy-sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+}
+
+/* ========================================
+   SEARCH MODAL
+   ======================================== */
+
+.oxy-search-modal {
+  max-width: 640px;
+  width: 90vw;
+  max-height: 540px;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.oxy-search-modal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-base) var(--spacing-md);
+  border-bottom: 1px solid var(--border);
+}
+
+.oxy-search-modal-icon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.oxy-search-modal-input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--font-lg);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.oxy-search-modal-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.oxy-search-modal-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--surface-overlay);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.oxy-search-modal-results {
+  max-height: 440px;
+  overflow-y: auto;
+}
+
+/* Search result items */
+.oxy-search-result {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.oxy-search-result:hover {
+  background: var(--surface-overlay);
+}
+
+.oxy-search-result:last-child {
+  border-bottom: none;
+}
+
+.oxy-search-new-chat {
+  background: var(--surface-overlay);
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.oxy-search-result-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-overlay);
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.oxy-search-new-chat .oxy-search-result-icon {
+  background: var(--text-primary);
+  color: var(--surface);
+}
+
+.oxy-search-result-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.oxy-search-result-title {
+  font-size: var(--font-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oxy-search-result-subtitle {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+}
+
+.oxy-search-result-preview {
+  font-size: var(--font-base);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Search sections */
+.oxy-search-section {
+  padding: var(--spacing-xs) 0;
+}
+
+.oxy-search-section-title {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  padding: var(--spacing-xs) var(--spacing-md);
+}
+
+/* Search states */
+.oxy-search-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-base);
+}
+
+.oxy-search-empty {
+  padding: var(--spacing-xl) * 2;
+}
+
+.oxy-search-empty-icon {
+  color: var(--text-faint);
+  margin-bottom: var(--spacing-xs);
+}
+
+.oxy-search-error {
+  color: #ef4444;
+}
+
+/* Loading spinner */
+.oxy-search-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

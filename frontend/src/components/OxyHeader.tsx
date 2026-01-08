@@ -1,15 +1,28 @@
 "use client";
 
-import { OxyThemeToggle } from "./OxyThemeToggle";
+import { useRouter } from "next/navigation";
 
 interface OxyHeaderProps {
+  showHomeButton?: boolean;
   onLibraryClick: () => void;
 }
 
-export function OxyHeader({ onLibraryClick }: OxyHeaderProps) {
+export function OxyHeader({ showHomeButton = false, onLibraryClick }: OxyHeaderProps) {
+  const router = useRouter();
+
+  const handleLogoClick = () => {
+    if (showHomeButton) {
+      router.push("/");
+    }
+  };
+
   return (
     <header className="oxy-bar">
-      <div className="oxy-mark">
+      <div
+        className={`oxy-mark ${showHomeButton ? "clickable" : ""}`}
+        onClick={handleLogoClick}
+        style={showHomeButton ? { cursor: "pointer" } : undefined}
+      >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="2" fill="currentColor" />
           <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" opacity="0.4" />
@@ -18,7 +31,6 @@ export function OxyHeader({ onLibraryClick }: OxyHeaderProps) {
         <span>Oxy</span>
       </div>
       <div className="oxy-bar-actions">
-        <OxyThemeToggle />
         <button className="oxy-bar-btn" onClick={onLibraryClick}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />

@@ -32,6 +32,8 @@ export function OxyMentionPopover({
           side="top"
           align="start"
           sideOffset={8}
+          collisionPadding={12}
+          avoidCollisions={true}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           {transcripts.map((t) => (

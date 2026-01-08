@@ -151,3 +151,140 @@ async def get_recent_meetings(session: AsyncSession, limit: int = 10) -> list[Me
     return list(result.scalars().all())
 
 
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    auto_titled: Mapped[bool] = mapped_column(Boolean, default=False)
+    model: Mapped[str] = mapped_column(String(100), default="claude-sonnet-4.5")
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False)
+    pinned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("idx_conversations_updated_at", "updated_at"),
+        Index("idx_conversations_pinned", "pinned", "pinned_at"),
+    )
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    conversation_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    mentions: Mapped[dict] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_messages_conversation_id", "conversation_id", "created_at"),
+    )
+
+
+class ConversationDraft(Base):
+    __tablename__ = "conversation_drafts"
+
+    conversation_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class Profile(Base):
+    """Extended user profile linked to Supabase auth.users"""
+    __tablename__ = "profiles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)  # UUID from auth.users
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    org_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    metadata: Mapped[dict] = mapped_column(JSON, default=dict)
+
+    __table_args__ = (
+        Index("idx_profiles_email", "email"),
+        Index("idx_profiles_org_id", "org_id"),
+    )
+
+
+class Turn(Base):
+    """Groups messages in a single exchange (user message + assistant response)"""
+    __tablename__ = "turns"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    conversation_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_turns_conversation_id", "conversation_id", "sequence"),
+        UniqueConstraint("conversation_id", "sequence", name="uq_conversation_sequence"),
+    )
+
+
+class ToolCall(Base):
+    """Tracks tool usage (@mentions, RAG, future tools)"""
+    __tablename__ = "tool_calls"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    message_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    tool_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    input: Mapped[dict] = mapped_column(JSON, nullable=False)
+    output: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("idx_tool_calls_message_id", "message_id"),
+        Index("idx_tool_calls_turn_id", "turn_id"),
+        Index("idx_tool_calls_tool_name", "tool_name"),
+    )
+
+
+class AgentStep(Base):
+    """Tracks multi-step reasoning for advanced agent behaviors"""
+    __tablename__ = "agent_steps"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    step_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    input_context: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    output: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    tokens_in: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    tokens_out: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_agent_steps_turn_id", "turn_id", "sequence"),
+    )
+
+
+class RetrievalResult(Base):
+    """Tracks RAG retrievals for debugging and improvement"""
+    __tablename__ = "retrieval_results"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    tool_call_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    query: Mapped[str] = mapped_column(Text, nullable=False)
+    results: Mapped[dict] = mapped_column(JSON, nullable=False)
+    retrieval_method: Mapped[str] = mapped_column(String(50), default="chromadb")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_retrieval_results_turn_id", "turn_id"),
+        Index("idx_retrieval_results_tool_call_id", "tool_call_id"),
+    )
+
+

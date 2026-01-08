@@ -1,26 +1,24 @@
 "use client";
 
-interface OxyEmptyStateProps {
-  onStarterClick: (text: string) => void;
+function getTimeContext() {
+  const hour = new Date().getHours();
+
+  if (hour < 5) return { greeting: "Working late", prompt: "What's keeping you up?" };
+  if (hour < 8) return { greeting: "Good morning", prompt: "What's on the agenda?" };
+  if (hour < 12) return { greeting: "Good morning", prompt: "What are we tackling today?" };
+  if (hour < 17) return { greeting: "Good afternoon", prompt: "What are you working on?" };
+  if (hour < 20) return { greeting: "Good evening", prompt: "Wrapping up anything?" };
+  return { greeting: "Good evening", prompt: "What's on your mind?" };
 }
 
-const starters = [
-  { label: "Summarize", detail: "recent meetings" },
-  { label: "Find", detail: "action items" },
-  { label: "Search", detail: "by topic" },
-];
+export function OxyEmptyState() {
+  const { greeting, prompt } = getTimeContext();
 
-function getGreeting() {
-  const h = new Date().getHours();
-  return h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
-}
-
-export function OxyEmptyState({ onStarterClick }: OxyEmptyStateProps) {
   return (
     <div className="oxy-empty">
       <div className="oxy-empty-top">
-        <p className="oxy-empty-time">Good {getGreeting()}</p>
-        <h1 className="oxy-empty-title">What would you like to know?</h1>
+        <p className="oxy-empty-time">{greeting}</p>
+        <h1 className="oxy-empty-title">{prompt}</h1>
       </div>
 
       <div className="oxy-empty-middle">
@@ -28,19 +26,6 @@ export function OxyEmptyState({ onStarterClick }: OxyEmptyStateProps) {
           I can search your meeting transcripts, summarize discussions,
           surface decisions, and help you recall what was said.
         </p>
-      </div>
-
-      <div className="oxy-starters">
-        {starters.map((s, i) => (
-          <button
-            key={i}
-            className="oxy-starter"
-            onClick={() => onStarterClick(`${s.label} ${s.detail}`)}
-          >
-            <span className="oxy-starter-label">{s.label}</span>
-            <span className="oxy-starter-detail">{s.detail}</span>
-          </button>
-        ))}
       </div>
     </div>
   );

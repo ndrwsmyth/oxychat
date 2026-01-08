@@ -16,6 +16,9 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 from .database import get_db, get_recent_meetings, init_db
 from .routers import chat_router, transcripts_router
+from .routers.conversations import router as conversations_router
+from .routers.search import router as search_router
+from .routers.messages import router as messages_router
 from .webhook import router as webhook_router
 
 # Configure logging
@@ -43,6 +46,9 @@ app.add_middleware(
 # Register routers
 app.include_router(chat_router)
 app.include_router(transcripts_router)
+app.include_router(conversations_router)
+app.include_router(search_router)
+app.include_router(messages_router)
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
 
 
