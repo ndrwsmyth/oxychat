@@ -7,7 +7,7 @@
 
 import { useRouter } from 'next/navigation'
 import { Search, Plus, MessageSquare, Clock } from 'lucide-react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useSearch } from '@/hooks/useSearch'
 
@@ -40,6 +40,7 @@ export function SearchModal({ isOpen, onClose, onNewChat }: SearchModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="oxy-search-modal">
+        <DialogTitle className="sr-only">Search conversations</DialogTitle>
         {/* Search Input */}
         <div className="oxy-search-modal-header">
           <Search size={20} className="oxy-search-modal-icon" />
