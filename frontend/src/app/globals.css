@@ -127,22 +127,14 @@ body {
   );
 }
 
-/* Main layout */
+/* Main chat area - inside oxy-chat-container */
 .oxy-main {
   position: relative;
   z-index: 1;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  max-width: 1200px; /* 33% wider for better screen utilization */
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-  transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Expanded content width when sidebar is collapsed */
-.oxy-app-layout.sidebar-collapsed .oxy-main {
-  max-width: 1600px; /* 14% wider when sidebar hidden */
+  width: 100%;
 }
 
 /* Top bar */
@@ -182,12 +174,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition:
+    border-color 0.15s ease-out,
+    color 0.15s ease-out,
+    transform 0.1s ease-out;
 }
 
 .oxy-bar-btn:hover {
   border-color: var(--border-strong);
   color: var(--text-primary);
+}
+
+.oxy-bar-btn:active {
+  transform: scale(0.95);
 }
 
 /* Theme toggle */
@@ -671,107 +670,221 @@ body {
 }
 
 /* ========================================
-   APP LAYOUT (Multi-Conversation)
+   APP LAYOUT - CSS Grid with fluid panels
    ======================================== */
 
 .oxy-app-layout {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--sidebar-width, 280px) 1fr var(--panel-width, 0px);
   height: 100vh;
   overflow: hidden;
   position: relative;
+  /* Fast, snappy grid transition - 200ms with custom ease-out */
+  transition: grid-template-columns 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* Left Sidebar */
 .oxy-sidebar {
-  width: 280px;
   background: var(--surface);
   border-right: 1px solid var(--border);
-  flex-shrink: 0;
   overflow: hidden;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: width;
-  z-index: 10;
+  display: flex;
+  flex-direction: column;
 }
 
-.oxy-sidebar.collapsed {
-  width: 0;
-  border-right: none;
-  pointer-events: none;
+.oxy-sidebar[data-collapsed="true"] {
+  /* When collapsed, content is handled by ConversationSidebar component */
 }
 
-.oxy-main-wrapper {
-  flex: 1;
+/* Main Content Area */
+.oxy-main-content {
   display: flex;
   justify-content: center;
+  align-items: stretch;
   overflow: hidden;
-  background: var(--surface); /* Match sidebar background for consistency */
+  background: var(--surface);
+  min-width: 0; /* Allow grid item to shrink */
 }
 
-/* Responsive sidebar widths */
+.oxy-chat-container {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--spacing-lg);
+}
+
+/* Right Panel (Transcripts) */
+.oxy-right-panel {
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.oxy-right-panel[data-open="false"] {
+  border-left: none;
+}
+
+/* Responsive - Tablet */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .oxy-sidebar {
-    width: 240px;
-  }
-
-  .oxy-sidebar.collapsed {
-    width: 0;
+  .oxy-app-layout {
+    --sidebar-width: var(--sidebar-width, 240px);
+    --panel-width: var(--panel-width, 0px);
   }
 }
 
-/* Mobile: full-screen overlay */
+/* Mobile: Full-screen overlays */
 @media (max-width: 768px) {
+  .oxy-app-layout {
+    grid-template-columns: 1fr;
+  }
+
   .oxy-sidebar {
     position: fixed;
     inset: 0;
-    width: 100% !important; /* Override width animation */
     z-index: 100;
     transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    /* Fast 200ms with responsive ease-out */
+    transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
     will-change: transform;
     border-right: none;
   }
 
-  .oxy-sidebar:not(.collapsed) {
+  .oxy-sidebar[data-collapsed="false"] {
     transform: translateX(0);
   }
 
-  /* Opacity transitions for mobile overlay sidebar */
-  .oxy-sidebar-content {
-    opacity: 1;
-    visibility: visible;
-    transition: opacity 0.2s ease, visibility 0s 0s;
+  .oxy-right-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    transform: translateX(100%);
+    transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+    border-left: none;
   }
 
-  .oxy-sidebar-content.collapsed {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, visibility 0s 0.2s;
+  .oxy-right-panel[data-open="true"] {
+    transform: translateX(0);
+  }
+
+  .oxy-chat-container {
+    max-width: 100%;
+    padding: 0 var(--spacing-base);
+  }
+}
+
+/* Mobile backdrop */
+.oxy-mobile-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .oxy-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    animation: fadeIn 0.15s ease-out;
   }
 }
 
 /* ========================================
-   SIDEBAR COMPONENTS
+   SIDEBAR - COLLAPSED STATE (Icons only)
+   ======================================== */
+
+.oxy-sidebar-collapsed {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--spacing-sm) 0;
+}
+
+.oxy-sidebar-collapsed-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.oxy-sidebar-icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  /* Only animate transform and opacity for performance */
+  transition:
+    background-color 0.15s ease-out,
+    color 0.15s ease-out,
+    transform 0.1s ease-out;
+}
+
+.oxy-sidebar-icon-btn:hover {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+}
+
+/* Subtle scale on press - feels responsive */
+.oxy-sidebar-icon-btn:active {
+  transform: scale(0.95);
+}
+
+.oxy-sidebar-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   SIDEBAR - EXPANDED STATE
    ======================================== */
 
 .oxy-sidebar-content {
   display: flex;
   flex-direction: column;
   height: 100%;
-  /* Opacity/visibility removed on desktop - parent width animation handles visibility */
-}
-
-.oxy-sidebar-content.collapsed {
-  /* Only disable pointer events - parent overflow: hidden handles visibility */
-  pointer-events: none;
 }
 
 .oxy-sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-base); /* 20px 16px - keep generous */
-  gap: var(--spacing-xs);
+  padding: var(--spacing-md) var(--spacing-base);
+  gap: var(--spacing-sm);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.oxy-sidebar-collapse-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease-out,
+    color 0.15s ease-out,
+    transform 0.1s ease-out;
+  flex-shrink: 0;
+}
+
+.oxy-sidebar-collapse-btn:hover {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+}
+
+.oxy-sidebar-collapse-btn:active {
+  transform: scale(0.95);
 }
 
 .oxy-new-chat-btn {
@@ -784,22 +897,29 @@ body {
   background: var(--text-primary);
   color: var(--surface);
   border: none;
-  border-radius: var(--radius-base); /* 8px */
+  border-radius: var(--radius-base);
   font-family: inherit;
-  font-size: var(--font-md); /* 14px */
+  font-size: var(--font-md);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  /* Fast, performant transitions */
+  transition:
+    opacity 0.15s ease-out,
+    transform 0.1s ease-out;
 }
 
 .oxy-new-chat-btn:hover {
-  transform: scale(1.02);
+  opacity: 0.9;
+}
+
+/* Scale down on press - not up on hover (feels more natural) */
+.oxy-new-chat-btn:active {
+  transform: scale(0.97);
 }
 
 .oxy-new-chat-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
 .oxy-sidebar-toggle {
@@ -898,12 +1018,13 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  padding: var(--spacing-sm); /* 12px all around - more breathing room */
+  padding: var(--spacing-sm);
   background: none;
-  border-radius: var(--radius-base); /* 8px */
+  border-radius: var(--radius-base);
   cursor: pointer;
-  transition: background 0.15s ease;
-  animation: conversationIn 0.3s ease backwards;
+  transition: background-color 0.15s ease-out;
+  /* Fast stagger animation - 150ms */
+  animation: conversationIn 0.15s ease-out backwards;
 }
 
 @keyframes conversationIn {
@@ -919,6 +1040,11 @@ body {
 
 .oxy-conversation-item:hover {
   background: var(--surface-overlay);
+}
+
+.oxy-conversation-item:active {
+  background: var(--surface-overlay);
+  transform: scale(0.99);
 }
 
 .oxy-conversation-item.active {
@@ -1388,26 +1514,34 @@ body {
 }
 
 /* ========================================
-   PERSISTENT SIDEBAR BAR
+   TRANSCRIPTS PANEL (Right Side)
    ======================================== */
 
-.oxy-persistent-bar {
-  width: 56px;
-  height: 100vh;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+.oxy-transcripts-panel {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: var(--spacing-sm) 0;
-  gap: var(--spacing-xs);
-  flex-shrink: 0;
-  z-index: 11;
+  height: 100%;
+  width: 100%;
 }
 
-.oxy-persistent-bar-btn {
-  width: 40px;
-  height: 40px;
+.oxy-transcripts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-base);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.oxy-transcripts-title {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.oxy-transcripts-close {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1416,53 +1550,81 @@ body {
   border-radius: var(--radius-base);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.15s ease-out,
+    color 0.15s ease-out,
+    transform 0.1s ease-out;
 }
 
-.oxy-persistent-bar-btn:hover {
+.oxy-transcripts-close:hover {
   background: var(--surface-overlay);
   color: var(--text-primary);
 }
 
-/* Update sidebar to slide next to persistent bar */
-.oxy-sidebar {
-  width: 280px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  flex-shrink: 0;
+.oxy-transcripts-close:active {
+  transform: scale(0.95);
+}
+
+.oxy-transcripts-list {
+  flex: 1;
   overflow: hidden;
-  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: margin-left;
-  z-index: 10;
 }
 
-.oxy-sidebar.collapsed {
-  margin-left: -280px;
-  border-right: none;
-  pointer-events: none;
+.oxy-transcripts-viewport {
+  height: 100%;
+  width: 100%;
+  padding: var(--spacing-sm);
 }
 
-/* Mobile: hide persistent bar, show full-screen overlay */
-@media (max-width: 768px) {
-  .oxy-persistent-bar {
-    display: none;
-  }
+.oxy-transcripts-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: var(--spacing-sm) var(--spacing-base);
+  background: none;
+  border: none;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: background-color 0.15s ease-out;
+  text-align: left;
+}
 
-  .oxy-sidebar {
-    position: fixed;
-    inset: 0;
-    width: 100% !important;
-    margin-left: 0 !important;
-    z-index: 100;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    will-change: transform;
-    border-right: none;
-  }
+.oxy-transcripts-item:hover {
+  background: var(--surface-overlay);
+}
 
-  .oxy-sidebar:not(.collapsed) {
-    transform: translateX(0);
-  }
+.oxy-transcripts-item:active {
+  background: var(--surface-overlay);
+  transform: scale(0.99);
+}
+
+.oxy-transcripts-item-title {
+  font-size: var(--font-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.oxy-transcripts-item-date {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+}
+
+.oxy-transcripts-empty {
+  padding: var(--spacing-md) var(--spacing-base);
+  color: var(--text-tertiary);
+  font-size: var(--font-md);
+}
+
+.oxy-transcripts-scrollbar {
+  width: 4px;
+}
+
+.oxy-transcripts-thumb {
+  background: var(--gray-200);
+  border-radius: 2px;
 }
 
 /* ========================================
@@ -1658,5 +1820,29 @@ body {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY - Reduced Motion
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .oxy-app-layout {
+    transition: none !important;
+  }
+
+  .oxy-sidebar,
+  .oxy-right-panel {
+    transition: none !important;
   }
 }

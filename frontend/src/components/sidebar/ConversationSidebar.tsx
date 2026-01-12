@@ -3,19 +3,22 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useConversations } from "@/hooks/useConversations";
+import { useSidebar } from "@/hooks/useSidebar";
 import { ConversationGroup } from "./ConversationGroup";
 import { IOSThemeToggle } from "./IOSThemeToggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 
 interface ConversationSidebarProps {
   activeConversationId: string | null;
+  onOpenSearch?: () => void;
 }
 
-export function ConversationSidebar({ activeConversationId }: ConversationSidebarProps) {
+export function ConversationSidebar({ activeConversationId, onOpenSearch }: ConversationSidebarProps) {
   const router = useRouter();
+  const { collapsed, toggle } = useSidebar();
   const {
     conversations,
     isLoading,
@@ -62,9 +65,56 @@ export function ConversationSidebar({ activeConversationId }: ConversationSideba
     router.push(`/?c=${newConv.id}`);
   };
 
+  // Collapsed state - show only icon buttons
+  if (collapsed) {
+    return (
+      <div className="oxy-sidebar-collapsed">
+        <div className="oxy-sidebar-collapsed-buttons">
+          <button
+            onClick={toggle}
+            className="oxy-sidebar-icon-btn"
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={handleNewChat}
+            className="oxy-sidebar-icon-btn"
+            aria-label="New chat"
+            title="New chat"
+            disabled={isLoading}
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={onOpenSearch}
+            className="oxy-sidebar-icon-btn"
+            aria-label="Search (Cmd+K)"
+            title="Search (Cmd+K)"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded state - show full content
   return (
     <div className="oxy-sidebar-content">
       <div className="oxy-sidebar-header">
+        <button
+          onClick={toggle}
+          className="oxy-sidebar-collapse-btn"
+          aria-label="Collapse sidebar"
+          title="Collapse sidebar"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
         <Button
           onClick={handleNewChat}
           className="oxy-new-chat-btn"

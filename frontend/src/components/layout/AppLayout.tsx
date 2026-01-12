@@ -2,46 +2,51 @@
 
 import { ReactNode } from "react";
 import { useSidebar } from "@/hooks/useSidebar";
-import { PersistentSidebarBar } from "@/components/sidebar/PersistentSidebarBar";
+import { useTranscriptsPanel } from "@/hooks/useTranscriptsPanel";
 
 interface AppLayoutProps {
   sidebar: ReactNode;
   main: ReactNode;
-  onNewChat: () => void;
-  onOpenSearch: () => void;
+  rightPanel?: ReactNode;
 }
 
-export function AppLayout({ sidebar, main, onNewChat, onOpenSearch }: AppLayoutProps) {
+export function AppLayout({ sidebar, main, rightPanel }: AppLayoutProps) {
   const { collapsed, setCollapsed } = useSidebar();
+  const { open: panelOpen } = useTranscriptsPanel();
 
   return (
-    <div className={`oxy-app-layout ${collapsed ? "sidebar-collapsed" : ""}`}>
-      {/* Persistent sidebar bar - always visible */}
-      <PersistentSidebarBar
-        isCollapsed={collapsed}
-        onToggleCollapse={() => setCollapsed(!collapsed)}
-        onNewChat={onNewChat}
-        onOpenSearch={onOpenSearch}
-      />
-
-      {/* Mobile backdrop */}
+    <div
+      className="oxy-app-layout"
+      style={{
+        "--sidebar-width": collapsed ? "56px" : "280px",
+        "--panel-width": panelOpen ? "320px" : "0px",
+      } as React.CSSProperties}
+    >
+      {/* Mobile backdrop - only visible on mobile when sidebar is open */}
       {!collapsed && (
         <div
-          className="oxy-sidebar-backdrop"
+          className="oxy-mobile-backdrop"
           onClick={() => setCollapsed(true)}
           aria-hidden="true"
         />
       )}
 
-      {/* Sidebar content - slides in/out */}
-      <aside className={`oxy-sidebar ${collapsed ? "collapsed" : ""}`}>
+      {/* Left Sidebar */}
+      <aside className="oxy-sidebar" data-collapsed={collapsed}>
         {sidebar}
       </aside>
 
-      {/* Main content area */}
-      <div className="oxy-main-wrapper">
-        {main}
-      </div>
+      {/* Main Content Area */}
+      <main className="oxy-main-content">
+        <div className="oxy-chat-container">
+          {main}
+        </div>
+      </main>
+
+      {/* Right Panel (Transcripts) */}
+      <aside className="oxy-right-panel" data-open={panelOpen}>
+        {rightPanel}
+      </aside>
     </div>
   );
 }

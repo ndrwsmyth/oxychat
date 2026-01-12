@@ -4,9 +4,9 @@
  * Login page for OxyChat with Supabase authentication
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,10 +17,23 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // Redirect to home if auth is not configured (local dev mode)
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      router.push('/')
+    }
+  }, [router])
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
+
+    if (!supabase) {
+      setError('Authentication is not configured')
+      setLoading(false)
+      return
+    }
 
     try {
       if (isSignUp) {
@@ -50,7 +63,7 @@ export default function LoginPage() {
         }
       } else {
         // Log in
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase!.auth.signInWithPassword({
           email,
           password,
         })

@@ -9,7 +9,7 @@ AI workspace platform for Oxy design agency. Context-aware AI that uses meeting 
 ## Project Architecture
 
 ### Monorepo Structure
-- **Root**: Orchestrates both services via npm scripts
+- **Root**: Orchestrates both services via pnpm scripts
 - **backend/**: FastAPI Python service (Python 3.11+)
 - **frontend/**: Next.js React app (TypeScript, Tailwind, shadcn/ui)
 
@@ -78,20 +78,20 @@ AI workspace platform for Oxy design agency. Context-aware AI that uses meeting 
 
 Start both services (requires `uv` and `OPENAI_API_KEY`):
 ```bash
-npm start
+pnpm start
 ```
 
 Start individually:
 ```bash
 # Backend only (from root)
-npm run backend
+pnpm run backend
 # Or from backend/
 cd backend && uv run uvicorn app.main:app --reload --port 8000
 
 # Frontend only (from root)
-npm run frontend
+pnpm run frontend
 # Or from frontend/
-cd frontend && npm run dev
+cd frontend && pnpm run dev
 ```
 
 Backend runs on `http://localhost:8000`, frontend on `http://localhost:3000`
@@ -128,16 +128,16 @@ Database tables auto-create on startup via `init_db()` in `main.py`
 
 ```bash
 # Install dependencies
-cd frontend && npm install
+cd frontend && pnpm install
 
 # Run dev server
-npm run dev
+pnpm run dev
 
 # Build for production
-npm run build
+pnpm run build
 
 # Lint
-npm run lint
+pnpm run lint
 ```
 
 ## Key Features Implementation

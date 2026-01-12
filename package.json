@@ -1,9 +1,9 @@
 {
-  "name": "openai-chatkit-sample-apps",
+  "name": "oxychat",
   "private": true,
   "scripts": {
-    "start": "concurrently --kill-others-on-fail --names backend,frontend \"npm run backend\" \"npm run frontend\"",
-    "frontend": "npm --prefix frontend install && npm --prefix frontend run dev",
+    "start": "concurrently --kill-others-on-fail --names backend,frontend \"pnpm run backend\" \"pnpm run frontend\"",
+    "frontend": "pnpm --dir frontend install && pnpm --dir frontend run dev",
     "backend": "uv sync --directory backend && uv run --directory backend uvicorn app.main:app --reload --port 8000"
   },
   "devDependencies": {

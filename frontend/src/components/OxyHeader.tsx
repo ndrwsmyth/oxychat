@@ -1,14 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranscriptsPanel } from "@/hooks/useTranscriptsPanel";
 
 interface OxyHeaderProps {
   showHomeButton?: boolean;
-  onLibraryClick: () => void;
 }
 
-export function OxyHeader({ showHomeButton = false, onLibraryClick }: OxyHeaderProps) {
+export function OxyHeader({ showHomeButton = false }: OxyHeaderProps) {
   const router = useRouter();
+  const { toggle: toggleTranscripts } = useTranscriptsPanel();
 
   const handleLogoClick = () => {
     if (showHomeButton) {
@@ -31,7 +32,12 @@ export function OxyHeader({ showHomeButton = false, onLibraryClick }: OxyHeaderP
         <span>Oxy</span>
       </div>
       <div className="oxy-bar-actions">
-        <button className="oxy-bar-btn" onClick={onLibraryClick}>
+        <button
+          className="oxy-bar-btn"
+          onClick={toggleTranscripts}
+          aria-label="Toggle transcripts"
+          title="Transcripts"
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
