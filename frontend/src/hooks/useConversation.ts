@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message, ModelOption } from "@/types";
 import { fetchMessages, streamChat, parseMentions } from "@/lib/api";
 
@@ -9,9 +9,12 @@ export function useConversation(
   transcripts: any[] = []
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [model, setModel] = useState<ModelOption>("claude-sonnet-4.5");
+  const [model, setModel] = useState<ModelOption>("gpt-5.2");
   const [isLoading, setIsLoading] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const [thinkingContent, setThinkingContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -56,7 +59,12 @@ export function useConversation(
 
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+    setIsThinking(false);
+    setThinkingContent("");
     setError(null);
+
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController();
 
     // Build complete message history for API
     const messageHistory = [...messages, userMessage].map(m => ({
@@ -67,6 +75,7 @@ export function useConversation(
     // Create assistant message placeholder
     const assistantId = crypto.randomUUID();
     let assistantContent = "";
+    let currentThinking = "";
 
     setMessages((prev) => [
       ...prev,
@@ -75,6 +84,7 @@ export function useConversation(
         conversation_id: conversationId || undefined,
         role: "assistant",
         content: "",
+        thinking: "",
         timestamp: new Date(),
       },
     ]);
@@ -84,6 +94,7 @@ export function useConversation(
       messages: messageHistory,
       mentions: docIds,
       model,
+      signal: abortControllerRef.current.signal,
       onChunk: (chunk) => {
         assistantContent += chunk;
         setMessages((prev) =>
@@ -92,17 +103,45 @@ export function useConversation(
           )
         );
       },
+      onThinkingStart: () => {
+        setIsThinking(true);
+        currentThinking = "";
+      },
+      onThinkingChunk: (chunk) => {
+        currentThinking += chunk;
+        setThinkingContent(currentThinking);
+        // Also store thinking in the message
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, thinking: currentThinking } : m
+          )
+        );
+      },
+      onThinkingEnd: () => {
+        setIsThinking(false);
+      },
       onComplete: () => {
         setIsLoading(false);
+        setIsThinking(false);
+        abortControllerRef.current = null;
       },
       onError: (err) => {
         setError(err.message);
         setIsLoading(false);
+        setIsThinking(false);
+        abortControllerRef.current = null;
         // Remove the empty assistant message on error
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       },
     });
   }, [conversationId, isLoading, messages, model, transcripts]);
+
+  const stopGenerating = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
 
   const changeModel = useCallback((newModel: ModelOption) => {
     setModel(newModel);
@@ -112,8 +151,11 @@ export function useConversation(
     messages,
     model,
     isLoading,
+    isThinking,
+    thinkingContent,
     error,
     sendMessage,
+    stopGenerating,
     changeModel,
     refresh: loadMessages,
   };

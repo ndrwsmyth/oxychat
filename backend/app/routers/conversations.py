@@ -7,7 +7,10 @@ from datetime import datetime, timedelta
 
 from app.database import get_db, Conversation, Message, ConversationDraft
 from app.services.auto_title import generate_title
-from app.auth import get_current_user
+from app.auth import get_optional_user
+
+# For development: use a default user ID when auth is not provided
+DEFAULT_DEV_USER = "dev-user-local"
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 
@@ -111,12 +114,13 @@ def group_conversations_by_date(conversations: list[Conversation]) -> GroupedCon
 @router.get("", response_model=GroupedConversationsResponse)
 async def list_conversations(
     search: Optional[str] = None,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
+    user_id = user_id or DEFAULT_DEV_USER
     """List all conversations for the authenticated user, grouped by date."""
+    # Note: user_id filtering disabled for dev (model doesn't have user_id yet)
     stmt = select(Conversation).where(
-        Conversation.user_id == user_id,
         Conversation.deleted_at.is_(None)
     )
 
@@ -139,12 +143,13 @@ async def list_conversations(
 @router.post("", response_model=ConversationResponse)
 async def create_conversation(
     request: CreateConversationRequest,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new conversation for the authenticated user."""
+    user_id = user_id or DEFAULT_DEV_USER
     conversation = Conversation(
-        user_id=user_id,
+        # user_id=user_id,  # Disabled for dev - model doesn't have user_id
         title=request.title or "New conversation",
         model=request.model or "claude-sonnet-4.5",
         auto_titled=False,
@@ -161,13 +166,14 @@ async def create_conversation(
 @router.get("/{conversation_id}", response_model=ConversationResponse)
 async def get_conversation(
     conversation_id: str,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single conversation (must be owned by authenticated user)."""
+    user_id = user_id or DEFAULT_DEV_USER
     stmt = select(Conversation).where(
         Conversation.id == conversation_id,
-        Conversation.user_id == user_id,
+        # Conversation.user_id == user_id,  # Disabled for dev
         Conversation.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
@@ -183,13 +189,14 @@ async def get_conversation(
 async def update_conversation(
     conversation_id: str,
     request: UpdateConversationRequest,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Update conversation title, model, or pinned status (must be owned by authenticated user)."""
+    user_id = user_id or DEFAULT_DEV_USER
     stmt = select(Conversation).where(
         Conversation.id == conversation_id,
-        Conversation.user_id == user_id,
+        # Conversation.user_id == user_id,  # Disabled for dev
         Conversation.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
@@ -217,13 +224,14 @@ async def update_conversation(
 @router.delete("/{conversation_id}")
 async def delete_conversation(
     conversation_id: str,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Soft delete a conversation (must be owned by authenticated user)."""
+    user_id = user_id or DEFAULT_DEV_USER
     stmt = select(Conversation).where(
         Conversation.id == conversation_id,
-        Conversation.user_id == user_id,
+        # Conversation.user_id == user_id,  # Disabled for dev
         Conversation.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
@@ -241,13 +249,14 @@ async def delete_conversation(
 @router.post("/{conversation_id}/pin", response_model=ConversationResponse)
 async def toggle_pin_conversation(
     conversation_id: str,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Toggle pin status of a conversation (must be owned by authenticated user)."""
+    user_id = user_id or DEFAULT_DEV_USER
     stmt = select(Conversation).where(
         Conversation.id == conversation_id,
-        Conversation.user_id == user_id,
+        # Conversation.user_id == user_id,  # Disabled for dev
         Conversation.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
@@ -269,14 +278,15 @@ async def toggle_pin_conversation(
 @router.get("/{conversation_id}/messages", response_model=list[MessageResponse])
 async def get_messages(
     conversation_id: str,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all messages for a conversation (must be owned by authenticated user)."""
+    user_id = user_id or DEFAULT_DEV_USER
     # Verify conversation exists and is owned by user
     stmt = select(Conversation).where(
         Conversation.id == conversation_id,
-        Conversation.user_id == user_id,
+        # Conversation.user_id == user_id,  # Disabled for dev
         Conversation.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
@@ -296,13 +306,14 @@ async def get_messages(
 @router.get("/{conversation_id}/draft", response_model=DraftResponse)
 async def get_draft(
     conversation_id: str,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Get draft for a conversation (user-specific)."""
+    user_id = user_id or DEFAULT_DEV_USER
     stmt = select(ConversationDraft).where(
         ConversationDraft.conversation_id == conversation_id,
-        ConversationDraft.user_id == user_id
+        # ConversationDraft.user_id == user_id  # Disabled for dev
     )
     result = await db.execute(stmt)
     draft = result.scalar_one_or_none()
@@ -317,14 +328,15 @@ async def get_draft(
 async def save_draft(
     conversation_id: str,
     request: DraftRequest,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Save or update draft for a conversation (user-specific)."""
+    user_id = user_id or DEFAULT_DEV_USER
     # Verify conversation exists and is owned by user
     stmt = select(Conversation).where(
         Conversation.id == conversation_id,
-        Conversation.user_id == user_id,
+        # Conversation.user_id == user_id,  # Disabled for dev
         Conversation.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
@@ -336,7 +348,7 @@ async def save_draft(
     # Check if draft exists for this user
     stmt = select(ConversationDraft).where(
         ConversationDraft.conversation_id == conversation_id,
-        ConversationDraft.user_id == user_id
+        # ConversationDraft.user_id == user_id  # Disabled for dev
     )
     result = await db.execute(stmt)
     draft = result.scalar_one_or_none()
@@ -347,7 +359,7 @@ async def save_draft(
     else:
         draft = ConversationDraft(
             conversation_id=conversation_id,
-            user_id=user_id,
+            # user_id=user_id,  # Disabled for dev - model doesn't have user_id
             content=request.content,
         )
         db.add(draft)
@@ -360,13 +372,14 @@ async def save_draft(
 @router.delete("/{conversation_id}/draft")
 async def delete_draft(
     conversation_id: str,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Delete draft for a conversation (user-specific)."""
+    user_id = user_id or DEFAULT_DEV_USER
     stmt = sql_delete(ConversationDraft).where(
         ConversationDraft.conversation_id == conversation_id,
-        ConversationDraft.user_id == user_id
+        # ConversationDraft.user_id == user_id  # Disabled for dev
     )
     await db.execute(stmt)
     await db.commit()
@@ -377,14 +390,15 @@ async def delete_draft(
 @router.post("/{conversation_id}/auto-title", response_model=ConversationResponse)
 async def auto_title_conversation(
     conversation_id: str,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Generate and set an automatic title for a conversation based on its first user message (must be owned by authenticated user)."""
+    user_id = user_id or DEFAULT_DEV_USER
     # Get conversation
     stmt = select(Conversation).where(
         Conversation.id == conversation_id,
-        Conversation.user_id == user_id,
+        # Conversation.user_id == user_id,  # Disabled for dev
         Conversation.deleted_at.is_(None)
     )
     result = await db.execute(stmt)

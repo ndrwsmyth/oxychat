@@ -1,7 +1,59 @@
 import type { Conversation, GroupedConversations, Message } from "@/types";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+/**
+ * Fetch with automatic retry and toast notifications
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = 3,
+  showToast = true
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) return response;
+
+      // Don't retry on 4xx errors (client errors)
+      if (response.status >= 400 && response.status < 500) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Network error");
+
+      // Show retrying toast (except on last attempt)
+      if (showToast && attempt < retries - 1) {
+        toast.loading(`Retrying... (${attempt + 2}/${retries})`, { id: "retry-toast" });
+      }
+
+      // Exponential backoff
+      if (attempt < retries - 1) {
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
+    }
+  }
+
+  // Dismiss retry toast and show error
+  toast.dismiss("retry-toast");
+  if (showToast) {
+    toast.error(lastError?.message || "Request failed", {
+      action: {
+        label: "Retry",
+        onClick: () => fetchWithRetry(url, options, retries, showToast),
+      },
+    });
+  }
+
+  throw lastError;
+}
 
 /**
  * Get authentication headers with Supabase JWT token
@@ -37,7 +89,11 @@ export interface ChatStreamOptions {
   messages: Array<{ role: string; content: string }>;
   mentions?: string[];
   model?: string;
+  signal?: AbortSignal;
   onChunk: (chunk: string) => void;
+  onThinkingStart?: () => void;
+  onThinkingChunk?: (chunk: string) => void;
+  onThinkingEnd?: () => void;
   onComplete: () => void;
   onError: (error: Error) => void;
 }
@@ -69,8 +125,12 @@ export async function streamChat({
   conversationId,
   messages,
   mentions = [],
-  model = "claude-sonnet-4.5",
+  model = "gpt-5.2",
+  signal,
   onChunk,
+  onThinkingStart,
+  onThinkingChunk,
+  onThinkingEnd,
   onComplete,
   onError,
 }: ChatStreamOptions): Promise<void> {
@@ -79,6 +139,7 @@ export async function streamChat({
     const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
       method: "POST",
       headers,
+      signal,
       body: JSON.stringify({
         conversation_id: conversationId,
         messages,
@@ -115,13 +176,28 @@ export async function streamChat({
           }
           try {
             const parsed = JSON.parse(data);
-            if (parsed.type === "content" && parsed.content) {
-              onChunk(parsed.content);
-            } else if (parsed.type === "done") {
-              onComplete();
-              return;
-            } else if (parsed.type === "error") {
-              throw new Error(parsed.error || "Unknown error");
+            switch (parsed.type) {
+              case "content":
+                if (parsed.content) {
+                  onChunk(parsed.content);
+                }
+                break;
+              case "thinking_start":
+                onThinkingStart?.();
+                break;
+              case "thinking":
+                if (parsed.content) {
+                  onThinkingChunk?.(parsed.content);
+                }
+                break;
+              case "thinking_end":
+                onThinkingEnd?.();
+                break;
+              case "done":
+                onComplete();
+                return;
+              case "error":
+                throw new Error(parsed.error || parsed.content || "Unknown error");
             }
           } catch (e) {
             if (e instanceof SyntaxError) {
@@ -137,6 +213,11 @@ export async function streamChat({
 
     onComplete();
   } catch (error) {
+    // Don't treat abort as an error
+    if (error instanceof Error && error.name === "AbortError") {
+      onComplete();
+      return;
+    }
     onError(error instanceof Error ? error : new Error("Unknown error"));
   }
 }
@@ -189,15 +270,14 @@ export async function fetchConversations(search?: string): Promise<GroupedConver
 
 export async function createConversation(title?: string): Promise<Conversation> {
   const headers = await getAuthHeaders();
-  const response = await fetch(`${API_BASE_URL}/api/conversations`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ title }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to create conversation");
-  }
+  const response = await fetchWithRetry(
+    `${API_BASE_URL}/api/conversations`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ title }),
+    }
+  );
 
   const data = await response.json();
   return {

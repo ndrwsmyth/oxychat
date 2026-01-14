@@ -17,7 +17,6 @@ import { OxyHeader } from "@/components/OxyHeader";
 import { OxyEmptyState } from "@/components/chat/OxyEmptyState";
 import { OxyMessageThread } from "@/components/chat/OxyMessageThread";
 import { OxyComposer } from "@/components/chat/OxyComposer";
-import { ThinkingIndicator } from "@/components/chat/ThinkingIndicator";
 
 function HomeContent() {
   const router = useRouter();
@@ -25,7 +24,7 @@ function HomeContent() {
   const conversationId = searchParams.get("c");
 
   const { transcripts } = useTranscripts();
-  const { messages, model, isLoading, error, sendMessage, changeModel } =
+  const { messages, model, isLoading, isThinking, error, sendMessage, stopGenerating, changeModel } =
     useConversation(conversationId, transcripts);
   const { draft, setDraft } = useDraft(conversationId);
   const { isOpen: isSearchOpen, setIsOpen: setSearchOpen } = useSearch();
@@ -90,10 +89,11 @@ function HomeContent() {
                   <OxyEmptyState />
                 </div>
               ) : (
-                <>
-                  <OxyMessageThread messages={messages} isLoading={isLoading} />
-                  {isLoading && <ThinkingIndicator />}
-                </>
+                <OxyMessageThread
+                  messages={messages}
+                  isLoading={isLoading}
+                  isThinking={isThinking}
+                />
               )}
 
               {/* Error message */}
@@ -111,7 +111,11 @@ function HomeContent() {
                 value={draft}
                 onChange={setDraft}
                 onSend={send}
+                onStop={stopGenerating}
+                onNewConversation={handleNewChat}
                 disabled={isLoading}
+                isGenerating={isLoading}
+                hasMessages={messages.length > 0}
                 transcripts={transcripts}
                 model={model}
                 onModelChange={changeModel}

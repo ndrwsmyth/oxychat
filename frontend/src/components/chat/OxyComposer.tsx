@@ -1,16 +1,20 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { OxyMentionPopover } from "@/components/mentions/OxyMentionPopover";
+import { OxyMentionPopover, type MentionPopoverHandle } from "@/components/mentions/OxyMentionPopover";
 import { ModelPicker } from "./ModelPicker";
 import type { Transcript, ModelOption } from "@/types";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Square } from "lucide-react";
 
 interface OxyComposerProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onStop?: () => void;
+  onNewConversation?: () => void;
   disabled: boolean;
+  isGenerating?: boolean;
+  hasMessages?: boolean;
   transcripts: Transcript[];
   model: ModelOption;
   onModelChange: (model: ModelOption) => void;
@@ -20,12 +24,17 @@ export function OxyComposer({
   value,
   onChange,
   onSend,
+  onStop,
+  onNewConversation,
   disabled,
+  isGenerating = false,
+  hasMessages = false,
   transcripts,
   model,
   onModelChange,
 }: OxyComposerProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const popoverRef = useRef<MentionPopoverHandle>(null);
   const [focusedInput, setFocusedInput] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
@@ -69,6 +78,11 @@ export function OxyComposer({
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Forward keyboard events to popover when open
+    if (showMentions && popoverRef.current?.handleKeyDown(e)) {
+      return; // Event was handled by popover
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -85,6 +99,7 @@ export function OxyComposer({
   return (
     <div className="oxy-composer">
       <OxyMentionPopover
+        ref={popoverRef}
         open={showMentions}
         onOpenChange={setShowMentions}
         transcripts={filteredTranscripts}
@@ -112,6 +127,8 @@ export function OxyComposer({
               <ModelPicker
                 model={model}
                 onModelChange={onModelChange}
+                onNewConversation={onNewConversation}
+                hasMessages={hasMessages}
                 disabled={disabled}
               />
               <button
@@ -127,16 +144,26 @@ export function OxyComposer({
               <span className="oxy-hint">
                 <kbd>@</kbd> to cite
               </span>
-              <button
-                className="oxy-send"
-                onClick={onSend}
-                disabled={!value.trim() || disabled}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M5 12h14" />
-                  <path d="M12 5l7 7-7 7" />
-                </svg>
-              </button>
+              {isGenerating ? (
+                <button
+                  className="oxy-stop"
+                  onClick={onStop}
+                  title="Stop generating"
+                >
+                  <Square size={14} fill="currentColor" />
+                </button>
+              ) : (
+                <button
+                  className="oxy-send"
+                  onClick={onSend}
+                  disabled={!value.trim() || disabled}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M5 12h14" />
+                    <path d="M12 5l7 7-7 7" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -56,6 +56,9 @@
   --radius-base: 8px; /* Default */
   --radius-md: 12px;  /* Medium containers */
   --radius-lg: 16px;  /* Large containers */
+
+  /* Chat Content Width - shared across thread, messages, composer */
+  --chat-content-width: min(800px, 100% - 48px);
 }
 
 .dark {
@@ -289,7 +292,8 @@ body {
 /* Thread */
 .oxy-thread {
   padding: var(--spacing-xl) 0;
-  max-width: 800px; /* Align better with new main width */
+  max-width: var(--chat-content-width);
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -380,6 +384,61 @@ body {
 
 .oxy-msg-user .oxy-msg-body {
   text-align: right;
+  background: var(--surface-overlay);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-base);
+  max-width: 80%;
+}
+
+.oxy-msg-user .oxy-msg-text {
+  color: var(--text-primary);
+}
+
+/* ========================================
+   SCROLL TO BOTTOM BUTTON
+   ======================================== */
+
+.oxy-scroll-to-bottom {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--text-primary);
+  color: var(--surface);
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: scrollButtonIn 0.2s ease-out;
+  z-index: 10;
+  transition: all 0.15s ease;
+}
+
+.oxy-scroll-to-bottom:hover {
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.oxy-scroll-to-bottom:active {
+  transform: translateX(-50%) scale(0.98);
+}
+
+@keyframes scrollButtonIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* Composer */
@@ -387,6 +446,9 @@ body {
   padding: 24px 0 32px;
   position: relative;
   flex-shrink: 0;
+  max-width: var(--chat-content-width);
+  width: 100%;
+  margin: 0 auto;
 }
 
 .oxy-mentions {
@@ -411,24 +473,89 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: none;
   border: none;
-  border-radius: var(--radius-base); /* 8px */
+  border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: var(--font-md); /* 14px */
+  font-size: var(--font-base);
   color: var(--text-primary);
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.1s ease;
 }
 
-.oxy-mention:hover {
+.oxy-mention:hover,
+.oxy-mention-selected {
+  background: var(--surface-overlay);
+}
+
+.oxy-mention-selected {
   background: var(--surface-overlay);
 }
 
 .oxy-mention-when {
-  font-size: var(--font-sm); /* 12px */
+  font-size: var(--font-xs);
   color: var(--text-faint);
+}
+
+.oxy-mention-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+}
+
+/* ========================================
+   MENTION CHIPS
+   ======================================== */
+
+.oxy-mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px 2px 8px;
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  vertical-align: middle;
+  margin: 0 2px;
+  white-space: nowrap;
+}
+
+.oxy-mention-chip-at {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.oxy-mention-chip-title {
+  color: var(--text-primary);
+  font-weight: 500;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oxy-mention-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin-left: 2px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.oxy-mention-chip-remove:hover {
+  background: var(--border-strong);
+  color: var(--text-primary);
 }
 
 /* Unified composer box with border */
@@ -518,6 +645,31 @@ body {
 
 .oxy-send:not(:disabled):hover {
   transform: scale(1.05);
+}
+
+/* Stop button */
+.oxy-stop {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: var(--text-primary);
+  color: var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.oxy-stop:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.oxy-stop:active {
+  transform: scale(0.95);
 }
 
 /* Backdrop */
@@ -1435,6 +1587,53 @@ body {
   flex-shrink: 0;
 }
 
+/* ========================================
+   MODEL SWITCH DIALOG
+   ======================================== */
+
+.oxy-model-switch-dialog {
+  max-width: 400px;
+}
+
+.oxy-model-switch-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: var(--spacing-base);
+}
+
+.oxy-dialog-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-base);
+  font-family: inherit;
+  font-size: var(--font-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.oxy-dialog-btn-primary {
+  background: var(--text-primary);
+  color: var(--surface);
+  border: none;
+}
+
+.oxy-dialog-btn-primary:hover {
+  opacity: 0.9;
+}
+
+.oxy-dialog-btn-secondary {
+  background: none;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.oxy-dialog-btn-secondary:hover {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
 /* Attach button */
 .oxy-attach-btn {
   display: flex;
@@ -1494,6 +1693,137 @@ body {
 .oxy-thinking span {
   font-size: 13px;
   color: var(--text-tertiary);
+}
+
+/* ========================================
+   RADIATING INDICATOR (for thinking state)
+   ======================================== */
+
+.oxy-radiating-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.oxy-radiate-center {
+  fill: var(--text-primary);
+}
+
+.oxy-radiate-ring {
+  fill: none;
+  stroke: var(--text-primary);
+  stroke-width: 1.5;
+  opacity: 0;
+  transform-origin: center;
+  animation: radiate 2s ease-out infinite;
+}
+
+.oxy-radiate-ring-1 {
+  animation-delay: 0s;
+}
+
+.oxy-radiate-ring-2 {
+  animation-delay: 0.4s;
+}
+
+.oxy-radiate-ring-3 {
+  animation-delay: 0.8s;
+}
+
+@keyframes radiate {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+/* ========================================
+   THINKING SECTION (collapsible)
+   ======================================== */
+
+.oxy-thinking-section {
+  margin-bottom: var(--spacing-sm);
+  border-radius: var(--radius-base);
+  background: var(--surface-overlay);
+  overflow: hidden;
+}
+
+.oxy-thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.oxy-thinking-header:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .oxy-thinking-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.oxy-thinking-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  transition: transform 0.15s ease;
+}
+
+.oxy-thinking-dot-static {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.oxy-thinking-label {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.oxy-thinking-streaming {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.oxy-thinking-content {
+  padding: 0 12px 12px 34px;
+  animation: thinkingExpand 0.2s ease-out;
+}
+
+@keyframes thinkingExpand {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.oxy-thinking-text {
+  font-size: var(--font-base);
+  line-height: 1.6;
+  color: var(--text-tertiary);
+  white-space: pre-wrap;
+  font-style: italic;
 }
 
 /* ========================================

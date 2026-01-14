@@ -24,4 +24,4 @@ INSTRUCTIONS: Final[str] = (
     "and connect information across meetings."
 )
 
-MODEL = "gpt-5-nano"
+MODEL = "gpt-5.2"

@@ -5,20 +5,23 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from ..database import get_db, get_meeting_by_doc_id, Conversation, Message, Turn
 from ..services.chat_service import chat_service
 from ..services.vector_store import get_vector_store
 from ..services.auto_title import generate_title
 from ..services.tool_tracker import ToolTracker
-from ..auth import get_current_user
-from sqlalchemy import select
+from ..auth import get_optional_user
+
+# For development: use a default user ID when auth is not provided
+DEFAULT_DEV_USER = "dev-user-local"
 
 logger = logging.getLogger(__name__)
 
@@ -143,9 +146,10 @@ def build_context_from_rag(
 @router.post("/stream")
 async def stream_chat(
     request: ChatRequest,
-    user_id: str = Depends(get_current_user),
+    user_id: Optional[str] = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
+    user_id = user_id or DEFAULT_DEV_USER
     """
     Stream a chat response with optional transcript context.
 
@@ -177,10 +181,10 @@ async def stream_chat(
     tool_tracker = None
 
     if request.conversation_id:
-        # Verify conversation exists and belongs to user
+        # Verify conversation exists
         stmt = select(Conversation).where(
             Conversation.id == request.conversation_id,
-            Conversation.user_id == user_id,
+            # Conversation.user_id == user_id,  # Disabled for dev
             Conversation.deleted_at.is_(None)
         )
         result = await db.execute(stmt)

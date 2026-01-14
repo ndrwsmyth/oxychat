@@ -3,6 +3,7 @@ export interface Message {
   conversation_id?: string;
   role: "user" | "assistant";
   content: string;
+  thinking?: string;
   model?: string;
   mentions?: string[];
   timestamp: Date;
@@ -45,5 +46,5 @@ export interface GroupedConversations {
 export type ModelOption =
   | "claude-sonnet-4.5"
   | "claude-opus-4.5"
-  | "gemini-3"
-  | "gpt-5.2";
+  | "gpt-5.2"
+  | "grok-4";
