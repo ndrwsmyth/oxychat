@@ -17,8 +17,8 @@ export function AnimatedText({ content, isStreaming }: AnimatedTextProps) {
     <AnimatedMarkdown
       content={content}
       animation={isStreaming ? "blurIn" : null}
-      animationDuration="0.2s"
-      animationTimingFunction="ease-out"
+      animationDuration="0.4s"
+      animationTimingFunction="cubic-bezier(0.16, 1, 0.3, 1)"
       sep="word"
     />
   );

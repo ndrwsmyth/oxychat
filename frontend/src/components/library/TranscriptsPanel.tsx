@@ -8,7 +8,7 @@ import type { Transcript } from "@/types";
 
 interface TranscriptsPanelProps {
   transcripts: Transcript[];
-  onTranscriptClick: (title: string) => void;
+  onTranscriptClick: (transcript: { id: string; title: string }) => void;
 }
 
 export function TranscriptsPanel({
@@ -42,7 +42,7 @@ export function TranscriptsPanel({
                 key={t.id}
                 className="oxy-transcripts-item"
                 onClick={() => {
-                  onTranscriptClick(t.title);
+                  onTranscriptClick({ id: t.id, title: t.title });
                   setOpen(false);
                 }}
               >

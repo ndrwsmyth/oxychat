@@ -25,27 +25,21 @@ export function RadiatingIndicator({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Center dot */}
-        <circle cx="20" cy="20" r="4" className="oxy-radiate-center" />
+        {/* Center dot - stable */}
+        <circle cx="20" cy="20" r="4.5" className="oxy-radiate-center" />
 
-        {/* Radiating circles */}
+        {/* Two radiating rings - atom-like effect */}
         <circle
           cx="20"
           cy="20"
-          r="8"
+          r="10"
           className="oxy-radiate-ring oxy-radiate-ring-1"
         />
         <circle
           cx="20"
           cy="20"
-          r="12"
+          r="10"
           className="oxy-radiate-ring oxy-radiate-ring-2"
-        />
-        <circle
-          cx="20"
-          cy="20"
-          r="16"
-          className="oxy-radiate-ring oxy-radiate-ring-3"
         />
       </svg>
     </div>

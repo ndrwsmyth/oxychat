@@ -1,15 +1,31 @@
 "use client";
-
-import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useConversations } from "@/hooks/useConversations";
 import { useSidebar } from "@/hooks/useSidebar";
 import { ConversationGroup } from "./ConversationGroup";
 import { IOSThemeToggle } from "./IOSThemeToggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
+import { Plus, Search, ChevronRight, ChevronsLeft } from "lucide-react";
+
+// Oxy logo component
+function OxyLogo({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 196 196"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M97.8571 0C151.362 0 195.714 43.5773 195.714 97.8571C195.714 152.137 152.133 195.714 97.8571 195.714C43.5765 195.714 0 152.137 0 97.8571C0 43.5773 44.3518 0 97.8571 0ZM97.8571 58.7143L58.7143 97.8571L97.8571 137L137 97.8571L97.8571 58.7143Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
 
 interface ConversationSidebarProps {
   activeConversationId: string | null;
@@ -28,74 +44,51 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
     togglePin,
   } = useConversations();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  // Debounce search with 300ms delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Filter conversations based on search
-  const filteredConversations = useMemo(() => {
-    if (!debouncedSearch.trim()) {
-      return conversations;
-    }
-
-    const query = debouncedSearch.toLowerCase();
-    const filterList = (list: typeof conversations.today) =>
-      list.filter((c) => c.title.toLowerCase().includes(query));
-
-    return {
-      pinned: filterList(conversations.pinned),
-      today: filterList(conversations.today),
-      yesterday: filterList(conversations.yesterday),
-      last_7_days: filterList(conversations.last_7_days),
-      last_30_days: filterList(conversations.last_30_days),
-      older: filterList(conversations.older),
-    };
-  }, [conversations, debouncedSearch]);
 
   const handleNewChat = async () => {
     const newConv = await createConversation("New conversation");
     router.push(`/?c=${newConv.id}`);
   };
 
-  // Collapsed state - show only icon buttons
+  // Collapsed state - show only icon buttons with hover-to-expand
   if (collapsed) {
     return (
-      <div className="oxy-sidebar-collapsed">
+      <div className="oxy-sidebar-collapsed" onClick={toggle}>
+        {/* Hover expand indicator - shows on sidebar hover */}
+        <div className="oxy-sidebar-expand-indicator">
+          <ChevronRight className="w-4 h-4" />
+        </div>
+
         <div className="oxy-sidebar-collapsed-buttons">
+          {/* Logo - click to expand */}
           <button
-            onClick={toggle}
-            className="oxy-sidebar-icon-btn"
+            onClick={(e) => { e.stopPropagation(); toggle(); }}
+            className="oxy-sidebar-icon-btn oxy-sidebar-logo-btn"
             aria-label="Expand sidebar"
             title="Expand sidebar"
           >
-            <ChevronRight className="w-5 h-5" />
+            <OxyLogo size={20} />
           </button>
 
+          {/* Search - first action */}
           <button
-            onClick={handleNewChat}
+            onClick={(e) => { e.stopPropagation(); onOpenSearch?.(); }}
+            className="oxy-sidebar-icon-btn"
+            aria-label="Search (Cmd+K)"
+            title="Search (Cmd+K)"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
+          {/* New chat - second action */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleNewChat(); }}
             className="oxy-sidebar-icon-btn"
             aria-label="New chat"
             title="New chat"
             disabled={isLoading}
           >
             <Plus className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={onOpenSearch}
-            className="oxy-sidebar-icon-btn"
-            aria-label="Search (Cmd+K)"
-            title="Search (Cmd+K)"
-          >
-            <Search className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -105,41 +98,39 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
   // Expanded state - show full content
   return (
     <div className="oxy-sidebar-content">
-      <div className="oxy-sidebar-header">
+      {/* Logo */}
+      <div className="oxy-sidebar-logo">
+        <OxyLogo size={28} />
+      </div>
+
+      {/* Search bar - clickable, opens search modal */}
+      <div className="oxy-sidebar-actions">
         <button
-          onClick={toggle}
-          className="oxy-sidebar-collapse-btn"
-          aria-label="Collapse sidebar"
-          title="Collapse sidebar"
+          type="button"
+          onClick={onOpenSearch}
+          className="oxy-sidebar-search-btn"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <Search size={16} />
+          <span>Search</span>
+          <kbd>⌘K</kbd>
         </button>
 
-        <Button
+        {/* New chat item */}
+        <button
+          type="button"
           onClick={handleNewChat}
-          className="oxy-new-chat-btn"
+          className="oxy-sidebar-menu-item"
           disabled={isLoading}
         >
           <Plus size={16} />
-          New chat
-        </Button>
-      </div>
-
-      <div className="oxy-sidebar-search">
-        <Search size={16} className="oxy-search-icon" />
-        <Input
-          type="text"
-          placeholder="Search conversations..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="oxy-search-input"
-        />
+          <span>New chat</span>
+        </button>
       </div>
 
       <ScrollArea className="oxy-sidebar-list">
         <ConversationGroup
           title="Pinned"
-          conversations={filteredConversations.pinned}
+          conversations={conversations.pinned}
           activeConversationId={activeConversationId}
           isPinned
           onUpdate={updateConversation}
@@ -149,7 +140,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
 
         <ConversationGroup
           title="Today"
-          conversations={filteredConversations.today}
+          conversations={conversations.today}
           activeConversationId={activeConversationId}
           onUpdate={updateConversation}
           onDelete={deleteConversation}
@@ -158,7 +149,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
 
         <ConversationGroup
           title="Yesterday"
-          conversations={filteredConversations.yesterday}
+          conversations={conversations.yesterday}
           activeConversationId={activeConversationId}
           onUpdate={updateConversation}
           onDelete={deleteConversation}
@@ -167,7 +158,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
 
         <ConversationGroup
           title="Last 7 days"
-          conversations={filteredConversations.last_7_days}
+          conversations={conversations.last_7_days}
           activeConversationId={activeConversationId}
           onUpdate={updateConversation}
           onDelete={deleteConversation}
@@ -176,7 +167,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
 
         <ConversationGroup
           title="Last 30 days"
-          conversations={filteredConversations.last_30_days}
+          conversations={conversations.last_30_days}
           activeConversationId={activeConversationId}
           onUpdate={updateConversation}
           onDelete={deleteConversation}
@@ -185,7 +176,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
 
         <ConversationGroup
           title="Older"
-          conversations={filteredConversations.older}
+          conversations={conversations.older}
           activeConversationId={activeConversationId}
           onUpdate={updateConversation}
           onDelete={deleteConversation}
@@ -193,9 +184,18 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
         />
       </ScrollArea>
 
-      {/* Theme toggle footer */}
+      {/* Footer with theme toggle and collapse button */}
       <div className="oxy-sidebar-footer">
         <IOSThemeToggle />
+        <button
+          type="button"
+          onClick={toggle}
+          className="oxy-sidebar-collapse-btn"
+          aria-label="Collapse sidebar"
+          title="Collapse sidebar"
+        >
+          <ChevronsLeft size={18} />
+        </button>
       </div>
     </div>
   );

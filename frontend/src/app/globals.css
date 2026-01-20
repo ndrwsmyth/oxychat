@@ -58,7 +58,14 @@
   --radius-lg: 16px;  /* Large containers */
 
   /* Chat Content Width - shared across thread, messages, composer */
-  --chat-content-width: min(800px, 100% - 48px);
+  --chat-content-width: 755px;
+
+  /* Blue color scale for mention chips */
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
 }
 
 .dark {
@@ -146,7 +153,11 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 20px 0;
+  padding-right: 17px; /* Align with send button */
   flex-shrink: 0;
+  max-width: var(--chat-content-width);
+  width: 100%;
+  margin: 0 auto;
 }
 
 .oxy-mark {
@@ -242,7 +253,11 @@ body {
 /* Empty state */
 .oxy-empty {
   padding: 60px 0;
+  padding-right: 17px; /* Align with send button */
   animation: emptyIn 0.7s ease;
+  max-width: var(--chat-content-width);
+  width: 100%;
+  margin: 0 auto;
 }
 
 @keyframes emptyIn {
@@ -292,6 +307,7 @@ body {
 /* Thread */
 .oxy-thread {
   padding: var(--spacing-xl) 0;
+  padding-right: 17px; /* Align text end with send button (composer border + toolbar padding) */
   max-width: var(--chat-content-width);
   width: 100%;
   margin: 0 auto;
@@ -299,7 +315,6 @@ body {
 
 .oxy-msg {
   display: flex;
-  gap: 16px;
   margin-bottom: 36px;
   animation: msgIn 0.35s ease backwards;
 }
@@ -311,18 +326,24 @@ body {
 
 .oxy-msg-user {
   flex-direction: row-reverse;
+  justify-content: flex-start;
 }
 
 .oxy-msg-indicator {
-  width: 20px;
-  padding-top: 6px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
+  margin-right: 12px;
+  margin-top: 2px; /* Align with first line of text (15px * 1.75 line-height) */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .oxy-dot {
   display: block;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   background: var(--text-primary);
   border-radius: 50%;
 }
@@ -383,15 +404,22 @@ body {
 }
 
 .oxy-msg-user .oxy-msg-body {
-  text-align: right;
+  flex: 0 0 auto; /* Don't expand, shrink to fit content */
+  width: fit-content;
   background: var(--surface-overlay);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-sm) var(--spacing-base);
-  max-width: 80%;
+  border-radius: 18px;
+  padding: 10px 14px;
+  max-width: 450px;
+  margin-left: auto;
 }
 
 .oxy-msg-user .oxy-msg-text {
   color: var(--text-primary);
+  text-align: left;
+}
+
+.oxy-msg-user .oxy-msg-time {
+  display: none; /* No timestamp for user messages */
 }
 
 /* ========================================
@@ -443,12 +471,13 @@ body {
 
 /* Composer */
 .oxy-composer {
-  padding: 24px 0 32px;
+  padding: 0 0 32px;
   position: relative;
   flex-shrink: 0;
   max-width: var(--chat-content-width);
   width: 100%;
   margin: 0 auto;
+  padding-left: 15px; /* Align "Ask anything..." with message text: 36px - 1px border - 20px input padding */
 }
 
 .oxy-mentions {
@@ -506,39 +535,71 @@ body {
 }
 
 /* ========================================
-   MENTION CHIPS
+   CONTENTEDITABLE COMPOSER
    ======================================== */
 
-.oxy-mention-chip {
+.oxy-editable {
+  width: 100%;
+  min-height: 24px;
+  max-height: 336px;
+  overflow-y: hidden;
+  font-family: inherit;
+  font-size: var(--font-lg);
+  line-height: 1.55;
+  color: var(--text-primary);
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.oxy-editable:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+/* ========================================
+   INLINE MENTION PILLS
+   ======================================== */
+
+.oxy-mention-pill {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   padding: 2px 6px 2px 8px;
-  background: var(--surface-overlay);
-  border: 1px solid var(--border);
+  background: var(--blue-50);
+  border: 1px solid var(--blue-200);
   border-radius: 999px;
   font-size: var(--font-sm);
-  color: var(--text-primary);
-  vertical-align: middle;
+  line-height: 1.4;
+  color: var(--blue-700);
+  vertical-align: baseline;
   margin: 0 2px;
   white-space: nowrap;
+  user-select: none;
+  cursor: default;
 }
 
-.oxy-mention-chip-at {
-  color: var(--text-tertiary);
-  font-weight: 500;
+.oxy-mention-pill:hover {
+  background: var(--blue-100);
+  border-color: var(--blue-300);
 }
 
-.oxy-mention-chip-title {
-  color: var(--text-primary);
+.oxy-mention-pill-icon {
+  color: var(--blue-600);
+  flex-shrink: 0;
+}
+
+.oxy-mention-pill-title {
+  color: var(--blue-700);
   font-weight: 500;
-  max-width: 150px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.oxy-mention-chip-remove {
-  display: flex;
+.oxy-mention-pill-remove {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 16px;
@@ -548,14 +609,40 @@ body {
   background: none;
   border: none;
   border-radius: 50%;
-  color: var(--text-tertiary);
+  color: var(--blue-600);
   cursor: pointer;
+  opacity: 0.6;
   transition: all 0.15s ease;
 }
 
-.oxy-mention-chip-remove:hover {
-  background: var(--border-strong);
-  color: var(--text-primary);
+.oxy-mention-pill-remove:hover {
+  opacity: 1;
+  background: var(--blue-200);
+}
+
+/* Dark mode inline pills */
+.dark .oxy-mention-pill {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: #93c5fd;
+}
+
+.dark .oxy-mention-pill:hover {
+  background: rgba(37, 99, 235, 0.25);
+  border-color: rgba(37, 99, 235, 0.4);
+}
+
+.dark .oxy-mention-pill-icon,
+.dark .oxy-mention-pill-title {
+  color: #93c5fd;
+}
+
+.dark .oxy-mention-pill-remove {
+  color: #93c5fd;
+}
+
+.dark .oxy-mention-pill-remove:hover {
+  background: rgba(37, 99, 235, 0.3);
 }
 
 /* Unified composer box with border */
@@ -860,7 +947,6 @@ body {
 
 .oxy-chat-container {
   width: 100%;
-  max-width: 1000px;
   display: flex;
   flex-direction: column;
   padding: 0 var(--spacing-lg);
@@ -947,10 +1033,38 @@ body {
    ======================================== */
 
 .oxy-sidebar-collapsed {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   padding: var(--spacing-sm) 0;
+  cursor: pointer;
+}
+
+/* Hover expand indicator - appears on sidebar hover */
+.oxy-sidebar-expand-indicator {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateX(50%) translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.oxy-sidebar-collapsed:hover .oxy-sidebar-expand-indicator {
+  opacity: 1;
 }
 
 .oxy-sidebar-collapsed-buttons {
@@ -971,7 +1085,6 @@ body {
   border-radius: var(--radius-base);
   color: var(--text-secondary);
   cursor: pointer;
-  /* Only animate transform and opacity for performance */
   transition:
     background-color 0.15s ease-out,
     color 0.15s ease-out,
@@ -981,6 +1094,25 @@ body {
 .oxy-sidebar-icon-btn:hover {
   background: var(--surface-overlay);
   color: var(--text-primary);
+}
+
+/* Logo button - special styling */
+.oxy-sidebar-logo-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-base);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: opacity 0.15s ease-out;
+}
+
+.oxy-sidebar-logo-btn:hover {
+  opacity: 0.6;
 }
 
 /* Subtle scale on press - feels responsive */
@@ -1003,73 +1135,80 @@ body {
   height: 100%;
 }
 
-.oxy-sidebar-header {
-  display: flex;
-  align-items: center;
+/* Sidebar logo area */
+.oxy-sidebar-logo {
   padding: var(--spacing-md) var(--spacing-base);
-  gap: var(--spacing-sm);
-  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
-.oxy-sidebar-collapse-btn {
-  width: 36px;
-  height: 36px;
+/* Sidebar actions (search + new chat) */
+.oxy-sidebar-actions {
+  padding: 0 var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Search button styled like a search bar */
+.oxy-sidebar-search-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-base);
+  font-family: inherit;
+  font-size: var(--font-base);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.oxy-sidebar-search-btn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.oxy-sidebar-search-btn span {
+  flex: 1;
+  text-align: left;
+}
+
+.oxy-sidebar-search-btn kbd {
+  font-family: inherit;
+  font-size: var(--font-xs);
+  color: var(--text-faint);
+  background: var(--surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Menu items (New chat, etc.) */
+.oxy-sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
   background: none;
   border: none;
   border-radius: var(--radius-base);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease-out,
-    color 0.15s ease-out,
-    transform 0.1s ease-out;
-  flex-shrink: 0;
-}
-
-.oxy-sidebar-collapse-btn:hover {
-  background: var(--surface-overlay);
-  color: var(--text-primary);
-}
-
-.oxy-sidebar-collapse-btn:active {
-  transform: scale(0.95);
-}
-
-.oxy-new-chat-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px var(--spacing-base);
-  background: var(--text-primary);
-  color: var(--surface);
-  border: none;
-  border-radius: var(--radius-base);
   font-family: inherit;
-  font-size: var(--font-md);
-  font-weight: 500;
+  font-size: var(--font-base);
+  color: var(--text-primary);
   cursor: pointer;
-  /* Fast, performant transitions */
-  transition:
-    opacity 0.15s ease-out,
-    transform 0.1s ease-out;
+  transition: background-color 0.15s ease-out;
 }
 
-.oxy-new-chat-btn:hover {
-  opacity: 0.9;
+.oxy-sidebar-menu-item:hover {
+  background: var(--surface-overlay);
 }
 
-/* Scale down on press - not up on hover (feels more natural) */
-.oxy-new-chat-btn:active {
-  transform: scale(0.97);
-}
-
-.oxy-new-chat-btn:disabled {
+.oxy-sidebar-menu-item:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1097,8 +1236,7 @@ body {
 /* Sidebar search */
 .oxy-sidebar-search {
   position: relative;
-  padding: var(--spacing-sm) var(--spacing-base); /* 12px 16px - consistent with header */
-  border-bottom: 1px solid var(--border);
+  padding: var(--spacing-xs) var(--spacing-base);
   flex-shrink: 0;
 }
 
@@ -1346,12 +1484,31 @@ body {
    ======================================== */
 
 .oxy-sidebar-footer {
-  padding: 16px;
+  padding: var(--spacing-sm) var(--spacing-base);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
+}
+
+.oxy-sidebar-collapse-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-base);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+}
+
+.oxy-sidebar-collapse-btn:hover {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
 }
 
 /* iOS-style theme toggle */
@@ -1713,10 +1870,10 @@ body {
 .oxy-radiate-ring {
   fill: none;
   stroke: var(--text-primary);
-  stroke-width: 1.5;
+  stroke-width: 1;
   opacity: 0;
   transform-origin: center;
-  animation: radiate 2s ease-out infinite;
+  animation: radiate 2.5s ease-out infinite;
 }
 
 .oxy-radiate-ring-1 {
@@ -1724,21 +1881,20 @@ body {
 }
 
 .oxy-radiate-ring-2 {
-  animation-delay: 0.4s;
-}
-
-.oxy-radiate-ring-3 {
-  animation-delay: 0.8s;
+  animation-delay: 1.25s;
 }
 
 @keyframes radiate {
   0% {
-    opacity: 0.8;
-    transform: scale(0.5);
+    opacity: 0.5;
+    transform: scale(0.4);
+  }
+  50% {
+    opacity: 0.25;
   }
   100% {
     opacity: 0;
-    transform: scale(1.2);
+    transform: scale(1.8);
   }
 }
 

@@ -11,14 +11,16 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  // Default to collapsed (closed)
+  const [collapsed, setCollapsed] = useState(true);
 
   // Load from localStorage after hydration (client-side only)
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("sidebar_collapsed") === "true";
-      if (stored) {
-        setCollapsed(true);
+      const stored = localStorage.getItem("sidebar_collapsed");
+      // Only override default if user has explicitly set a preference
+      if (stored !== null) {
+        setCollapsed(stored === "true");
       }
     }
   }, []);

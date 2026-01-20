@@ -9,7 +9,7 @@ interface OxyMentionPopoverProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transcripts: Transcript[];
-  onSelect: (title: string) => void;
+  onSelect: (transcript: Transcript) => void;
   children: React.ReactNode;
 }
 
@@ -32,8 +32,8 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
     }, [open, transcripts]);
 
     const handleSelect = useCallback(
-      (title: string) => {
-        onSelect(title);
+      (transcript: Transcript) => {
+        onSelect(transcript);
         onOpenChange(false);
       },
       [onSelect, onOpenChange]
@@ -56,7 +56,7 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
           case "Enter":
             e.preventDefault();
             if (transcripts[selectedIndex]) {
-              handleSelect(transcripts[selectedIndex].title);
+              handleSelect(transcripts[selectedIndex]);
             }
             return true;
           case "Escape":
@@ -101,7 +101,7 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
                 <button
                   key={t.id}
                   className={`oxy-mention ${index === selectedIndex ? "oxy-mention-selected" : ""}`}
-                  onClick={() => handleSelect(t.title)}
+                  onClick={() => handleSelect(t)}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
                   <span>{t.title}</span>

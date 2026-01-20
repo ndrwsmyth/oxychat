@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, Suspense } from "react";
+import { useCallback, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranscripts } from "@/hooks/useTranscripts";
 import { useConversation } from "@/hooks/useConversation";
@@ -16,7 +16,7 @@ import { SearchModal } from "@/components/search/SearchModal";
 import { OxyHeader } from "@/components/OxyHeader";
 import { OxyEmptyState } from "@/components/chat/OxyEmptyState";
 import { OxyMessageThread } from "@/components/chat/OxyMessageThread";
-import { OxyComposer } from "@/components/chat/OxyComposer";
+import { OxyComposer, type MentionChip } from "@/components/chat/OxyComposer";
 
 function HomeContent() {
   const router = useRouter();
@@ -29,18 +29,23 @@ function HomeContent() {
   const { draft, setDraft } = useDraft(conversationId);
   const { isOpen: isSearchOpen, setIsOpen: setSearchOpen } = useSearch();
   const { createConversation } = useConversations();
+  const [mentions, setMentions] = useState<MentionChip[]>([]);
 
   const send = useCallback(async () => {
-    if (!draft.trim() || isLoading) return;
-    await sendMessage(draft.trim());
-    setDraft("");
-  }, [draft, isLoading, sendMessage, setDraft]);
+    if ((!draft.trim() && mentions.length === 0) || isLoading) return;
 
-  const handleTranscriptClick = (title: string) => {
-    setDraft((prev) => {
-      const prefix = prev.endsWith(" ") || prev === "" ? "" : " ";
-      return `${prev}${prefix}@${title} `;
-    });
+    // Convert mentions to @title format and prepend to message
+    const mentionText = mentions.map(m => `@${m.title}`).join(" ");
+    const fullMessage = mentionText ? `${mentionText} ${draft.trim()}` : draft.trim();
+
+    await sendMessage(fullMessage);
+    setDraft("");
+    setMentions([]);
+  }, [draft, mentions, isLoading, sendMessage, setDraft]);
+
+  const handleTranscriptClick = (transcript: { id: string; title: string }) => {
+    // Add as a chip instead of inserting text
+    setMentions(prev => [...prev, { id: transcript.id, title: transcript.title }]);
   };
 
   const handleNewChat = useCallback(async () => {
@@ -110,6 +115,8 @@ function HomeContent() {
               <OxyComposer
                 value={draft}
                 onChange={setDraft}
+                mentions={mentions}
+                onMentionsChange={setMentions}
                 onSend={send}
                 onStop={stopGenerating}
                 onNewConversation={handleNewChat}

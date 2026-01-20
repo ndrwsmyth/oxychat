@@ -22,10 +22,12 @@ export function OxyMessage({ message, isStreaming = false, isThinking = false }:
     <div className={`oxy-msg oxy-msg-${message.role}`}>
       {message.role === "assistant" && (
         <div className="oxy-msg-indicator">
-          {isThinking ? (
-            <RadiatingIndicator size={20} />
-          ) : (
-            <span className={`oxy-dot ${isStreaming ? "oxy-dot-pulse" : ""}`} />
+          {(isStreaming || isThinking) && (
+            isThinking ? (
+              <RadiatingIndicator size={24} />
+            ) : (
+              <span className="oxy-dot oxy-dot-pulse" />
+            )
           )}
         </div>
       )}
@@ -56,7 +58,7 @@ export function OxyThinkingIndicator() {
   return (
     <div className="oxy-msg oxy-msg-assistant oxy-thinking">
       <div className="oxy-msg-indicator">
-        <RadiatingIndicator size={20} />
+        <RadiatingIndicator size={24} />
       </div>
       <div className="oxy-msg-body">
         <p className="oxy-msg-text oxy-msg-thinking">Thinking</p>
