@@ -9,8 +9,13 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
-.env
 ENV/
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+!.env.example
 
 # Node
 node_modules/
@@ -26,6 +31,11 @@ dist/
 .vite/
 .coverage/
 coverage/
+
+# Next.js
+.next/
+out/
+.vercel
 
 # Chroma vector database
 backend/chroma_data/

@@ -1,0 +1,19 @@
+# Railway deployment configuration for OxyChat Backend
+# https://docs.railway.app/reference/config-as-code
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# Railway injects PORT automatically
+# These environment variables should be set in Railway dashboard:
+# - SUPABASE_DATABASE_URL
+# - OPENAI_API_KEY
+# - ANTHROPIC_API_KEY (optional)
+# - WEBHOOK_SECRET (optional, for CircleBack verification)

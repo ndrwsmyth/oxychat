@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -34,10 +35,20 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS middleware for frontend
+# CORS configuration - use ALLOWED_ORIGINS env var in production
+# Format: comma-separated URLs, e.g., "https://app.example.com,https://staging.example.com"
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+    logger.info(f"CORS configured for origins: {allowed_origins}")
+else:
+    # Default to allow all for local development
+    allowed_origins = ["*"]
+    logger.warning("CORS: No ALLOWED_ORIGINS set, allowing all origins (development mode)")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,9 +96,24 @@ async def root_post() -> dict[str, str]:
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
-    """Health check endpoint."""
-    return {"status": "healthy"}
+async def health_check() -> dict[str, Any]:
+    """Health check endpoint with service status."""
+    import os
+
+    # Check for required API keys
+    openai_configured = bool(os.getenv("OPENAI_API_KEY"))
+    anthropic_configured = bool(os.getenv("ANTHROPIC_API_KEY"))
+    db_configured = bool(os.getenv("SUPABASE_DATABASE_URL"))
+
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "services": {
+            "openai": "configured" if openai_configured else "not_configured",
+            "anthropic": "configured" if anthropic_configured else "not_configured",
+            "database": "configured" if db_configured else "not_configured",
+        },
+    }
 
 
 # Legacy endpoint for backwards compatibility
