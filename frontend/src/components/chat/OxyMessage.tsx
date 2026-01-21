@@ -15,6 +15,30 @@ function formatTime(d: Date) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase();
 }
 
+function renderUserContent(content: string): React.ReactNode {
+  const mentionRegex = /@([^\s@]+)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let key = 0;
+
+  while ((match = mentionRegex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <span key={key++} className="oxy-user-mention-pill">
+        {match[0]}
+      </span>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+  return parts.length ? parts : content;
+}
+
 export function OxyMessage({ message, isStreaming = false, isThinking = false }: OxyMessageProps) {
   const showThinking = message.thinking && message.thinking.length > 0;
 
@@ -46,7 +70,7 @@ export function OxyMessage({ message, isStreaming = false, isThinking = false }:
             </div>
           </>
         ) : (
-          <p className="oxy-msg-text">{message.content}</p>
+          <p className="oxy-msg-text">{renderUserContent(message.content)}</p>
         )}
         <span className="oxy-msg-time">{formatTime(message.timestamp)}</span>
       </div>

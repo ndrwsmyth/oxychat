@@ -48,3 +48,18 @@ export type ModelOption =
   | "claude-opus-4.5"
   | "gpt-5.2"
   | "grok-4";
+
+// Truncation info for @mentioned documents
+export interface TruncationInfo {
+  doc_id: string;
+  title: string;
+  truncated: boolean;
+  percent_included: number;
+}
+
+// Source info from chat API
+export interface SourceInfo {
+  doc_id: string;
+  title: string;
+  type: "mention" | "rag";
+}

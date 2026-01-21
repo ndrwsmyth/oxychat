@@ -32,16 +32,13 @@ function HomeContent() {
   const [mentions, setMentions] = useState<MentionChip[]>([]);
 
   const send = useCallback(async () => {
-    if ((!draft.trim() && mentions.length === 0) || isLoading) return;
+    if (!draft.trim() || isLoading) return;
 
-    // Convert mentions to @title format and prepend to message
-    const mentionText = mentions.map(m => `@${m.title}`).join(" ");
-    const fullMessage = mentionText ? `${mentionText} ${draft.trim()}` : draft.trim();
-
-    await sendMessage(fullMessage);
+    // Draft already contains @mentions from pills (handled by extractContent in OxyComposer)
+    await sendMessage(draft.trim());
     setDraft("");
     setMentions([]);
-  }, [draft, mentions, isLoading, sendMessage, setDraft]);
+  }, [draft, isLoading, sendMessage, setDraft]);
 
   const handleTranscriptClick = (transcript: { id: string; title: string }) => {
     // Add as a chip instead of inserting text

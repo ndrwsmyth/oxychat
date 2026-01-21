@@ -13,7 +13,7 @@ import json
 import logging
 from typing import AsyncIterator
 
-from ..constants import INSTRUCTIONS, MODEL
+from ..constants import get_instructions, MODEL
 from .providers import ProviderRegistry, StreamEvent, register_default_providers
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,6 @@ class ChatService:
     """Orchestrates chat requests across multiple model providers."""
 
     def __init__(self) -> None:
-        self.instructions = INSTRUCTIONS
         self.default_model = MODEL
 
         # Register all providers
@@ -54,8 +53,8 @@ class ChatService:
         """
         model_id = model or self.default_model
 
-        # Build system prompt with context
-        system_prompt = self.instructions
+        # Build system prompt with context (get fresh instructions with current date)
+        system_prompt = get_instructions()
         if context:
             system_prompt += f"\n\n{context}"
 

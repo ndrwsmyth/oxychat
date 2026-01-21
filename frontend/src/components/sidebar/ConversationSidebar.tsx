@@ -67,7 +67,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
             aria-label="Expand sidebar"
             title="Expand sidebar"
           >
-            <OxyLogo size={20} />
+            <OxyLogo size={28} />
           </button>
 
           {/* Search - first action */}
@@ -95,9 +95,17 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
     );
   }
 
+  // Handle background click to collapse
+  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    // Don't collapse if clicking on interactive elements
+    if (target.closest('button, a, input, [role="button"], .oxy-sidebar-item, .oxy-conversation-item')) return;
+    toggle();
+  };
+
   // Expanded state - show full content
   return (
-    <div className="oxy-sidebar-content">
+    <div className="oxy-sidebar-content" onClick={handleBackgroundClick}>
       {/* Logo */}
       <div className="oxy-sidebar-logo">
         <OxyLogo size={28} />

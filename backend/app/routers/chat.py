@@ -19,6 +19,7 @@ from ..services.vector_store import get_vector_store
 from ..services.auto_title import generate_title
 from ..services.tool_tracker import ToolTracker
 from ..auth import get_optional_user
+from ..constants import MAX_DOCUMENT_TOKENS, CHARS_PER_TOKEN
 
 # For development: use a default user ID when auth is not provided
 DEFAULT_DEV_USER = "dev-user-local"
@@ -45,49 +46,99 @@ class ChatRequest(BaseModel):
     model: str = "claude-sonnet-4.5"  # Model to use for this request
 
 
+def estimate_tokens(text: str) -> int:
+    """Estimate token count from text using character-based approximation."""
+    return len(text) // CHARS_PER_TOKEN
+
+
 async def build_context_from_mentions(
     mentions: list[str],
     db: AsyncSession,
-) -> tuple[str | None, list[dict]]:
+) -> tuple[str | None, list[dict], list[dict]]:
     """
-    Build context string from @mentioned transcripts.
+    Build context string from @mentioned transcripts with token limits.
+
+    Uses XML format for optimal LLM parsing (per Anthropic best practices).
+    First-mentioned documents have priority - later ones may be truncated.
 
     Returns:
-        Tuple of (context_string, sources_list)
+        Tuple of (context_string, sources_list, truncation_info)
     """
     if not mentions:
-        return None, []
+        return None, [], []
 
     context_parts = []
     sources = []
+    truncation_info = []
+    tokens_used = 0
 
     for doc_id in mentions[:5]:  # Max 5 transcripts
         meeting = await get_meeting_by_doc_id(db, doc_id)
-        if meeting:
-            context_parts.append(
-                f"---\n"
-                f"Title: {meeting.title}\n"
-                f"ID: {meeting.doc_id}\n"
-                f"Date: {meeting.date}\n"
-                f"Transcript:\n{meeting.formatted_content}\n"
-            )
-            sources.append(
-                {
-                    "doc_id": meeting.doc_id,
-                    "title": meeting.title,
-                    "type": "mention",
-                }
-            )
-            logger.info(f"Added context for transcript: {meeting.doc_id}")
+        if not meeting:
+            continue
+
+        content = meeting.formatted_content or ""
+        content_tokens = estimate_tokens(content)
+        tokens_remaining = MAX_DOCUMENT_TOKENS - tokens_used
+
+        if tokens_remaining <= 0:
+            # No room left - skip entirely
+            truncation_info.append({
+                "doc_id": meeting.doc_id,
+                "title": meeting.title,
+                "truncated": True,
+                "percent_included": 0,
+            })
+            logger.info(f"Skipped transcript {meeting.doc_id} - no token budget remaining")
+            continue
+
+        if content_tokens > tokens_remaining:
+            # Truncate to fit
+            chars_to_keep = tokens_remaining * CHARS_PER_TOKEN
+            content = content[:chars_to_keep] + "\n\n[Document truncated to fit context limit]"
+            percent_included = round((tokens_remaining / content_tokens) * 100)
+            truncation_info.append({
+                "doc_id": meeting.doc_id,
+                "title": meeting.title,
+                "truncated": True,
+                "percent_included": percent_included,
+            })
+            logger.info(f"Truncated transcript {meeting.doc_id} to {percent_included}%")
+        else:
+            truncation_info.append({
+                "doc_id": meeting.doc_id,
+                "title": meeting.title,
+                "truncated": False,
+                "percent_included": 100,
+            })
+
+        tokens_used += estimate_tokens(content)
+
+        # Use XML format for document context (per Anthropic best practices)
+        date_str = meeting.date.strftime("%Y-%m-%d") if meeting.date else "Unknown"
+        context_parts.append(
+            f'<document title="{meeting.title}" date="{date_str}" doc_id="{meeting.doc_id}">\n'
+            f'{content}\n'
+            f'</document>'
+        )
+        sources.append({
+            "doc_id": meeting.doc_id,
+            "title": meeting.title,
+            "type": "mention",
+        })
+        logger.info(f"Added context for transcript: {meeting.doc_id}")
 
     if not context_parts:
-        return None, []
+        return None, [], []
 
+    # XML-structured context header
     header = (
-        "# User-provided context for @-mentions\n"
-        "Use the following transcript(s) to answer the user's question.\n\n"
+        "<user_documents>\n"
+        "The user has referenced the following meeting transcripts. Use them to answer their question.\n\n"
     )
-    return header + "\n".join(context_parts), sources
+    footer = "\n</user_documents>"
+
+    return header + "\n\n".join(context_parts) + footer, sources, truncation_info
 
 
 def build_context_from_rag(
@@ -229,6 +280,7 @@ async def stream_chat(
 
     context = None
     sources = []
+    truncation_info = []
 
     # Get the latest user message for RAG query
     user_query = ""
@@ -239,7 +291,7 @@ async def stream_chat(
 
     if request.mentions:
         # Priority 1: Use full transcripts from @mentions
-        context, sources = await build_context_from_mentions(request.mentions, db)
+        context, sources, truncation_info = await build_context_from_mentions(request.mentions, db)
 
         # Track mention tool usage
         if tool_tracker and sources:
@@ -273,9 +325,15 @@ async def stream_chat(
     async def generate():
         nonlocal assistant_response
 
-        # First, send sources metadata if any
+        # First, send sources metadata if any (include truncation info)
         if sources:
-            yield f"data: {json.dumps({'type': 'sources', 'sources': sources})}\n\n"
+            sources_data = {
+                'type': 'sources',
+                'sources': sources,
+            }
+            if truncation_info:
+                sources_data['truncation_info'] = truncation_info
+            yield f"data: {json.dumps(sources_data)}\n\n"
 
         # Then stream the response
         async for chunk in chat_service.stream_response(messages, context):

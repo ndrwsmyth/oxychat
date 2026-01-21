@@ -1,4 +1,4 @@
-import type { Conversation, GroupedConversations, Message } from "@/types";
+import type { Conversation, GroupedConversations, Message, TruncationInfo, SourceInfo } from "@/types";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -94,6 +94,7 @@ export interface ChatStreamOptions {
   onThinkingStart?: () => void;
   onThinkingChunk?: (chunk: string) => void;
   onThinkingEnd?: () => void;
+  onSources?: (sources: SourceInfo[], truncationInfo?: TruncationInfo[]) => void;
   onComplete: () => void;
   onError: (error: Error) => void;
 }
@@ -132,6 +133,7 @@ export async function streamChat({
   onThinkingStart,
   onThinkingChunk,
   onThinkingEnd,
+  onSources,
   onComplete,
   onError,
 }: ChatStreamOptions): Promise<void> {
@@ -179,6 +181,12 @@ export async function streamChat({
           try {
             const parsed = JSON.parse(data);
             switch (parsed.type) {
+              case "sources":
+                // Handle sources with optional truncation info
+                if (parsed.sources && onSources) {
+                  onSources(parsed.sources, parsed.truncation_info);
+                }
+                break;
               case "content":
                 if (parsed.content) {
                   onChunk(parsed.content);

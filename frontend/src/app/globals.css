@@ -492,6 +492,74 @@ body {
   display: none; /* No timestamp for user messages */
 }
 
+/* AI response vertical spacing - ChatGPT-like paragraph density */
+.oxy-msg-assistant .oxy-msg-text p {
+  margin-bottom: 1em;
+}
+
+.oxy-msg-assistant .oxy-msg-text p:last-child {
+  margin-bottom: 0;
+}
+
+.oxy-msg-assistant .oxy-msg-text ul,
+.oxy-msg-assistant .oxy-msg-text ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+
+.oxy-msg-assistant .oxy-msg-text li {
+  margin-bottom: 0.25em;
+}
+
+/* Inline code styling */
+.oxy-msg-assistant .oxy-msg-text code:not(pre code) {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 0.9em;
+  padding: 2px 6px;
+  background: var(--surface-overlay);
+  border-radius: 4px;
+}
+
+/* User message @mention pills */
+.oxy-user-mention-pill {
+  display: inline;
+  padding: 1px 6px;
+  background: var(--blue-50);
+  border-radius: 4px;
+  color: var(--blue-700);
+}
+
+/* Truncated mention pills (yellow/amber) - for documents that exceeded context limits */
+.oxy-mention-pill-truncated,
+.oxy-user-mention-pill-truncated {
+  background: var(--amber-50, #fffbeb);
+  border-color: var(--amber-200, #fde68a);
+  color: var(--amber-700, #b45309);
+}
+
+.oxy-mention-pill-truncated::after {
+  content: attr(data-truncation-percent);
+  margin-left: 4px;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+/* Amber color scale for truncated pills (if not defined) */
+:root {
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --amber-300: #fcd34d;
+  --amber-700: #b45309;
+}
+
+.dark {
+  --amber-50: rgba(180, 83, 9, 0.15);
+  --amber-100: rgba(180, 83, 9, 0.25);
+  --amber-200: rgba(180, 83, 9, 0.3);
+  --amber-700: #fcd34d;
+}
+
 /* ========================================
    SCROLL TO BOTTOM BUTTON
    ======================================== */
@@ -571,7 +639,7 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--spacing-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
   background: none;
   border: none;
@@ -581,6 +649,14 @@ body {
   color: var(--text-primary);
   cursor: pointer;
   transition: background var(--duration-fast) ease;
+}
+
+.oxy-mention > span:first-child {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .oxy-mention:hover,
@@ -599,6 +675,8 @@ body {
 }
 
 .oxy-mention-when {
+  flex-shrink: 0;
+  margin-left: auto;
   font-size: var(--font-xs);
   color: var(--text-faint);
 }
@@ -1185,6 +1263,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-xs);
+  padding-top: var(--spacing-md);
 }
 
 .oxy-sidebar-icon-btn {
@@ -1252,12 +1331,18 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  cursor: pointer;
 }
 
 /* Sidebar logo area */
 .oxy-sidebar-logo {
   padding: var(--spacing-md) var(--spacing-base);
   flex-shrink: 0;
+  /* Fixed position for animation stability */
+  position: relative;
+  height: 60px;
+  display: flex;
+  align-items: center;
 }
 
 /* Sidebar actions (search + new chat) */
@@ -1790,7 +1875,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-xs) var(--spacing-base); /* 8px 16px (symmetric) */
+  padding: var(--spacing-xs) var(--spacing-md); /* 8px 20px - matches input padding */
   min-height: 48px;
   border-top: 1px solid var(--border); /* Use defined variable */
 }
