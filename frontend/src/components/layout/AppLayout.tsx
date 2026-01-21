@@ -18,8 +18,8 @@ export function AppLayout({ sidebar, main, rightPanel }: AppLayoutProps) {
     <div
       className="oxy-app-layout"
       style={{
-        "--sidebar-width": collapsed ? "56px" : "280px",
-        "--panel-width": panelOpen ? "320px" : "0px",
+        "--sidebar-width": collapsed ? "var(--sidebar-width-collapsed)" : "var(--sidebar-width-expanded)",
+        "--panel-width": panelOpen ? "var(--panel-width-default)" : "0px",
       } as React.CSSProperties}
     >
       {/* Mobile backdrop - only visible on mobile when sidebar is open */}

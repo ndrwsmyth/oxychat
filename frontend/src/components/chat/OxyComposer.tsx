@@ -279,8 +279,9 @@ export function OxyComposer({
     // Create remove button
     const removeBtn = document.createElement("button");
     removeBtn.className = "oxy-mention-pill-remove";
-    removeBtn.tabIndex = -1;
+    removeBtn.tabIndex = 0; // Allow keyboard focus
     removeBtn.type = "button";
+    removeBtn.setAttribute("aria-label", `Remove ${transcript.title}`);
     removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
     removeBtn.onclick = (e) => {
       e.preventDefault();
@@ -291,6 +292,13 @@ export function OxyComposer({
         editor.normalize();
         syncToParent();
         editor.focus();
+      }
+    };
+    // Handle keyboard activation
+    removeBtn.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        removeBtn.click();
       }
     };
     pill.appendChild(removeBtn);
