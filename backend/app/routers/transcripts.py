@@ -16,7 +16,8 @@ from ..database import (
     get_recent_meetings,
     save_meeting,
 )
-from ..services.vector_store import get_vector_store
+# NOTE: Embeddings/RAG is a future feature - disabled for now
+# from ..services.vector_store import get_vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -135,21 +136,22 @@ async def upload_transcript(
     meeting = await save_meeting(db, meeting_data)
     logger.info(f"Created manual transcript: {doc_id} - {request.title}")
 
+    # NOTE: Embeddings/RAG is a future feature - disabled for now
     # Auto-embed into vector store (background task)
-    def embed_background():
-        try:
-            vector_store = get_vector_store()
-            chunks = vector_store.add_transcript(
-                doc_id=meeting.doc_id,
-                title=meeting.title,
-                date=meeting.date,
-                content=meeting.formatted_content,
-            )
-            logger.info(f"Auto-embedded manual transcript {doc_id} into {chunks} chunks")
-        except Exception as e:
-            logger.error(f"Failed to auto-embed manual transcript {doc_id}: {e}")
-
-    background_tasks.add_task(embed_background)
+    # def embed_background():
+    #     try:
+    #         vector_store = get_vector_store()
+    #         chunks = vector_store.add_transcript(
+    #             doc_id=meeting.doc_id,
+    #             title=meeting.title,
+    #             date=meeting.date,
+    #             content=meeting.formatted_content,
+    #         )
+    #         logger.info(f"Auto-embedded manual transcript {doc_id} into {chunks} chunks")
+    #     except Exception as e:
+    #         logger.error(f"Failed to auto-embed manual transcript {doc_id}: {e}")
+    #
+    # background_tasks.add_task(embed_background)
 
     return TranscriptResponse(
         id=meeting.doc_id,
@@ -181,154 +183,157 @@ async def delete_transcript(
     await db.execute(stmt)
     await db.commit()
 
+    # NOTE: Embeddings/RAG is a future feature - disabled for now
     # Also remove from vector store
-    try:
-        vector_store = get_vector_store()
-        vector_store.delete_transcript(doc_id)
-    except Exception as e:
-        logger.warning(f"Failed to delete from vector store: {e}")
+    # try:
+    #     vector_store = get_vector_store()
+    #     vector_store.delete_transcript(doc_id)
+    # except Exception as e:
+    #     logger.warning(f"Failed to delete from vector store: {e}")
 
     logger.info(f"Deleted transcript: {doc_id}")
 
     return {"status": "deleted", "doc_id": doc_id}
 
 
-class SearchRequest(BaseModel):
-    """Request body for transcript search."""
-
-    query: str
-    n_results: int = 5
-    doc_ids: Optional[list[str]] = None
-
-
-class SearchResult(BaseModel):
-    """Single search result."""
-
-    doc_id: str
-    title: str
-    date: str
-    content: str
-    distance: float
-
-
-@router.post("/search")
-async def search_transcripts(request: SearchRequest) -> dict[str, Any]:
-    """
-    Search transcripts using semantic similarity.
-
-    Args:
-        query: Search query
-        n_results: Maximum number of results
-        doc_ids: Optional list of doc_ids to filter by (for @mentions)
-    """
-    try:
-        vector_store = get_vector_store()
-        results = vector_store.search(
-            query=request.query,
-            n_results=request.n_results,
-            doc_ids=request.doc_ids,
-        )
-
-        return {
-            "results": [
-                SearchResult(
-                    doc_id=r["doc_id"],
-                    title=r["title"],
-                    date=r["date"],
-                    content=r["content"],
-                    distance=r["distance"],
-                ).model_dump()
-                for r in results
-            ]
-        }
-    except Exception as e:
-        logger.error(f"Search error: {e}")
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
-
-
-@router.post("/{doc_id}/embed")
-async def embed_transcript(
-    doc_id: str,
-    db: AsyncSession = Depends(get_db),
-) -> dict[str, Any]:
-    """
-    Embed a transcript into the vector store.
-
-    This creates vector embeddings for the transcript content,
-    enabling semantic search.
-    """
-    meeting = await get_meeting_by_doc_id(db, doc_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Transcript not found")
-
-    try:
-        vector_store = get_vector_store()
-        num_chunks = vector_store.add_transcript(
-            doc_id=meeting.doc_id,
-            title=meeting.title,
-            date=meeting.date,
-            content=meeting.formatted_content,
-        )
-
-        logger.info(f"Embedded transcript {doc_id} into {num_chunks} chunks")
-
-        return {
-            "status": "embedded",
-            "doc_id": doc_id,
-            "chunks": num_chunks,
-        }
-    except Exception as e:
-        logger.error(f"Embedding error for {doc_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Embedding failed: {str(e)}")
+# NOTE: Embeddings/RAG is a future feature - the following endpoints are disabled for now
+#
+# class SearchRequest(BaseModel):
+#     """Request body for transcript search."""
+#
+#     query: str
+#     n_results: int = 5
+#     doc_ids: Optional[list[str]] = None
+#
+#
+# class SearchResult(BaseModel):
+#     """Single search result."""
+#
+#     doc_id: str
+#     title: str
+#     date: str
+#     content: str
+#     distance: float
+#
+#
+# @router.post("/search")
+# async def search_transcripts(request: SearchRequest) -> dict[str, Any]:
+#     """
+#     Search transcripts using semantic similarity.
+#
+#     Args:
+#         query: Search query
+#         n_results: Maximum number of results
+#         doc_ids: Optional list of doc_ids to filter by (for @mentions)
+#     """
+#     try:
+#         vector_store = get_vector_store()
+#         results = vector_store.search(
+#             query=request.query,
+#             n_results=request.n_results,
+#             doc_ids=request.doc_ids,
+#         )
+#
+#         return {
+#             "results": [
+#                 SearchResult(
+#                     doc_id=r["doc_id"],
+#                     title=r["title"],
+#                     date=r["date"],
+#                     content=r["content"],
+#                     distance=r["distance"],
+#                 ).model_dump()
+#                 for r in results
+#             ]
+#         }
+#     except Exception as e:
+#         logger.error(f"Search error: {e}")
+#         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
-@router.post("/embed-all")
-async def embed_all_transcripts(
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
-) -> dict[str, Any]:
-    """
-    Embed all transcripts into the vector store.
-
-    This runs in the background and returns immediately.
-    """
-    meetings = await get_recent_meetings(db, limit=1000)
-
-    if not meetings:
-        return {"status": "no_transcripts", "count": 0}
-
-    def embed_all():
-        vector_store = get_vector_store()
-        total_chunks = 0
-        for meeting in meetings:
-            try:
-                chunks = vector_store.add_transcript(
-                    doc_id=meeting.doc_id,
-                    title=meeting.title,
-                    date=meeting.date,
-                    content=meeting.formatted_content,
-                )
-                total_chunks += chunks
-            except Exception as e:
-                logger.error(f"Failed to embed {meeting.doc_id}: {e}")
-        logger.info(f"Finished embedding {len(meetings)} transcripts ({total_chunks} chunks)")
-
-    background_tasks.add_task(embed_all)
-
-    return {
-        "status": "started",
-        "count": len(meetings),
-        "message": "Embedding started in background",
-    }
+# @router.post("/{doc_id}/embed")
+# async def embed_transcript(
+#     doc_id: str,
+#     db: AsyncSession = Depends(get_db),
+# ) -> dict[str, Any]:
+#     """
+#     Embed a transcript into the vector store.
+#
+#     This creates vector embeddings for the transcript content,
+#     enabling semantic search.
+#     """
+#     meeting = await get_meeting_by_doc_id(db, doc_id)
+#     if not meeting:
+#         raise HTTPException(status_code=404, detail="Transcript not found")
+#
+#     try:
+#         vector_store = get_vector_store()
+#         num_chunks = vector_store.add_transcript(
+#             doc_id=meeting.doc_id,
+#             title=meeting.title,
+#             date=meeting.date,
+#             content=meeting.formatted_content,
+#         )
+#
+#         logger.info(f"Embedded transcript {doc_id} into {num_chunks} chunks")
+#
+#         return {
+#             "status": "embedded",
+#             "doc_id": doc_id,
+#             "chunks": num_chunks,
+#         }
+#     except Exception as e:
+#         logger.error(f"Embedding error for {doc_id}: {e}")
+#         raise HTTPException(status_code=500, detail=f"Embedding failed: {str(e)}")
 
 
-@router.get("/vector-stats")
-async def get_vector_stats() -> dict[str, Any]:
-    """Get statistics about the vector store."""
-    try:
-        vector_store = get_vector_store()
-        stats = vector_store.get_stats()
-        return stats
-    except Exception as e:
-        logger.error(f"Failed to get vector stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+# @router.post("/embed-all")
+# async def embed_all_transcripts(
+#     background_tasks: BackgroundTasks,
+#     db: AsyncSession = Depends(get_db),
+# ) -> dict[str, Any]:
+#     """
+#     Embed all transcripts into the vector store.
+#
+#     This runs in the background and returns immediately.
+#     """
+#     meetings = await get_recent_meetings(db, limit=1000)
+#
+#     if not meetings:
+#         return {"status": "no_transcripts", "count": 0}
+#
+#     def embed_all():
+#         vector_store = get_vector_store()
+#         total_chunks = 0
+#         for meeting in meetings:
+#             try:
+#                 chunks = vector_store.add_transcript(
+#                     doc_id=meeting.doc_id,
+#                     title=meeting.title,
+#                     date=meeting.date,
+#                     content=meeting.formatted_content,
+#                 )
+#                 total_chunks += chunks
+#             except Exception as e:
+#                 logger.error(f"Failed to embed {meeting.doc_id}: {e}")
+#         logger.info(f"Finished embedding {len(meetings)} transcripts ({total_chunks} chunks)")
+#
+#     background_tasks.add_task(embed_all)
+#
+#     return {
+#         "status": "started",
+#         "count": len(meetings),
+#         "message": "Embedding started in background",
+#     }
+#
+#
+# @router.get("/vector-stats")
+# async def get_vector_stats() -> dict[str, Any]:
+#     """Get statistics about the vector store."""
+#     try:
+#         vector_store = get_vector_store()
+#         stats = vector_store.get_stats()
+#         return stats
+#     except Exception as e:
+#         logger.error(f"Failed to get vector stats: {e}")
+#         raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")

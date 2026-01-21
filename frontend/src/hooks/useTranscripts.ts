@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchTranscripts, searchTranscripts, TranscriptResponse } from "@/lib/api";
 import type { Transcript } from "@/types";
+import { useTranscriptRealtime } from "./useTranscriptRealtime";
+import { toast } from "sonner";
 
 function toTranscript(response: TranscriptResponse): Transcript {
   return {
@@ -52,6 +54,24 @@ export function useTranscripts() {
   useEffect(() => {
     loadTranscripts();
   }, [loadTranscripts]);
+
+  // Real-time subscription callbacks
+  const realtimeCallbacks = useMemo(
+    () => ({
+      onInsert: (data: Record<string, unknown>) => {
+        const title = (data.title as string) || "New transcript";
+        toast.success(`New transcript: ${title}`);
+        loadTranscripts();
+      },
+      onUpdate: () => {
+        loadTranscripts();
+      },
+    }),
+    [loadTranscripts]
+  );
+
+  // Subscribe to real-time updates from Supabase
+  useTranscriptRealtime(realtimeCallbacks);
 
   return {
     transcripts,

@@ -108,6 +108,7 @@ export async function fetchTranscripts(): Promise<TranscriptResponse[]> {
   return data.transcripts || [];
 }
 
+// NOTE: Embeddings/RAG is a future feature - this endpoint is currently disabled on the backend
 export async function searchTranscripts(query: string): Promise<TranscriptResponse[]> {
   const headers = await getAuthHeaders();
   const response = await fetch(`${API_BASE_URL}/api/transcripts/search`, {
@@ -145,6 +146,7 @@ export async function streamChat({
         messages,
         mentions,
         model,
+        // NOTE: Embeddings/RAG is a future feature - disabled for now
         use_rag: false,
       }),
     });

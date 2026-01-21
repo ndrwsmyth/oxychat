@@ -10,7 +10,8 @@ import json
 
 from .database import get_db, save_meeting
 from .processor import process_meeting_data
-from .services.vector_store import get_vector_store
+# NOTE: Embeddings/RAG is a future feature - disabled for now
+# from .services.vector_store import get_vector_store
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -44,19 +45,20 @@ async def verify_webhook_secret(x_webhook_secret: str | None = Header(None)) -> 
         )
 
 
-def embed_transcript_background(doc_id: str, title: str, date: str, content: str) -> None:
-    """Background task to embed a transcript into the vector store."""
-    try:
-        vector_store = get_vector_store()
-        chunks = vector_store.add_transcript(
-            doc_id=doc_id,
-            title=title,
-            date=date,
-            content=content,
-        )
-        logger.info(f"Auto-embedded transcript {doc_id} into {chunks} chunks")
-    except Exception as e:
-        logger.error(f"Failed to auto-embed transcript {doc_id}: {e}")
+# NOTE: Embeddings/RAG is a future feature - disabled for now
+# def embed_transcript_background(doc_id: str, title: str, date: str, content: str) -> None:
+#     """Background task to embed a transcript into the vector store."""
+#     try:
+#         vector_store = get_vector_store()
+#         chunks = vector_store.add_transcript(
+#             doc_id=doc_id,
+#             title=title,
+#             date=date,
+#             content=content,
+#         )
+#         logger.info(f"Auto-embedded transcript {doc_id} into {chunks} chunks")
+#     except Exception as e:
+#         logger.error(f"Failed to auto-embed transcript {doc_id}: {e}")
 
 
 @router.post("/circleback")
@@ -134,15 +136,16 @@ async def webhook_circleback(
             saved_meeting = await save_meeting(db, processed)
             logger.info(f"Successfully saved meeting {meeting_id} to database (DB ID: {saved_meeting.id})")
 
+            # NOTE: Embeddings/RAG is a future feature - disabled for now
             # Auto-embed into vector store (background task)
-            background_tasks.add_task(
-                embed_transcript_background,
-                doc_id=saved_meeting.doc_id,
-                title=saved_meeting.title,
-                date=saved_meeting.date,
-                content=saved_meeting.formatted_content,
-            )
-            logger.info(f"Scheduled background embedding for meeting {meeting_id}")
+            # background_tasks.add_task(
+            #     embed_transcript_background,
+            #     doc_id=saved_meeting.doc_id,
+            #     title=saved_meeting.title,
+            #     date=saved_meeting.date,
+            #     content=saved_meeting.formatted_content,
+            # )
+            # logger.info(f"Scheduled background embedding for meeting {meeting_id}")
 
             processed_count += 1
 
