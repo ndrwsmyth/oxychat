@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message, ModelOption } from "@/types";
-import { fetchMessages, streamChat, parseMentions } from "@/lib/api";
+import { fetchMessages, streamChat } from "@/lib/api";
 
 export function useConversation(
   conversationId: string | null,
@@ -39,19 +39,23 @@ export function useConversation(
     }
   }, [conversationId]);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (
+    content: string,
+    explicitConversationId?: string,
+    mentionIds?: string[]
+  ) => {
     if (!content.trim() || isLoading) return;
 
-    // Parse @mentions and resolve to doc_ids
-    const mentionTitles = parseMentions(content);
-    const docIds = mentionTitles
-      .map(title => transcripts.find((t: any) => t.title === title)?.id)
-      .filter((id): id is string => Boolean(id));
+    // Use explicit conversationId if provided, otherwise fall back to hook's conversationId
+    const effectiveConversationId = explicitConversationId || conversationId;
+
+    // Use passed-in mentionIds directly (extracted from pills in page.tsx)
+    const docIds = mentionIds || [];
 
     // Add user message optimistically
     const userMessage: Message = {
       id: crypto.randomUUID(),
-      conversation_id: conversationId || undefined,
+      conversation_id: effectiveConversationId || undefined,
       role: "user",
       content: content.trim(),
       timestamp: new Date(),
@@ -81,7 +85,7 @@ export function useConversation(
       ...prev,
       {
         id: assistantId,
-        conversation_id: conversationId || undefined,
+        conversation_id: effectiveConversationId || undefined,
         role: "assistant",
         content: "",
         thinking: "",
@@ -90,7 +94,7 @@ export function useConversation(
     ]);
 
     await streamChat({
-      conversationId: conversationId || undefined,
+      conversationId: effectiveConversationId || undefined,
       messages: messageHistory,
       mentions: docIds,
       model,
@@ -134,7 +138,7 @@ export function useConversation(
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       },
     });
-  }, [conversationId, isLoading, messages, model, transcripts]);
+  }, [conversationId, isLoading, messages, model]);
 
   const stopGenerating = useCallback(() => {
     if (abortControllerRef.current) {

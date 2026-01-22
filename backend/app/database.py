@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import os
+import uuid
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
 from dotenv import load_dotenv
 from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -154,7 +156,7 @@ async def get_recent_meetings(session: AsyncSession, limit: int = 10) -> list[Me
 class Conversation(Base):
     __tablename__ = "conversations"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     auto_titled: Mapped[bool] = mapped_column(Boolean, default=False)
     model: Mapped[str] = mapped_column(String(100), default="claude-sonnet-4.5")
@@ -173,8 +175,9 @@ class Conversation(Base):
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
-    conversation_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False, index=True)
+    turn_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -183,13 +186,14 @@ class Message(Base):
 
     __table_args__ = (
         Index("idx_messages_conversation_id", "conversation_id", "created_at"),
+        Index("idx_messages_turn_id", "turn_id"),
     )
 
 
 class ConversationDraft(Base):
     __tablename__ = "conversation_drafts"
 
-    conversation_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -198,10 +202,10 @@ class Profile(Base):
     """Extended user profile linked to Supabase auth.users"""
     __tablename__ = "profiles"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)  # UUID from auth.users
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)  # UUID from auth.users
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    org_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    org_id: Mapped[Optional[uuid.UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     profile_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -216,7 +220,7 @@ class Turn(Base):
     """Groups messages in a single exchange (user message + assistant response)"""
     __tablename__ = "turns"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     conversation_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -231,7 +235,7 @@ class ToolCall(Base):
     """Tracks tool usage (@mentions, RAG, future tools)"""
     __tablename__ = "tool_calls"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     message_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     tool_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
@@ -254,7 +258,7 @@ class AgentStep(Base):
     """Tracks multi-step reasoning for advanced agent behaviors"""
     __tablename__ = "agent_steps"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     step_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -274,7 +278,7 @@ class RetrievalResult(Base):
     """Tracks RAG retrievals for debugging and improvement"""
     __tablename__ = "retrieval_results"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(__import__('uuid').uuid4()))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     tool_call_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     query: Mapped[str] = mapped_column(Text, nullable=False)

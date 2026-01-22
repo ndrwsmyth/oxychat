@@ -436,11 +436,13 @@ body {
   font-size: var(--font-lg);
   line-height: var(--line-height-relaxed);
   color: var(--text-primary);
-  white-space: pre-wrap;
+  /* NOTE: pre-wrap removed - was causing double spacing with markdown paragraphs */
+  /* User messages use pre-wrap below; assistant messages use normal whitespace */
 }
 
 .oxy-msg-user .oxy-msg-text {
   color: var(--text-secondary);
+  white-space: pre-wrap; /* Keep pre-wrap for user messages (no markdown parsing) */
 }
 
 .oxy-msg-thinking {
@@ -492,23 +494,30 @@ body {
   display: none; /* No timestamp for user messages */
 }
 
-/* AI response vertical spacing - ChatGPT-like paragraph density */
-.oxy-msg-assistant .oxy-msg-text p {
-  margin-bottom: 1em;
+/* AI response vertical spacing - readable prose density */
+.oxy-msg-assistant .oxy-msg-text p,
+.oxy-msg-assistant .oxy-msg-text ul,
+.oxy-msg-assistant .oxy-msg-text ol {
+  margin: 0 0 0.75em 0;
 }
 
-.oxy-msg-assistant .oxy-msg-text p:last-child {
+.oxy-msg-assistant .oxy-msg-text p:last-child,
+.oxy-msg-assistant .oxy-msg-text ul:last-child,
+.oxy-msg-assistant .oxy-msg-text ol:last-child {
   margin-bottom: 0;
 }
 
 .oxy-msg-assistant .oxy-msg-text ul,
 .oxy-msg-assistant .oxy-msg-text ol {
-  margin-bottom: 1em;
   padding-left: 1.5em;
 }
 
 .oxy-msg-assistant .oxy-msg-text li {
-  margin-bottom: 0.25em;
+  margin: 0 0 0.25em 0;
+}
+
+.oxy-msg-assistant .oxy-msg-text li:last-child {
+  margin-bottom: 0;
 }
 
 /* Inline code styling */

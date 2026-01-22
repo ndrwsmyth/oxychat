@@ -193,3 +193,84 @@ pnpm run lint
 - **Model switching** supported via `ModelPicker` component (claude-sonnet-4.5, gpt-4, etc.)
 - **API-first design** - backend is UI-agnostic, frontend is swappable
 - **Human-in-the-loop** philosophy - agent outputs reviewed before final delivery (future feature)
+
+---
+
+## Claude Code Workflow
+
+### Verification Commands
+
+Always verify changes work before considering a task complete:
+
+```bash
+# Backend verification
+cd backend && uv run ruff check app/ && uv run ruff format --check app/ && uv run mypy app/
+
+# Frontend verification
+cd frontend && pnpm run lint && pnpm run build
+
+# Run tests if they exist
+cd backend && uv run pytest tests/
+cd frontend && pnpm test
+```
+
+### Recommended Workflow
+
+1. **Explore first**: Use Plan Mode or subagents to understand relevant code before making changes
+2. **Plan for multi-file changes**: For features touching >2-3 files, create a plan before implementing
+3. **Implement incrementally**: Make changes file by file, verifying as you go
+4. **Verify before committing**: Run lint, type check, and tests before any commit
+
+### Code Style
+
+**Python (backend)**:
+- Use async/await consistently - all database operations must be async
+- Follow existing patterns in `routers/` for new endpoints
+- SSE responses use `data: {json}\n\n` format with `[DONE]` termination
+
+**TypeScript (frontend)**:
+- Use named exports, not default exports
+- Hooks go in `src/hooks/`, API calls in `src/lib/api.ts`
+- shadcn/ui components for UI primitives - don't reinvent
+- Tailwind for styling - avoid inline styles or CSS modules
+
+### Context Management
+
+- Use `/clear` between unrelated tasks to reset context
+- For large investigations, ask to "use a subagent to investigate X" to keep main context clean
+- When debugging, scope investigations narrowly (specific file, function, or error)
+
+### Common Gotchas
+
+- **SSE streaming**: Frontend expects `data: {"type": "content", "content": "..."}\n\n` - don't change the format
+- **Database sessions**: Always use `async with get_session() as session` - never raw sessions
+- **Environment variables**: Backend reads from env directly, frontend uses `NEXT_PUBLIC_` prefix
+- **@mentions**: IDs are `doc_{meeting_id}` for DB records, `doc_{slug}` for file transcripts
+- **CORS**: Backend allows all origins in dev - don't commit restrictive CORS for production without updating deployment config
+
+### Repeat Mistakes to Avoid
+
+These issues have been fixed multiple times - check for them before committing:
+
+**Accessibility (fixed 3+ times)**:
+- Radix `Dialog` components MUST have `DialogTitle` (use `className="sr-only"` if visually hidden)
+- Interactive elements need `aria-label` when icon-only
+- Buttons in custom components need `tabIndex={0}` and `onKeyDown` handlers for Enter/Space
+- Loading states need `role="status"` and `aria-label`
+
+**CSS Design Tokens (fixed 47+ hardcoded values)**:
+- NEVER use raw pixel values - use `var(--spacing-*)`, `var(--size-*)`, etc.
+- NEVER use raw colors - use `var(--gray-*)`, `var(--blue-*)`, etc.
+- Check `globals.css` for existing tokens before adding new ones
+- Both light and dark mode tokens must be defined
+
+**@Mention System (multiple critical bugs)**:
+- The composer uses DOM manipulation for mention pills - test insertion/deletion thoroughly
+- Watch for duplication bugs when inserting mentions
+- Mention IDs must match exactly: `doc_{meeting_id}` or `doc_{slug}`
+
+**Radix UI Components**:
+- `Dialog` → requires `DialogTitle`
+- `AlertDialog` → requires `AlertDialogTitle` and `AlertDialogDescription`
+- `Popover` → check keyboard navigation works
+- Always test with keyboard-only navigation

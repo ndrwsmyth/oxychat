@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete as sql_delete
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import uuid
 
 from app.database import get_db, Conversation, Message, ConversationDraft
 from app.services.auto_title import generate_title
@@ -28,7 +29,7 @@ class UpdateConversationRequest(BaseModel):
 
 
 class ConversationResponse(BaseModel):
-    id: str
+    id: uuid.UUID
     title: str
     auto_titled: bool
     model: str
@@ -42,12 +43,12 @@ class ConversationResponse(BaseModel):
 
 
 class MessageResponse(BaseModel):
-    id: str
-    conversation_id: str
+    id: uuid.UUID
+    conversation_id: uuid.UUID
     role: str
     content: str
     model: Optional[str]
-    mentions: dict
+    mentions: list
     created_at: datetime
 
     class Config:
@@ -74,7 +75,7 @@ class DraftResponse(BaseModel):
 # Helper functions
 def group_conversations_by_date(conversations: list[Conversation]) -> GroupedConversationsResponse:
     """Group conversations by date buckets."""
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     yesterday_start = today_start - timedelta(days=1)
     week_ago = today_start - timedelta(days=7)
@@ -211,9 +212,9 @@ async def update_conversation(
         conversation.model = request.model
     if request.pinned is not None:
         conversation.pinned = request.pinned
-        conversation.pinned_at = datetime.now() if request.pinned else None
+        conversation.pinned_at = datetime.now(timezone.utc) if request.pinned else None
 
-    conversation.updated_at = datetime.now()
+    conversation.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(conversation)
@@ -240,7 +241,7 @@ async def delete_conversation(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    conversation.deleted_at = datetime.now()
+    conversation.deleted_at = datetime.now(timezone.utc)
     await db.commit()
 
     return {"message": "Conversation deleted successfully"}
@@ -266,8 +267,8 @@ async def toggle_pin_conversation(
         raise HTTPException(status_code=404, detail="Conversation not found")
 
     conversation.pinned = not conversation.pinned
-    conversation.pinned_at = datetime.now() if conversation.pinned else None
-    conversation.updated_at = datetime.now()
+    conversation.pinned_at = datetime.now(timezone.utc) if conversation.pinned else None
+    conversation.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(conversation)
@@ -355,7 +356,7 @@ async def save_draft(
 
     if draft:
         draft.content = request.content
-        draft.updated_at = datetime.now()
+        draft.updated_at = datetime.now(timezone.utc)
     else:
         draft = ConversationDraft(
             conversation_id=conversation_id,
@@ -424,7 +425,7 @@ async def auto_title_conversation(
     # Update conversation
     conversation.title = title
     conversation.auto_titled = True
-    conversation.updated_at = datetime.now()
+    conversation.updated_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(conversation)

@@ -25,6 +25,12 @@ dev = [
     "ruff>=0.6.4,<0.7",
     "mypy>=1.8,<2",
 ]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.28",
+    "aiosqlite>=0.19",
+]
 
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]

@@ -54,7 +54,7 @@ def estimate_tokens(text: str) -> int:
 async def build_context_from_mentions(
     mentions: list[str],
     db: AsyncSession,
-) -> tuple[str | None, list[dict], list[dict]]:
+) -> tuple[str | None, list[dict], list[dict], list[dict]]:
     """
     Build context string from @mentioned transcripts with token limits.
 
@@ -62,19 +62,22 @@ async def build_context_from_mentions(
     First-mentioned documents have priority - later ones may be truncated.
 
     Returns:
-        Tuple of (context_string, sources_list, truncation_info)
+        Tuple of (context_string, sources_list, truncation_info, failed_mentions)
     """
     if not mentions:
-        return None, [], []
+        return None, [], [], []
 
     context_parts = []
     sources = []
     truncation_info = []
+    failed_mentions = []
     tokens_used = 0
 
     for doc_id in mentions[:5]:  # Max 5 transcripts
         meeting = await get_meeting_by_doc_id(db, doc_id)
         if not meeting:
+            logger.warning(f"Mention lookup failed: doc_id '{doc_id}' not found in database")
+            failed_mentions.append({"doc_id": doc_id, "reason": "not_found"})
             continue
 
         content = meeting.formatted_content or ""
@@ -115,7 +118,7 @@ async def build_context_from_mentions(
         tokens_used += estimate_tokens(content)
 
         # Use XML format for document context (per Anthropic best practices)
-        date_str = meeting.date.strftime("%Y-%m-%d") if meeting.date else "Unknown"
+        date_str = meeting.date if meeting.date else "Unknown"
         context_parts.append(
             f'<document title="{meeting.title}" date="{date_str}" doc_id="{meeting.doc_id}">\n'
             f'{content}\n'
@@ -129,7 +132,7 @@ async def build_context_from_mentions(
         logger.info(f"Added context for transcript: {meeting.doc_id}")
 
     if not context_parts:
-        return None, [], []
+        return None, [], [], failed_mentions
 
     # XML-structured context header
     header = (
@@ -138,7 +141,7 @@ async def build_context_from_mentions(
     )
     footer = "\n</user_documents>"
 
-    return header + "\n\n".join(context_parts) + footer, sources, truncation_info
+    return header + "\n\n".join(context_parts) + footer, sources, truncation_info, failed_mentions
 
 
 def build_context_from_rag(
@@ -281,6 +284,7 @@ async def stream_chat(
     context = None
     sources = []
     truncation_info = []
+    failed_mentions = []
 
     # Get the latest user message for RAG query
     user_query = ""
@@ -291,14 +295,14 @@ async def stream_chat(
 
     if request.mentions:
         # Priority 1: Use full transcripts from @mentions
-        context, sources, truncation_info = await build_context_from_mentions(request.mentions, db)
+        context, sources, truncation_info, failed_mentions = await build_context_from_mentions(request.mentions, db)
 
         # Track mention tool usage
         if tool_tracker and sources:
             await tool_tracker.track_mention(
                 mentions=[{"doc_id": m} for m in request.mentions],
                 context_sources=sources,
-                message_id=user_message_db.id if user_message_db else None,
+                message_id=str(user_message_db.id) if user_message_db else None,
             )
             logger.info(f"Tracked @mention tool usage for turn {turn.id}")
 
@@ -312,7 +316,7 @@ async def stream_chat(
                 query=user_query,
                 results=sources,
                 retrieval_method="chromadb",
-                message_id=user_message_db.id if user_message_db else None,
+                message_id=str(user_message_db.id) if user_message_db else None,
             )
             logger.info(f"Tracked RAG tool usage for turn {turn.id}")
 
@@ -325,14 +329,17 @@ async def stream_chat(
     async def generate():
         nonlocal assistant_response
 
-        # First, send sources metadata if any (include truncation info)
-        if sources:
+        # First, send sources metadata if any (include truncation info and failed mentions)
+        if sources or failed_mentions:
             sources_data = {
                 'type': 'sources',
                 'sources': sources,
             }
             if truncation_info:
                 sources_data['truncation_info'] = truncation_info
+            if failed_mentions:
+                sources_data['failed_mentions'] = failed_mentions
+                logger.warning(f"Failed mentions being sent to client: {failed_mentions}")
             yield f"data: {json.dumps(sources_data)}\n\n"
 
         # Then stream the response

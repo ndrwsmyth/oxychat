@@ -233,8 +233,10 @@ export async function streamChat({
 }
 
 // Parse @mentions from message
+// Supports @[Title with spaces] format (from OxyComposer mention pills)
 export function parseMentions(message: string): string[] {
-  const mentionRegex = /@([^@\s]+(?:\s+[^@\s]+)*?)(?=\s+@|\s*$)/g;
+  // Match @[Title with spaces] format
+  const mentionRegex = /@\[([^\]]+)\]/g;
   const mentions: string[] = [];
   let match;
 

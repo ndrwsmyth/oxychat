@@ -16,27 +16,32 @@ function formatTime(d: Date) {
 }
 
 function renderUserContent(content: string): React.ReactNode {
-  const mentionRegex = /@([^\s@]+)/g;
+  const mentionRegex = /@\[([^\]]+)\]/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match;
-  let key = 0;
 
   while ((match = mentionRegex.exec(content)) !== null) {
     if (match.index > lastIndex) {
       parts.push(content.slice(lastIndex, match.index));
     }
     parts.push(
-      <span key={key++} className="oxy-user-mention-pill">
-        {match[0]}
+      <span key={lastIndex} className="oxy-user-mention-pill">
+        @{match[1]}
       </span>
     );
     lastIndex = match.index + match[0].length;
   }
+
+  if (lastIndex === 0) {
+    return content;
+  }
+
   if (lastIndex < content.length) {
     parts.push(content.slice(lastIndex));
   }
-  return parts.length ? parts : content;
+
+  return parts;
 }
 
 export function OxyMessage({ message, isStreaming = false, isThinking = false }: OxyMessageProps) {

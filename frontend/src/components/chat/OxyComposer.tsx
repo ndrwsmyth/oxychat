@@ -68,7 +68,7 @@ function getTextBeforeCursor(editor: HTMLElement): { text: string; atIndex: numb
 
       if (el.classList?.contains("oxy-mention-pill")) {
         // Add a placeholder for the pill (we don't search inside pills for @)
-        text += `@${el.dataset.mentionTitle || ""}`;
+        text += `@[${el.dataset.mentionTitle || ""}]`;
       } else if (el.tagName === "BR") {
         text += "\n";
       } else {
@@ -115,7 +115,7 @@ function extractContent(editor: HTMLElement): { raw: string; mentions: MentionCh
       if (el.classList?.contains("oxy-mention-pill")) {
         const id = el.dataset.mentionId || "";
         const title = el.dataset.mentionTitle || "";
-        raw += `@${title}`;
+        raw += `@[${title}]`;
         mentions.push({ id, title });
       } else if (el.tagName === "BR") {
         raw += "\n";
@@ -134,7 +134,7 @@ function extractContent(editor: HTMLElement): { raw: string; mentions: MentionCh
 // Utility: Check if editor is empty (ignoring whitespace)
 function isEditorEmpty(editor: HTMLElement): boolean {
   const { raw } = extractContent(editor);
-  return raw.trim() === "";
+  return raw === "";
 }
 
 // Utility: Escape HTML for safe insertion

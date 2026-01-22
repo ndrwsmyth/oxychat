@@ -34,11 +34,31 @@ function HomeContent() {
   const send = useCallback(async () => {
     if (!draft.trim() || isLoading) return;
 
-    // Draft already contains @mentions from pills (handled by extractContent in OxyComposer)
-    await sendMessage(draft.trim());
+    let targetConversationId = conversationId;
+
+    // Create conversation on first message if needed
+    if (!targetConversationId) {
+      try {
+        const newConv = await createConversation("New conversation");
+        targetConversationId = newConv.id;
+        router.push(`/?c=${targetConversationId}`, { scroll: false });
+      } catch (err) {
+        // If conversation creation fails (e.g., backend not running),
+        // still allow sending message in ephemeral mode
+        console.warn("Failed to create conversation, using ephemeral mode:", err);
+      }
+    }
+
+    // Extract mention IDs directly from the pills (not re-parsing from text)
+    const mentionIds = mentions.map(m => m.id);
+    const messageContent = draft.trim();
+
+    // Clear input immediately before streaming starts
     setDraft("");
     setMentions([]);
-  }, [draft, isLoading, sendMessage, setDraft]);
+
+    await sendMessage(messageContent, targetConversationId, mentionIds);
+  }, [draft, isLoading, sendMessage, setDraft, conversationId, createConversation, router, mentions]);
 
   const handleTranscriptClick = (transcript: { id: string; title: string }) => {
     // Add as a chip instead of inserting text
