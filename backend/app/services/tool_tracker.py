@@ -8,13 +8,13 @@ from typing import Any, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import ToolCall, RetrievalResult
+from app.database import RetrievalResult, ToolCall
 
 
 class ToolTracker:
     """Tracks tool calls and retrievals for a specific turn."""
 
-    def __init__(self, db: AsyncSession, turn_id: str):
+    def __init__(self, db: AsyncSession, turn_id: uuid.UUID):
         """
         Initialize tool tracker for a turn.
 
@@ -29,7 +29,7 @@ class ToolTracker:
         self,
         mentions: list[dict[str, Any]],
         context_sources: list[dict[str, Any]],
-        message_id: Optional[str] = None,
+        message_id: Optional[uuid.UUID] = None,
     ) -> ToolCall:
         """
         Track @mention tool usage.
@@ -43,7 +43,7 @@ class ToolTracker:
             Created ToolCall record
         """
         tool_call = ToolCall(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             message_id=message_id,
             turn_id=self.turn_id,
             tool_name="mention",
@@ -71,7 +71,7 @@ class ToolTracker:
         query: str,
         results: list[dict[str, Any]],
         retrieval_method: str = "chromadb",
-        message_id: Optional[str] = None,
+        message_id: Optional[uuid.UUID] = None,
         latency_ms: Optional[int] = None,
     ) -> tuple[ToolCall, RetrievalResult]:
         """
@@ -89,7 +89,7 @@ class ToolTracker:
         """
         # Create tool call record
         tool_call = ToolCall(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             message_id=message_id,
             turn_id=self.turn_id,
             tool_name="rag",
@@ -111,7 +111,7 @@ class ToolTracker:
 
         # Create retrieval result record for debugging/analysis
         retrieval_result = RetrievalResult(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             turn_id=self.turn_id,
             tool_call_id=tool_call.id,
             query=query,
@@ -132,7 +132,7 @@ class ToolTracker:
         tool_name: str,
         input_data: dict[str, Any],
         error_message: str,
-        message_id: Optional[str] = None,
+        message_id: Optional[uuid.UUID] = None,
         latency_ms: Optional[int] = None,
     ) -> ToolCall:
         """
@@ -149,7 +149,7 @@ class ToolTracker:
             Created ToolCall record with error status
         """
         tool_call = ToolCall(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             message_id=message_id,
             turn_id=self.turn_id,
             tool_name=tool_name,
@@ -173,7 +173,7 @@ class ToolTracker:
         tool_name: str,
         input_data: dict[str, Any],
         output_data: dict[str, Any],
-        message_id: Optional[str] = None,
+        message_id: Optional[uuid.UUID] = None,
         latency_ms: Optional[int] = None,
         status: str = "success",
         error_message: Optional[str] = None,
@@ -194,7 +194,7 @@ class ToolTracker:
             Created ToolCall record
         """
         tool_call = ToolCall(
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             message_id=message_id,
             turn_id=self.turn_id,
             tool_name=tool_name,

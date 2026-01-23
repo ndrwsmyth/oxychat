@@ -2,12 +2,23 @@ from __future__ import annotations
 
 import os
 import uuid
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -18,6 +29,7 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 DATABASE_URL = os.getenv("SUPABASE_DATABASE_URL")
 if not DATABASE_URL:
     import logging
+
     logging.getLogger(__name__).warning(
         "SUPABASE_DATABASE_URL not set. Database features will be unavailable. "
         "Get your connection string from Supabase Dashboard → Settings → Database → Connection Pooling → Direct Connection"
@@ -73,6 +85,7 @@ async def init_db() -> None:
     """Initialize database by creating all tables."""
     if not engine:
         import logging
+
         logging.getLogger(__name__).warning("Database not configured, skipping initialization")
         return
 
@@ -81,6 +94,7 @@ async def init_db() -> None:
             await conn.run_sync(Base.metadata.create_all)
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to initialize database: {e}")
         logger.error(f"Database URL: {DATABASE_URL}")
@@ -91,9 +105,10 @@ async def get_db() -> AsyncSession:
     """Dependency for FastAPI routes to get database session."""
     if not async_session_maker:
         from fastapi import HTTPException
+
         raise HTTPException(
             status_code=503,
-            detail="Database not configured. Set SUPABASE_DATABASE_URL environment variable."
+            detail="Database not configured. Set SUPABASE_DATABASE_URL environment variable.",
         )
     async with async_session_maker() as session:
         yield session
@@ -102,14 +117,15 @@ async def get_db() -> AsyncSession:
 async def save_meeting(session: AsyncSession, meeting_data: dict) -> Meeting:
     """Insert or update a meeting in the database."""
     import logging
+
     logger = logging.getLogger(__name__)
-    
+
     # Check if meeting exists by meeting_id
     from sqlalchemy import select
 
     meeting_id = meeting_data.get("meeting_id", "unknown")
     logger.debug(f"Checking for existing meeting with meeting_id: {meeting_id}")
-    
+
     stmt = select(Meeting).where(Meeting.meeting_id == meeting_data["meeting_id"])
     result = await session.execute(stmt)
     existing = result.scalar_one_or_none()
@@ -131,7 +147,9 @@ async def save_meeting(session: AsyncSession, meeting_data: dict) -> Meeting:
         session.add(new_meeting)
         await session.commit()
         await session.refresh(new_meeting)
-        logger.info(f"Successfully inserted meeting (DB ID: {new_meeting.id}, meeting_id: {meeting_id})")
+        logger.info(
+            f"Successfully inserted meeting (DB ID: {new_meeting.id}, meeting_id: {meeting_id})"
+        )
         return new_meeting
 
 
@@ -156,14 +174,23 @@ async def get_recent_meetings(session: AsyncSession, limit: int = 10) -> list[Me
 class Conversation(Base):
     __tablename__ = "conversations"
 
-    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     auto_titled: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_renamed: Mapped[bool] = mapped_column(
+        Boolean, default=False
+    )  # True if user manually renamed
     model: Mapped[str] = mapped_column(String(100), default="claude-sonnet-4.5")
     pinned: Mapped[bool] = mapped_column(Boolean, default=False)
     pinned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
@@ -175,14 +202,28 @@ class Conversation(Base):
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    conversation_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False, index=True)
-    turn_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    turn_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("turns.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     mentions: Mapped[dict] = mapped_column(JSON, default=list)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     __table_args__ = (
         Index("idx_messages_conversation_id", "conversation_id", "created_at"),
@@ -193,21 +234,34 @@ class Message(Base):
 class ConversationDraft(Base):
     __tablename__ = "conversation_drafts"
 
-    conversation_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 class Profile(Base):
     """Extended user profile linked to Supabase auth.users"""
+
     __tablename__ = "profiles"
 
-    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)  # UUID from auth.users
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True
+    )  # UUID from auth.users
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     org_id: Mapped[Optional[uuid.UUID]] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
     profile_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
 
     __table_args__ = (
@@ -218,12 +272,20 @@ class Profile(Base):
 
 class Turn(Base):
     """Groups messages in a single exchange (user message + assistant response)"""
+
     __tablename__ = "turns"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    conversation_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     __table_args__ = (
         Index("idx_turns_conversation_id", "conversation_id", "sequence"),
@@ -233,33 +295,48 @@ class Turn(Base):
 
 class ToolCall(Base):
     """Tracks tool usage (@mentions, RAG, future tools)"""
+
     __tablename__ = "tool_calls"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    message_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
-    turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    message_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("messages.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    turn_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("turns.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     tool_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     input: Mapped[dict] = mapped_column(JSON, nullable=False)
     output: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending")
     latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    __table_args__ = (
-        Index("idx_tool_calls_message_id", "message_id"),
-        Index("idx_tool_calls_turn_id", "turn_id"),
-        Index("idx_tool_calls_tool_name", "tool_name"),
-    )
+    # Indexes defined via index=True on columns above
 
 
 class AgentStep(Base):
     """Tracks multi-step reasoning for advanced agent behaviors"""
+
     __tablename__ = "agent_steps"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    turn_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("turns.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     step_type: Mapped[str] = mapped_column(String(50), nullable=False)
     input_context: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
@@ -267,28 +344,36 @@ class AgentStep(Base):
     model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     tokens_in: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     tokens_out: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
-    __table_args__ = (
-        Index("idx_agent_steps_turn_id", "turn_id", "sequence"),
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+    __table_args__ = (Index("idx_agent_steps_turn_id", "turn_id", "sequence"),)
 
 
 class RetrievalResult(Base):
     """Tracks RAG retrievals for debugging and improvement"""
+
     __tablename__ = "retrieval_results"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    turn_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
-    tool_call_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    turn_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("turns.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tool_call_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("tool_calls.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     query: Mapped[str] = mapped_column(Text, nullable=False)
     results: Mapped[dict] = mapped_column(JSON, nullable=False)
     retrieval_method: Mapped[str] = mapped_column(String(50), default="chromadb")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
-    __table_args__ = (
-        Index("idx_retrieval_results_turn_id", "turn_id"),
-        Index("idx_retrieval_results_tool_call_id", "tool_call_id"),
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-
+    # Indexes defined via index=True on columns above
