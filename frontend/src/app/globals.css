@@ -1541,6 +1541,9 @@ body {
   transition: background-color var(--duration-fast) ease-out;
   /* Fast stagger animation */
   animation: conversationIn var(--duration-fast) ease-out backwards;
+  /* Performance: skip rendering for off-screen items */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 44px;
 }
 
 @keyframes conversationIn {

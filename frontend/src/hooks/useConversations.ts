@@ -202,8 +202,7 @@ export function useConversations() {
 
     try {
       await apiTogglePinConversation(id);
-      // Refetch to get correct grouping from server
-      await loadConversations();
+      // Trust optimistic update on success - no refetch needed
     } catch (err) {
       // Rollback on error - refetch full state
       await loadConversations();
@@ -211,9 +210,9 @@ export function useConversations() {
     }
   }, [conversations, loadConversations]);
 
-  const searchConversations = useCallback(async (query: string): Promise<void> => {
-    await loadConversations(query);
-  }, [loadConversations]);
+  // searchConversations is just a wrapper - could use loadConversations directly
+  // but keeping for semantic clarity at call sites
+  const searchConversations = loadConversations;
 
   return {
     conversations,

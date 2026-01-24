@@ -2,7 +2,7 @@
  * useSearch hook - Manages search modal state and debounced search queries
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { searchConversations, type SearchResult } from '@/lib/api'
 
 export function useSearch() {
@@ -12,6 +12,8 @@ export function useSearch() {
   const [results, setResults] = useState<SearchResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Track abort controller to cancel stale requests
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Debounce query with 300ms delay
   useEffect(() => {
@@ -30,6 +32,12 @@ export function useSearch() {
       return
     }
 
+    // Cancel previous request if still pending
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+
     const performSearch = async () => {
       setIsLoading(true)
       setError(null)
@@ -38,6 +46,10 @@ export function useSearch() {
         const searchResults = await searchConversations(debouncedQuery)
         setResults(searchResults)
       } catch (err) {
+        // Ignore abort errors
+        if (err instanceof Error && err.name === 'AbortError') {
+          return
+        }
         setError(err instanceof Error ? err.message : 'Search failed')
         setResults(null)
       } finally {
@@ -46,18 +58,20 @@ export function useSearch() {
     }
 
     performSearch()
+
+    return () => {
+      // Cleanup: abort on unmount or query change
+      abortControllerRef.current?.abort()
+    }
   }, [debouncedQuery])
 
-  // Keyboard shortcut: Cmd+K / Ctrl+K
+  // Keyboard shortcut: Cmd+K / Ctrl+K to open, Escape to close
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setIsOpen(true)
-      }
-
-      // Escape to close
-      if (e.key === 'Escape' && isOpen) {
+      } else if (e.key === 'Escape' && isOpen) {
         setIsOpen(false)
       }
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { OxyMentionPopover, type MentionPopoverHandle } from "@/components/mentions/OxyMentionPopover";
 import { ModelPicker } from "./ModelPicker";
 import type { Transcript, ModelOption } from "@/types";
@@ -16,7 +16,7 @@ interface OxyComposerProps {
   onChange: (value: string) => void;
   mentions: MentionChip[];
   onMentionsChange: (mentions: MentionChip[]) => void;
-  onSend: () => void;
+  onSend: (content: string, mentions: MentionChip[]) => void;
   onStop?: () => void;
   onNewConversation?: () => void;
   disabled: boolean;
@@ -326,6 +326,17 @@ export function OxyComposer({
     syncToParent();
   }, [syncToParent]);
 
+  const handleSend = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const { raw, mentions: extractedMentions } = extractContent(editor);
+    const trimmedContent = raw.trim();
+    if (!trimmedContent || disabled) return;
+
+    onSend(trimmedContent, extractedMentions);
+  }, [disabled, onSend]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     // Forward to mention popover when open
     if (showMentions && popoverRef.current?.handleKeyDown(e)) {
@@ -412,7 +423,7 @@ export function OxyComposer({
     if (e.key === "Escape") {
       setShowMentions(false);
     }
-  }, [showMentions, syncToParent]);
+  }, [showMentions, syncToParent, handleSend]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -439,18 +450,9 @@ export function OxyComposer({
     syncToParent();
   }, [syncToParent]);
 
-  const handleSend = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    const { raw } = extractContent(editor);
-    if (!raw.trim() || disabled) return;
-
-    onSend();
-  }, [disabled, onSend]);
-
-  const filteredTranscripts = transcripts.filter((t) =>
-    t.title.toLowerCase().includes(mentionFilter)
+  const filteredTranscripts = useMemo(
+    () => transcripts.filter((t) => t.title.toLowerCase().includes(mentionFilter)),
+    [transcripts, mentionFilter]
   );
 
   const handleCompositionStart = () => {

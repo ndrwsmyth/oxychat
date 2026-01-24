@@ -17,6 +17,12 @@ interface SearchModalProps {
   onNewChat: () => void
 }
 
+// Hoisted: Truncate message preview to ~150 characters
+function truncateContent(content: string, maxLength: number = 150) {
+  if (content.length <= maxLength) return content
+  return content.slice(0, maxLength) + '...'
+}
+
 export function SearchModal({ isOpen, onClose, onNewChat }: SearchModalProps) {
   const router = useRouter()
   const { query, setQuery, results, isLoading, error } = useSearch()
@@ -29,12 +35,6 @@ export function SearchModal({ isOpen, onClose, onNewChat }: SearchModalProps) {
   const handleNewChat = () => {
     onNewChat()
     onClose()
-  }
-
-  // Truncate message preview to ~150 characters
-  const truncateContent = (content: string, maxLength: number = 150) => {
-    if (content.length <= maxLength) return content
-    return content.slice(0, maxLength) + '...'
   }
 
   return (
@@ -162,13 +162,14 @@ function formatRelativeTime(date: Date): string {
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
+  const diffWeeks = Math.floor(diffDays / 7)
 
   if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+  if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
   if (diffDays === 1) return 'Yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`
+  if (diffDays < 30) return `${diffWeeks} week${diffWeeks === 1 ? '' : 's'} ago`
 
   return date.toLocaleDateString()
 }
