@@ -19,18 +19,30 @@ export function OxyHeader({ showHomeButton = false }: OxyHeaderProps) {
 
   return (
     <header className="oxy-bar">
-      <div
-        className={`oxy-mark ${showHomeButton ? "clickable" : ""}`}
-        onClick={handleLogoClick}
-        style={showHomeButton ? { cursor: "pointer" } : undefined}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="2" fill="currentColor" />
-          <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.15" />
-        </svg>
-        <span>Oxy</span>
-      </div>
+      {showHomeButton ? (
+        <button
+          className="oxy-mark clickable"
+          onClick={handleLogoClick}
+          aria-label="Go to home"
+          type="button"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+            <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.15" />
+          </svg>
+          <span>Oxy</span>
+        </button>
+      ) : (
+        <div className="oxy-mark">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+            <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.15" />
+          </svg>
+          <span>Oxy</span>
+        </div>
+      )}
       <div className="oxy-bar-actions">
         <button
           className="oxy-bar-btn"

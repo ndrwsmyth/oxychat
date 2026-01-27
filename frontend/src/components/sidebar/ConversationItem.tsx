@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { Conversation } from "@/types";
 import { Pin, Trash2 } from "lucide-react";
 
@@ -23,9 +23,13 @@ export function ConversationItem({
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(conversation.title);
-  const [showActions, setShowActions] = useState(false);
+  const [showActionsHover, setShowActionsHover] = useState(false);
+  const [hasFocus, setHasFocus] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Show actions on hover, focus, or when active
+  const showActions = showActionsHover || hasFocus || isActive;
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -90,10 +94,26 @@ export function ConversationItem({
     <div
       className={`oxy-conversation-item ${isActive ? "active" : ""}`}
       onClick={handleClick}
-      onMouseEnter={() => setShowActions(true)}
+      onMouseEnter={() => setShowActionsHover(true)}
       onMouseLeave={() => {
-        setShowActions(false);
+        setShowActionsHover(false);
         setShowDeleteConfirm(false);
+      }}
+      onFocus={() => setHasFocus(true)}
+      onBlur={(e) => {
+        // Only hide if focus moves outside the entire item
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setHasFocus(false);
+          setShowDeleteConfirm(false);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
       }}
     >
       {conversation.pinned && (

@@ -78,6 +78,7 @@ export function OxyMessageThread({ messages, isLoading, isThinking = false }: Ox
         <button
           className="oxy-scroll-to-bottom"
           onClick={scrollToBottom}
+          aria-label="Scroll to latest message"
           title="Scroll to bottom"
         >
           <ChevronDown size={18} />

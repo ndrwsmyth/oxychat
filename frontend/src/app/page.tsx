@@ -23,16 +23,43 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const conversationId = searchParams.get("c");
 
-  const { transcripts } = useTranscripts();
+  const { transcripts, isLoading: transcriptsLoading } = useTranscripts();
+  const { createConversation, refresh: refreshConversations } = useConversations();
+
+  // Refresh conversations list when title is auto-updated
+  const handleTitleUpdate = useCallback((title: string) => {
+    console.log("[Page] Title update received, refreshing conversations:", title);
+    refreshConversations();
+  }, [refreshConversations]);
+
   const { messages, model, isLoading, isThinking, error, sendMessage, stopGenerating, changeModel } =
-    useConversation(conversationId, transcripts);
+    useConversation(conversationId, transcripts, { onTitleUpdate: handleTitleUpdate });
   const { draft, setDraft } = useDraft(conversationId);
   const { isOpen: isSearchOpen, setIsOpen: setSearchOpen } = useSearch();
-  const { createConversation } = useConversations();
   const [mentions, setMentions] = useState<MentionChip[]>([]);
 
-  const send = useCallback(async () => {
-    if (!draft.trim() || isLoading) return;
+  const send = useCallback(async (content: string, passedMentions: MentionChip[]) => {
+    const currentDraft = content.trim();
+    const currentMentions = [...passedMentions];
+
+    console.log("[Page.send] Starting send:", {
+      draft: currentDraft.substring(0, 100),
+      draftLength: currentDraft.length,
+      mentionCount: currentMentions.length,
+      mentions: currentMentions.map(m => m.id),
+      isLoading,
+      conversationId,
+    });
+
+    if (!currentDraft) {
+      console.warn("[Page.send] Blocked - no content passed");
+      return;
+    }
+
+    if (isLoading) {
+      console.warn("[Page.send] Blocked - already loading");
+      return;
+    }
 
     let targetConversationId = conversationId;
 
@@ -41,6 +68,7 @@ function HomeContent() {
       try {
         const newConv = await createConversation("New conversation");
         targetConversationId = newConv.id;
+        console.log("[Page.send] Created new conversation:", targetConversationId);
         router.push(`/?c=${targetConversationId}`, { scroll: false });
       } catch (err) {
         // If conversation creation fails (e.g., backend not running),
@@ -50,15 +78,20 @@ function HomeContent() {
     }
 
     // Extract mention IDs directly from the pills (not re-parsing from text)
-    const mentionIds = mentions.map(m => m.id);
-    const messageContent = draft.trim();
+    const mentionIds = currentMentions.map(m => m.id);
 
     // Clear input immediately before streaming starts
     setDraft("");
     setMentions([]);
 
-    await sendMessage(messageContent, targetConversationId, mentionIds);
-  }, [draft, isLoading, sendMessage, setDraft, conversationId, createConversation, router, mentions]);
+    console.log("[Page.send] Calling sendMessage with:", {
+      content: currentDraft.substring(0, 100),
+      targetConversationId,
+      mentionIds,
+    });
+
+    await sendMessage(currentDraft, targetConversationId ?? undefined, mentionIds);
+  }, [isLoading, sendMessage, setDraft, conversationId, createConversation, router]);
 
   const handleTranscriptClick = (transcript: { id: string; title: string }) => {
     // Add as a chip instead of inserting text
@@ -99,6 +132,7 @@ function HomeContent() {
             <TranscriptsPanel
               transcripts={transcripts}
               onTranscriptClick={handleTranscriptClick}
+              isLoading={transcriptsLoading}
             />
           }
           main={

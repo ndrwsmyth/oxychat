@@ -9,11 +9,13 @@ import type { Transcript } from "@/types";
 interface TranscriptsPanelProps {
   transcripts: Transcript[];
   onTranscriptClick: (transcript: { id: string; title: string }) => void;
+  isLoading?: boolean;
 }
 
 export function TranscriptsPanel({
   transcripts,
   onTranscriptClick,
+  isLoading = false,
 }: TranscriptsPanelProps) {
   const { open, setOpen } = useTranscriptsPanel();
 
@@ -36,7 +38,16 @@ export function TranscriptsPanel({
 
       <ScrollArea.Root className="oxy-transcripts-list">
         <ScrollArea.Viewport className="oxy-transcripts-viewport">
-          {transcripts.length > 0 ? (
+          {isLoading ? (
+            <div className="oxy-conversation-group-list">
+              {[85, 70, 90, 65, 80].map((width, i) => (
+                <div key={i} className="oxy-skeleton-item">
+                  <div className="oxy-skeleton oxy-skeleton-text" style={{ width: `${width}%` }} />
+                  <div className="oxy-skeleton oxy-skeleton-text" style={{ width: '30%', height: '12px' }} />
+                </div>
+              ))}
+            </div>
+          ) : transcripts.length > 0 ? (
             transcripts.map((t) => (
               <button
                 key={t.id}

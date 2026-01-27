@@ -70,8 +70,8 @@ export function SearchModal({ isOpen, onClose, onNewChat }: SearchModalProps) {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="oxy-search-state">
-              <div className="oxy-search-spinner" />
+            <div className="oxy-search-state" role="status" aria-live="polite">
+              <div className="oxy-search-spinner" aria-hidden="true" />
               <span>Searching...</span>
             </div>
           )}

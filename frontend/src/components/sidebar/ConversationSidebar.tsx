@@ -44,7 +44,6 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
     togglePin,
   } = useConversations();
 
-
   const handleNewChat = async () => {
     const newConv = await createConversation("New conversation");
     router.push(`/?c=${newConv.id}`);
@@ -136,60 +135,70 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
       </div>
 
       <ScrollArea className="oxy-sidebar-list">
-        <ConversationGroup
-          title="Pinned"
-          conversations={conversations.pinned}
-          activeConversationId={activeConversationId}
-          isPinned
-          onUpdate={updateConversation}
-          onDelete={deleteConversation}
-          onTogglePin={togglePin}
-        />
-
-        <ConversationGroup
-          title="Today"
-          conversations={conversations.today}
-          activeConversationId={activeConversationId}
-          onUpdate={updateConversation}
-          onDelete={deleteConversation}
-          onTogglePin={togglePin}
-        />
-
-        <ConversationGroup
-          title="Yesterday"
-          conversations={conversations.yesterday}
-          activeConversationId={activeConversationId}
-          onUpdate={updateConversation}
-          onDelete={deleteConversation}
-          onTogglePin={togglePin}
-        />
-
-        <ConversationGroup
-          title="Last 7 days"
-          conversations={conversations.last_7_days}
-          activeConversationId={activeConversationId}
-          onUpdate={updateConversation}
-          onDelete={deleteConversation}
-          onTogglePin={togglePin}
-        />
-
-        <ConversationGroup
-          title="Last 30 days"
-          conversations={conversations.last_30_days}
-          activeConversationId={activeConversationId}
-          onUpdate={updateConversation}
-          onDelete={deleteConversation}
-          onTogglePin={togglePin}
-        />
-
-        <ConversationGroup
-          title="Older"
-          conversations={conversations.older}
-          activeConversationId={activeConversationId}
-          onUpdate={updateConversation}
-          onDelete={deleteConversation}
-          onTogglePin={togglePin}
-        />
+        {isLoading ? (
+          <div className="oxy-conversation-group">
+            <div className="oxy-conversation-group-title">Loading</div>
+            <div className="oxy-conversation-group-list">
+              {[85, 70, 90, 75, 80].map((width, i) => (
+                <div key={i} className="oxy-skeleton-item">
+                  <div className="oxy-skeleton oxy-skeleton-text" style={{ width: `${width}%` }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <ConversationGroup
+              title="Pinned"
+              conversations={conversations.pinned}
+              activeConversationId={activeConversationId}
+              isPinned
+              onUpdate={updateConversation}
+              onDelete={deleteConversation}
+              onTogglePin={togglePin}
+            />
+            <ConversationGroup
+              title="Today"
+              conversations={conversations.today}
+              activeConversationId={activeConversationId}
+              onUpdate={updateConversation}
+              onDelete={deleteConversation}
+              onTogglePin={togglePin}
+            />
+            <ConversationGroup
+              title="Yesterday"
+              conversations={conversations.yesterday}
+              activeConversationId={activeConversationId}
+              onUpdate={updateConversation}
+              onDelete={deleteConversation}
+              onTogglePin={togglePin}
+            />
+            <ConversationGroup
+              title="Last 7 days"
+              conversations={conversations.last_7_days}
+              activeConversationId={activeConversationId}
+              onUpdate={updateConversation}
+              onDelete={deleteConversation}
+              onTogglePin={togglePin}
+            />
+            <ConversationGroup
+              title="Last 30 days"
+              conversations={conversations.last_30_days}
+              activeConversationId={activeConversationId}
+              onUpdate={updateConversation}
+              onDelete={deleteConversation}
+              onTogglePin={togglePin}
+            />
+            <ConversationGroup
+              title="Older"
+              conversations={conversations.older}
+              activeConversationId={activeConversationId}
+              onUpdate={updateConversation}
+              onDelete={deleteConversation}
+              onTogglePin={togglePin}
+            />
+          </>
+        )}
       </ScrollArea>
 
       {/* Footer with theme toggle and collapse button */}

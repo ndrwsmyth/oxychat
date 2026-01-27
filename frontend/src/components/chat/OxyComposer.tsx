@@ -508,6 +508,7 @@ export function OxyComposer({
               <button
                 className="oxy-attach-btn"
                 disabled
+                aria-label="Attach files (coming soon)"
                 title="Attachments (coming soon)"
               >
                 <Paperclip size={18} />

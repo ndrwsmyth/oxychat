@@ -7,6 +7,11 @@
   padding: 0;
 }
 
+/* Eliminate 300ms delay on touch devices */
+button, [role="button"], a {
+  touch-action: manipulation;
+}
+
 :root {
   --black: #121212;
   --gray-900: #1a1a1a;
@@ -224,6 +229,20 @@ body {
   color: var(--text-primary);
 }
 
+button.oxy-mark {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.oxy-mark:focus-visible {
+  outline: none;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
 .oxy-mark svg {
   opacity: 0.7;
 }
@@ -248,12 +267,14 @@ body {
   transition:
     border-color var(--duration-fast) ease-out,
     color var(--duration-fast) ease-out,
-    transform 0.1s ease-out;
+    transform var(--duration-fast) ease-out;
 }
 
-.oxy-bar-btn:hover {
-  border-color: var(--border-strong);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-bar-btn:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
 }
 
 .oxy-bar-btn:active {
@@ -286,7 +307,7 @@ body {
   background: var(--surface-overlay);
   border-radius: var(--radius-md);
   padding: 2px;
-  transition: background var(--duration-slow) ease;
+  transition: background-color var(--duration-slow) ease-out;
 }
 
 .oxy-theme-thumb {
@@ -324,7 +345,7 @@ body {
   padding: 60px 0;
   padding-left: 36px; /* Align with composer input text: 15px + 1px border + 20px input padding */
   padding-right: 17px; /* Align with send button */
-  animation: emptyIn 0.7s ease;
+  animation: emptyIn 0.7s ease-out;
   max-width: var(--chat-content-width);
   width: 100%;
   margin: 0 auto;
@@ -344,7 +365,7 @@ body {
   font-weight: 400;
   color: var(--text-tertiary);
   margin-bottom: var(--spacing-sm);
-  animation: emptyItemIn 0.5s ease 0.1s backwards;
+  animation: emptyItemIn 0.5s ease-out 0.1s backwards;
 }
 
 .oxy-empty-title {
@@ -353,7 +374,8 @@ body {
   letter-spacing: -0.025em;
   line-height: 1.2;
   color: var(--text-primary);
-  animation: emptyItemIn 0.5s ease 0.15s backwards;
+  animation: emptyItemIn 0.5s ease-out 0.15s backwards;
+  text-wrap: balance;
 }
 
 @keyframes emptyItemIn {
@@ -364,7 +386,7 @@ body {
 .oxy-empty-middle {
   padding: var(--spacing-xl) 0;
   border-top: 1px solid var(--border);
-  animation: emptyItemIn 0.5s ease 0.2s backwards;
+  animation: emptyItemIn 0.5s ease-out 0.2s backwards;
 }
 
 .oxy-empty-desc {
@@ -468,11 +490,14 @@ body {
   color: var(--text-faint);
   margin-top: var(--spacing-xs);
   opacity: 0;
-  transition: opacity var(--duration-fast) ease;
+  transition: opacity var(--duration-fast) ease-out;
+  font-variant-numeric: tabular-nums;
 }
 
-.oxy-msg:hover .oxy-msg-time {
-  opacity: 1;
+@media (hover: hover) {
+  .oxy-msg:hover .oxy-msg-time {
+    opacity: 1;
+  }
 }
 
 .oxy-msg-user .oxy-msg-body {
@@ -593,12 +618,14 @@ body {
   box-shadow: var(--shadow-md);
   animation: scrollButtonIn var(--duration-base) ease-out;
   z-index: 10;
-  transition: all var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) ease-out, box-shadow var(--duration-fast) ease-out;
 }
 
-.oxy-scroll-to-bottom:hover {
-  transform: translateX(-50%) scale(1.05);
-  box-shadow: var(--shadow-lg);
+@media (hover: hover) {
+  .oxy-scroll-to-bottom:hover {
+    transform: translateX(-50%) scale(1.05);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 .oxy-scroll-to-bottom:active {
@@ -618,7 +645,7 @@ body {
 
 /* Composer */
 .oxy-composer {
-  padding: 0 0 var(--spacing-xl);
+  padding: 0 0 max(var(--spacing-xl), env(safe-area-inset-bottom));
   position: relative;
   flex-shrink: 0;
   max-width: var(--chat-content-width);
@@ -636,7 +663,7 @@ body {
   max-height: 280px;
   overflow-y: auto;
   z-index: 1000;
-  animation: mentionsIn var(--duration-base) ease;
+  animation: mentionsIn var(--duration-base) ease-out;
 }
 
 @keyframes mentionsIn {
@@ -657,7 +684,7 @@ body {
   font-size: var(--font-base);
   color: var(--text-primary);
   cursor: pointer;
-  transition: background var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) ease-out;
 }
 
 .oxy-mention > span:first-child {
@@ -668,7 +695,12 @@ body {
   text-overflow: ellipsis;
 }
 
-.oxy-mention:hover,
+@media (hover: hover) {
+  .oxy-mention:hover {
+    background: var(--surface-overlay);
+  }
+}
+
 .oxy-mention-selected {
   background: var(--surface-overlay);
 }
@@ -677,10 +709,6 @@ body {
   outline: none;
   background: var(--surface-overlay);
   box-shadow: inset 0 0 0 2px var(--focus);
-}
-
-.oxy-mention-selected {
-  background: var(--surface-overlay);
 }
 
 .oxy-mention-when {
@@ -743,9 +771,11 @@ body {
   cursor: default;
 }
 
-.oxy-mention-pill:hover {
-  background: var(--blue-100);
-  border-color: var(--blue-300);
+@media (hover: hover) {
+  .oxy-mention-pill:hover {
+    background: var(--blue-100);
+    border-color: var(--blue-300);
+  }
 }
 
 .oxy-mention-pill-icon {
@@ -775,12 +805,23 @@ body {
   color: var(--blue-600);
   cursor: pointer;
   opacity: 0.6;
-  transition: all 0.15s ease;
+  transition: opacity var(--duration-fast) ease-out, background-color var(--duration-fast) ease-out;
+  /* Increase touch target to 44px while keeping visual size at 16px */
+  position: relative;
 }
 
-.oxy-mention-pill-remove:hover {
-  opacity: 1;
-  background: var(--blue-200);
+.oxy-mention-pill-remove::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+}
+
+@media (hover: hover) {
+  .oxy-mention-pill-remove:hover {
+    opacity: 1;
+    background: var(--blue-200);
+  }
 }
 
 .oxy-mention-pill-remove:focus-visible {
@@ -797,9 +838,11 @@ body {
   color: var(--blue-700);
 }
 
-.dark .oxy-mention-pill:hover {
-  background: var(--blue-100);
-  border-color: var(--blue-300);
+@media (hover: hover) {
+  .dark .oxy-mention-pill:hover {
+    background: var(--blue-100);
+    border-color: var(--blue-300);
+  }
 }
 
 .dark .oxy-mention-pill-icon,
@@ -811,8 +854,10 @@ body {
   color: var(--blue-700);
 }
 
-.dark .oxy-mention-pill-remove:hover {
-  background: var(--blue-200);
+@media (hover: hover) {
+  .dark .oxy-mention-pill-remove:hover {
+    background: var(--blue-200);
+  }
 }
 
 /* Unified composer box with border */
@@ -822,7 +867,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg); /* 16px - keep large for emphasis */
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color var(--duration-slow) cubic-bezier(0.16, 1, 0.3, 1), box-shadow var(--duration-slow) cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
@@ -890,7 +935,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--duration-base) var(--ease-smooth);
+  transition: background-color var(--duration-base) var(--ease-smooth), color var(--duration-base) var(--ease-smooth), transform var(--duration-fast) ease-out;
   flex-shrink: 0;
 }
 
@@ -900,8 +945,10 @@ body {
   color: var(--surface);
 }
 
-.oxy-send:not(:disabled):hover {
-  transform: scale(1.05);
+@media (hover: hover) {
+  .oxy-send:not(:disabled):hover {
+    transform: scale(1.05);
+  }
 }
 
 .oxy-send:focus-visible {
@@ -921,13 +968,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--duration-base) ease;
+  transition: transform var(--duration-fast) ease-out, opacity var(--duration-base) ease-out;
   flex-shrink: 0;
 }
 
-.oxy-stop:hover {
-  transform: scale(1.05);
-  opacity: 0.9;
+@media (hover: hover) {
+  .oxy-stop:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
 }
 
 .oxy-stop:active {
@@ -945,7 +994,7 @@ body {
   inset: 0;
   background: rgba(0, 0, 0, var(--opacity-medium));
   z-index: 99;
-  animation: backdropIn var(--duration-slow) ease;
+  animation: backdropIn var(--duration-slow) ease-out;
 }
 
 .dark .oxy-backdrop {
@@ -993,8 +1042,8 @@ body {
 }
 
 .oxy-library-close {
-  width: 28px;
-  height: 28px;
+  width: var(--size-lg);
+  height: var(--size-lg);
   border: none;
   background: none;
   color: var(--text-tertiary);
@@ -1003,12 +1052,14 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: all var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
 }
 
-.oxy-library-close:hover {
-  background: var(--surface-overlay);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-library-close:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
 }
 
 .oxy-library-close:focus-visible {
@@ -1035,8 +1086,8 @@ body {
   font-family: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--duration-fast) ease;
-  animation: libraryIn var(--duration-slow) ease backwards;
+  transition: background-color var(--duration-fast) ease-out;
+  animation: libraryIn var(--duration-slow) ease-out backwards;
 }
 
 @keyframes libraryIn {
@@ -1051,8 +1102,10 @@ body {
 .oxy-library-item:nth-child(5) { animation-delay: 0.16s; }
 .oxy-library-item:nth-child(6) { animation-delay: 0.20s; }
 
-.oxy-library-item:hover {
-  background: var(--surface-overlay);
+@media (hover: hover) {
+  .oxy-library-item:hover {
+    background: var(--surface-overlay);
+  }
 }
 
 .oxy-library-item:focus-visible {
@@ -1070,6 +1123,7 @@ body {
 .oxy-library-when {
   font-size: var(--font-sm);
   color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Scrollbar */
@@ -1086,8 +1140,10 @@ body {
   border-radius: 2px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-300);
+@media (hover: hover) {
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-300);
+  }
 }
 
 /* Dark mode scrollbar */
@@ -1095,8 +1151,10 @@ body {
   background: var(--gray-300);
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-400);
+@media (hover: hover) {
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-400);
+  }
 }
 
 /* Selection */
@@ -1129,6 +1187,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding-top: env(safe-area-inset-top);
 }
 
 .oxy-sidebar[data-collapsed="true"] {
@@ -1263,8 +1322,10 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-.oxy-sidebar-collapsed:hover .oxy-sidebar-expand-indicator {
-  opacity: 1;
+@media (hover: hover) {
+  .oxy-sidebar-collapsed:hover .oxy-sidebar-expand-indicator {
+    opacity: 1;
+  }
 }
 
 .oxy-sidebar-collapsed-buttons {
@@ -1289,12 +1350,14 @@ body {
   transition:
     background-color var(--duration-fast) ease-out,
     color var(--duration-fast) ease-out,
-    transform 0.1s ease-out;
+    transform var(--duration-fast) ease-out;
 }
 
-.oxy-sidebar-icon-btn:hover {
-  background: var(--surface-overlay);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-sidebar-icon-btn:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
 }
 
 .oxy-sidebar-icon-btn:focus-visible {
@@ -1318,8 +1381,10 @@ body {
   transition: opacity var(--duration-fast) ease-out;
 }
 
-.oxy-sidebar-logo-btn:hover {
-  opacity: 0.6;
+@media (hover: hover) {
+  .oxy-sidebar-logo-btn:hover {
+    opacity: 0.6;
+  }
 }
 
 /* Subtle scale on press - feels responsive */
@@ -1378,12 +1443,14 @@ body {
   font-size: var(--font-base);
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: all 0.15s ease-out;
+  transition: border-color var(--duration-fast) ease-out, background-color var(--duration-fast) ease-out;
 }
 
-.oxy-sidebar-search-btn:hover {
-  border-color: var(--border-strong);
-  background: var(--surface);
+@media (hover: hover) {
+  .oxy-sidebar-search-btn:hover {
+    border-color: var(--border-strong);
+    background: var(--surface);
+  }
 }
 
 .oxy-sidebar-search-btn:focus-visible {
@@ -1423,8 +1490,10 @@ body {
   transition: background-color var(--duration-fast) ease-out;
 }
 
-.oxy-sidebar-menu-item:hover {
-  background: var(--surface-overlay);
+@media (hover: hover) {
+  .oxy-sidebar-menu-item:hover {
+    background: var(--surface-overlay);
+  }
 }
 
 .oxy-sidebar-menu-item:focus-visible {
@@ -1449,13 +1518,15 @@ body {
   border-radius: var(--radius-base);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
   flex-shrink: 0;
 }
 
-.oxy-sidebar-toggle:hover {
-  background: var(--surface-overlay);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-sidebar-toggle:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
 }
 
 /* Sidebar search */
@@ -1483,7 +1554,7 @@ body {
   font-family: inherit;
   font-size: var(--font-base);
   color: var(--text-primary);
-  transition: all var(--duration-base) ease;
+  transition: background-color var(--duration-base) ease-out, border-color var(--duration-base) ease-out;
 }
 
 .oxy-search-input:focus {
@@ -1557,8 +1628,10 @@ body {
   }
 }
 
-.oxy-conversation-item:hover {
-  background: var(--surface-overlay);
+@media (hover: hover) {
+  .oxy-conversation-item:hover {
+    background: var(--surface-overlay);
+  }
 }
 
 .oxy-conversation-item:active {
@@ -1626,19 +1699,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--size-xs);
-  height: var(--size-xs);
+  min-width: var(--size-lg);
+  min-height: var(--size-lg);
   background: none;
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
 }
 
-.oxy-action-btn:hover {
-  background: var(--surface-raised);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-action-btn:hover {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+  }
 }
 
 .oxy-action-btn:focus-visible {
@@ -1674,14 +1749,16 @@ body {
   color: var(--text-primary);
   cursor: pointer;
   box-shadow: var(--shadow-md);
-  transition: all var(--duration-base) ease;
-  animation: fadeInSlide var(--duration-slow) ease var(--duration-slow) backwards;
+  transition: background-color var(--duration-base) ease-out, transform var(--duration-fast) ease-out;
+  animation: fadeInSlide var(--duration-slow) ease-out var(--duration-slow) backwards;
 }
 
-.oxy-sidebar-floating-toggle:hover {
-  background: var(--surface-overlay);
-  transform: scale(1.05);
-  box-shadow: var(--shadow-lg);
+@media (hover: hover) {
+  .oxy-sidebar-floating-toggle:hover {
+    background: var(--surface-overlay);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 .oxy-sidebar-floating-toggle:focus-visible {
@@ -1711,7 +1788,7 @@ body {
     inset: 0;
     background: rgba(0, 0, 0, var(--opacity-heavy));
     z-index: 99;
-    animation: fadeIn var(--duration-slow) ease;
+    animation: fadeIn var(--duration-slow) ease-out;
   }
 }
 
@@ -1748,12 +1825,14 @@ body {
   border-radius: var(--radius-base);
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: all var(--duration-fast) ease-out;
+  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
 }
 
-.oxy-sidebar-collapse-btn:hover {
-  background: var(--surface-overlay);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-sidebar-collapse-btn:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
 }
 
 .oxy-sidebar-collapse-btn:focus-visible {
@@ -1863,10 +1942,12 @@ body {
 }
 
 /* Hover effect */
-.ios-theme-toggle:hover .ios-toggle-thumb {
-  box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.2),
-    0 1px 3px rgba(0, 0, 0, 0.15);
+@media (hover: hover) {
+  .ios-theme-toggle:hover .ios-toggle-thumb {
+    box-shadow:
+      0 3px 8px rgba(0, 0, 0, 0.2),
+      0 1px 3px rgba(0, 0, 0, 0.15);
+  }
 }
 
 /* Active press effect */
@@ -1917,14 +1998,16 @@ body {
   font-size: var(--font-sm);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--duration-base) ease;
+  transition: border-color var(--duration-base) ease-out, background-color var(--duration-base) ease-out;
   white-space: nowrap;
 }
 
-.oxy-model-picker-trigger-inline:hover {
-  border-color: var(--border-strong);
-  background: var(--surface);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-model-picker-trigger-inline:hover {
+    border-color: var(--border-strong);
+    background: var(--surface);
+    color: var(--text-primary);
+  }
 }
 
 .oxy-model-picker-trigger-inline:focus-visible {
@@ -1950,7 +2033,7 @@ body {
   box-shadow: var(--shadow-lg);
   padding: var(--spacing-xs);
   z-index: 1000;
-  animation: popoverIn var(--duration-base) ease;
+  animation: popoverIn var(--duration-base) ease-out;
   margin-bottom: var(--spacing-xs);
 }
 
@@ -1983,12 +2066,14 @@ body {
   font-size: var(--font-base);
   color: var(--text-primary);
   cursor: pointer;
-  transition: background var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) ease-out;
   text-align: left;
 }
 
-.oxy-model-option:hover {
-  background: var(--surface-overlay);
+@media (hover: hover) {
+  .oxy-model-option:hover {
+    background: var(--surface-overlay);
+  }
 }
 
 .oxy-model-option:focus-visible {
@@ -2032,7 +2117,7 @@ body {
   font-size: var(--font-md);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: opacity var(--duration-fast) ease-out;
 }
 
 .oxy-dialog-btn-primary {
@@ -2041,8 +2126,10 @@ body {
   border: none;
 }
 
-.oxy-dialog-btn-primary:hover {
-  opacity: 0.9;
+@media (hover: hover) {
+  .oxy-dialog-btn-primary:hover {
+    opacity: 0.9;
+  }
 }
 
 .oxy-dialog-btn-secondary {
@@ -2051,10 +2138,12 @@ body {
   border: 1px solid var(--border);
 }
 
-.oxy-dialog-btn-secondary:hover {
-  background: var(--surface-overlay);
-  color: var(--text-primary);
-  border-color: var(--border-strong);
+@media (hover: hover) {
+  .oxy-dialog-btn-secondary:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
 }
 
 .oxy-dialog-btn:focus-visible {
@@ -2067,14 +2156,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  min-width: var(--size-lg);
+  min-height: var(--size-lg);
   border: none;
   background: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--gray-400);
   cursor: not-allowed;
-  transition: all 0.2s ease;
+  transition: color var(--duration-base) ease-out, background-color var(--duration-base) ease-out;
 }
 
 .oxy-attach-btn:not(:disabled) {
@@ -2082,9 +2171,11 @@ body {
   color: var(--text-secondary);
 }
 
-.oxy-attach-btn:not(:disabled):hover {
-  background: var(--surface-overlay);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-attach-btn:not(:disabled):hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
 }
 
 .oxy-attach-btn:focus-visible {
@@ -2151,6 +2242,7 @@ body {
   opacity: 0;
   transform-origin: center;
   animation: radiate 2.5s ease-out infinite;
+  will-change: transform, opacity;
 }
 
 .oxy-radiate-ring-1 {
@@ -2196,15 +2288,17 @@ body {
   border: none;
   cursor: pointer;
   text-align: left;
-  transition: background var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) ease-out;
 }
 
-.oxy-thinking-header:hover {
-  background: rgba(0, 0, 0, 0.03);
-}
+@media (hover: hover) {
+  .oxy-thinking-header:hover {
+    background: rgba(0, 0, 0, 0.03);
+  }
 
-.dark .oxy-thinking-header:hover {
-  background: rgba(255, 255, 255, 0.03);
+  .dark .oxy-thinking-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
 }
 
 .oxy-thinking-toggle {
@@ -2243,11 +2337,11 @@ body {
 @keyframes thinkingExpand {
   from {
     opacity: 0;
-    max-height: 0;
+    clip-path: inset(0 0 100% 0);
   }
   to {
     opacity: 1;
-    max-height: 500px;
+    clip-path: inset(0);
   }
 }
 
@@ -2271,9 +2365,11 @@ body {
    CLICKABLE LOGO
    ======================================== */
 
-.oxy-mark.clickable:hover {
-  opacity: 0.7;
-  transition: opacity var(--duration-base) ease;
+@media (hover: hover) {
+  .oxy-mark.clickable:hover {
+    opacity: 0.7;
+    transition: opacity var(--duration-base) ease;
+  }
 }
 
 /* ========================================
@@ -2303,8 +2399,8 @@ body {
 }
 
 .oxy-transcripts-close {
-  width: 32px;
-  height: 32px;
+  width: var(--size-lg);
+  height: var(--size-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2314,14 +2410,16 @@ body {
   color: var(--text-secondary);
   cursor: pointer;
   transition:
-    background-color 0.15s ease-out,
-    color 0.15s ease-out,
-    transform 0.1s ease-out;
+    background-color var(--duration-fast) ease-out,
+    color var(--duration-fast) ease-out,
+    transform var(--duration-fast) ease-out;
 }
 
-.oxy-transcripts-close:hover {
-  background: var(--surface-overlay);
-  color: var(--text-primary);
+@media (hover: hover) {
+  .oxy-transcripts-close:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
 }
 
 .oxy-transcripts-close:active {
@@ -2355,12 +2453,14 @@ body {
   border: none;
   border-radius: var(--radius-base);
   cursor: pointer;
-  transition: background-color 0.15s ease-out;
+  transition: background-color var(--duration-fast) ease-out;
   text-align: left;
 }
 
-.oxy-transcripts-item:hover {
-  background: var(--surface-overlay);
+@media (hover: hover) {
+  .oxy-transcripts-item:hover {
+    background: var(--surface-overlay);
+  }
 }
 
 .oxy-transcripts-item:active {
@@ -2384,6 +2484,7 @@ body {
 .oxy-transcripts-item-date {
   font-size: var(--font-sm);
   color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .oxy-transcripts-empty {
@@ -2476,12 +2577,14 @@ body {
   border: none;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background-color var(--duration-fast) ease-out;
   text-align: left;
 }
 
-.oxy-search-result:hover {
-  background: var(--surface-overlay);
+@media (hover: hover) {
+  .oxy-search-result:hover {
+    background: var(--surface-overlay);
+  }
 }
 
 .oxy-search-result:focus-visible {
@@ -2600,6 +2703,48 @@ body {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   SKELETON LOADERS
+   ======================================== */
+
+.oxy-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-overlay) 25%,
+    var(--surface) 50%,
+    var(--surface-overlay) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+.oxy-skeleton-text {
+  height: 14px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.oxy-skeleton-text:last-child {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+.oxy-skeleton-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 
