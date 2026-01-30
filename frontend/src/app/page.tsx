@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranscripts } from "@/hooks/useTranscripts";
 import { useConversation } from "@/hooks/useConversation";
@@ -23,8 +23,8 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const conversationId = searchParams.get("c");
 
-  const { transcripts, isLoading: transcriptsLoading } = useTranscripts();
-  const { createConversation, refresh: refreshConversations } = useConversations();
+  const { transcripts, isLoading: transcriptsLoading, reload: reloadTranscripts } = useTranscripts();
+  const { conversations, createConversation, refresh: refreshConversations } = useConversations();
 
   // Refresh conversations list when title is auto-updated
   const handleTitleUpdate = useCallback((title: string) => {
@@ -35,8 +35,32 @@ function HomeContent() {
   const { messages, model, isLoading, isThinking, error, sendMessage, stopGenerating, changeModel } =
     useConversation(conversationId, transcripts, { onTitleUpdate: handleTitleUpdate });
   const { draft, setDraft } = useDraft(conversationId);
-  const { isOpen: isSearchOpen, setIsOpen: setSearchOpen } = useSearch();
   const [mentions, setMentions] = useState<MentionChip[]>([]);
+
+  const handleNewChat = useCallback(async () => {
+    const newConv = await createConversation("New conversation");
+    router.push(`/?c=${newConv.id}`);
+  }, [createConversation, router]);
+
+  const handleSelectConversation = useCallback((id: string) => {
+    router.push(`/?c=${id}`);
+  }, [router]);
+
+  // useSearch hook with conversations for local-first filtering
+  const {
+    isOpen: isSearchOpen,
+    setIsOpen: setSearchOpen,
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    localResults,
+    isSearchingDeeper,
+    selectedIndex,
+    setSelectedIndex,
+  } = useSearch({
+    conversations,
+    onSelectConversation: handleSelectConversation,
+    onNewChat: handleNewChat,
+  });
 
   const send = useCallback(async (content: string, passedMentions: MentionChip[]) => {
     const currentDraft = content.trim();
@@ -71,9 +95,8 @@ function HomeContent() {
         console.log("[Page.send] Created new conversation:", targetConversationId);
         router.push(`/?c=${targetConversationId}`, { scroll: false });
       } catch (err) {
-        // If conversation creation fails (e.g., backend not running),
-        // still allow sending message in ephemeral mode
-        console.warn("Failed to create conversation, using ephemeral mode:", err);
+        console.error("Failed to create conversation:", err);
+        return; // Don't continue without a valid conversation
       }
     }
 
@@ -98,14 +121,22 @@ function HomeContent() {
     setMentions(prev => [...prev, { id: transcript.id, title: transcript.title }]);
   };
 
-  const handleNewChat = useCallback(async () => {
-    const newConv = await createConversation("New conversation");
-    router.push(`/?c=${newConv.id}`);
-  }, [createConversation, router]);
-
   const handleOpenSearch = useCallback(() => {
     setSearchOpen(true);
   }, [setSearchOpen]);
+
+  // Keyboard shortcut: Shift+Cmd+O for new chat
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        handleNewChat();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleNewChat]);
 
   return (
     <SidebarProvider>
@@ -118,6 +149,12 @@ function HomeContent() {
           isOpen={isSearchOpen}
           onClose={() => setSearchOpen(false)}
           onNewChat={handleNewChat}
+          query={searchQuery}
+          setQuery={setSearchQuery}
+          localResults={localResults}
+          isSearchingDeeper={isSearchingDeeper}
+          selectedIndex={selectedIndex}
+          setSelectedIndex={setSelectedIndex}
         />
 
         {/* Main layout with sidebar and right panel */}
@@ -133,6 +170,7 @@ function HomeContent() {
               transcripts={transcripts}
               onTranscriptClick={handleTranscriptClick}
               isLoading={transcriptsLoading}
+              onRefresh={reloadTranscripts}
             />
           }
           main={

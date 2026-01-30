@@ -1,5 +1,4 @@
 import type { Conversation, GroupedConversations, Message, TruncationInfo, SourceInfo } from "@/types";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -56,25 +55,13 @@ async function fetchWithRetry(
 }
 
 /**
- * Get authentication headers with Supabase JWT token
- * Returns basic headers if Supabase is not configured
+ * Get headers for API requests.
+ * Auth removed for dev - will be replaced with Clerk when implemented.
  */
 async function getAuthHeaders(): Promise<HeadersInit> {
-  const headers: HeadersInit = {
+  return {
     "Content-Type": "application/json",
   };
-
-  if (supabase) {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (session?.access_token) {
-      headers["Authorization"] = `Bearer ${session.access_token}`;
-    }
-  }
-
-  return headers;
 }
 
 /**
@@ -119,8 +106,7 @@ export async function fetchTranscripts(): Promise<TranscriptResponse[]> {
   const response = await fetchWithAuth(`${API_BASE_URL}/api/transcripts`);
   if (!response.ok) throw new Error("Failed to fetch transcripts");
 
-  const data = await response.json();
-  return data.transcripts || [];
+  return response.json();
 }
 
 // NOTE: Embeddings/RAG is a future feature - this endpoint is currently disabled on the backend
@@ -138,7 +124,7 @@ export async function streamChat({
   conversationId,
   messages,
   mentions = [],
-  model = "gpt-5.2",
+  model = "claude-sonnet-4.5",
   signal,
   onChunk,
   onThinkingStart,
@@ -154,18 +140,19 @@ export async function streamChat({
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      if (!conversationId) {
+        throw new Error("conversationId is required - create a conversation first");
+      }
       const headers = await getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+      const endpoint = `${API_BASE_URL}/api/conversations/${conversationId}/messages`;
+      const response = await fetch(endpoint, {
         method: "POST",
         headers,
         signal,
         body: JSON.stringify({
-          conversation_id: conversationId,
-          messages,
+          content: messages[messages.length - 1]?.content,
           mentions,
           model,
-          // NOTE: Embeddings/RAG is a future feature - disabled for now
-          use_rag: false,
         }),
       });
 
@@ -206,6 +193,7 @@ export async function streamChat({
                   if (parsed.sources) onSources?.(parsed.sources, parsed.truncation_info);
                   break;
                 case "content":
+                case "token":
                   if (parsed.content) onChunk(parsed.content);
                   break;
                 case "thinking_start":
@@ -383,60 +371,53 @@ export async function togglePinConversation(id: string): Promise<Conversation> {
 
 export async function fetchMessages(conversationId: string): Promise<Message[]> {
   const response = await fetchWithAuth(
-    `${API_BASE_URL}/api/conversations/${conversationId}/messages`
+    `${API_BASE_URL}/api/conversations/${conversationId}`
   );
   if (!response.ok) throw new Error("Failed to fetch messages");
 
   const data = await response.json();
-  return data.map((msg: any) => ({
+  return (data.messages || []).map((msg: any) => ({
     ...msg,
     timestamp: new Date(msg.created_at),
   }));
 }
 
-export async function autoTitleConversation(conversationId: string): Promise<Conversation> {
-  const response = await fetchWithAuth(
-    `${API_BASE_URL}/api/conversations/${conversationId}/auto-title`,
-    { method: "POST" }
-  );
-  if (!response.ok) throw new Error("Failed to auto-title conversation");
+// Auto-titling is now handled via SSE title_update events from the chat pipeline.
+// Draft autosave is deferred — stubbed out for now.
 
-  const data = await response.json();
-  return {
-    ...data,
-    pinned_at: data.pinned_at ? new Date(data.pinned_at) : null,
-    created_at: new Date(data.created_at),
-    updated_at: new Date(data.updated_at),
-  };
+export async function fetchDraft(_conversationId: string): Promise<string> {
+  return "";
 }
 
-export async function fetchDraft(conversationId: string): Promise<string> {
-  const response = await fetchWithAuth(
-    `${API_BASE_URL}/api/conversations/${conversationId}/draft`
-  );
-  if (!response.ok) throw new Error("Failed to fetch draft");
-
-  const data = await response.json();
-  return data.content || "";
+export async function saveDraft(_conversationId: string, _content: string): Promise<void> {
+  // No-op: draft autosave deferred
 }
 
-export async function saveDraft(conversationId: string, content: string): Promise<void> {
-  const response = await fetchWithAuth(
-    `${API_BASE_URL}/api/conversations/${conversationId}/draft`,
-    {
-      method: "PUT",
-      body: JSON.stringify({ content }),
-    }
-  );
-  if (!response.ok) throw new Error("Failed to save draft");
+export async function deleteDraft(_conversationId: string): Promise<void> {
+  // No-op: draft autosave deferred
 }
 
-export async function deleteDraft(conversationId: string): Promise<void> {
-  const response = await fetchWithAuth(
-    `${API_BASE_URL}/api/conversations/${conversationId}/draft`,
-    { method: "DELETE" }
-  );
-  if (!response.ok) throw new Error("Failed to delete draft");
+// Feedback API
+export type FeedbackType = 'positive' | 'negative' | null;
+
+export async function submitMessageFeedback(
+  messageId: string,
+  feedback: FeedbackType
+): Promise<{ feedback: FeedbackType }> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/messages/${messageId}/feedback`, {
+    method: "POST",
+    body: JSON.stringify({ feedback }),
+  });
+  if (!response.ok) throw new Error("Failed to submit feedback");
+  return response.json();
+}
+
+export async function getMessageFeedback(
+  messageId: string
+): Promise<{ feedback: FeedbackType }> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/messages/${messageId}/feedback`);
+  if (!response.ok) throw new Error("Failed to get feedback");
+  return response.json();
 }
 
 // Search API

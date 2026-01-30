@@ -4,7 +4,7 @@
   "scripts": {
     "start": "concurrently --kill-others-on-fail --names backend,frontend \"pnpm run backend\" \"pnpm run frontend\"",
     "frontend": "pnpm --dir frontend install && pnpm --dir frontend run dev",
-    "backend": "uv sync --directory backend && uv run --directory backend uvicorn app.main:app --reload --port 8000"
+    "backend": "pnpm --dir backend install && pnpm --dir backend run dev"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

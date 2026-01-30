@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import type { Message } from "@/types";
 import { AnimatedText } from "./AnimatedText";
 import { ThinkingSection } from "./ThinkingSection";
 import { RadiatingIndicator } from "./RadiatingIndicator";
+import { MessageActions } from "./MessageActions";
 
 interface OxyMessageProps {
   message: Message;
@@ -46,9 +48,18 @@ function renderUserContent(content: string): React.ReactNode {
 
 export function OxyMessage({ message, isStreaming = false, isThinking = false }: OxyMessageProps) {
   const showThinking = message.thinking && message.thinking.length > 0;
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Show actions only for assistant messages that are not currently streaming/thinking
+  const showActions =
+    message.role === "assistant" && !isStreaming && !isThinking && message.id;
 
   return (
-    <div className={`oxy-msg oxy-msg-${message.role}`}>
+    <div
+      className={`oxy-msg oxy-msg-${message.role}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {message.role === "assistant" && (
         <div className="oxy-msg-indicator">
           {(isStreaming || isThinking) && (
@@ -73,6 +84,13 @@ export function OxyMessage({ message, isStreaming = false, isThinking = false }:
             <div className="oxy-msg-text">
               <AnimatedText content={message.content} isStreaming={isStreaming} />
             </div>
+            {showActions && (
+              <MessageActions
+                messageId={message.id}
+                content={message.content}
+                visible={isHovered}
+              />
+            )}
           </>
         ) : (
           <p className="oxy-msg-text">{renderUserContent(message.content)}</p>

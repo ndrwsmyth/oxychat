@@ -43,6 +43,7 @@ export function ModelPicker({
   const pendingModelOption = pendingModel
     ? MODEL_OPTIONS.find((m) => m.value === pendingModel)
     : null;
+  const pendingModelLabel = pendingModelOption?.label ?? "this model";
 
   const handleSelect = (value: ModelOption) => {
     if (value === model) {
@@ -129,32 +130,52 @@ export function ModelPicker({
       {/* Model switch confirmation dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="oxy-model-switch-dialog">
-          <DialogHeader>
+          <DialogHeader className="oxy-model-switch-header">
             <DialogTitle>Switch to {pendingModelOption?.label}?</DialogTitle>
             <DialogDescription>
-              You have an existing conversation. How would you like to proceed?
+              Choose how to continue this conversation.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="oxy-model-switch-actions">
+          <div
+            className="oxy-model-switch-grid"
+            role="group"
+            aria-label="Switch options"
+          >
             <button
-              className="oxy-dialog-btn oxy-dialog-btn-secondary"
+              className="oxy-model-switch-card oxy-model-switch-card-primary"
+              type="button"
+              onClick={handleIncludeHistory}
+            >
+              <div className="oxy-model-switch-card-top">
+                <span className="oxy-model-switch-card-title">Include history</span>
+                <span className="oxy-model-switch-badge">Recommended</span>
+              </div>
+              <span className="oxy-model-switch-card-copy">
+                Keep this thread and continue with {pendingModelLabel}.
+              </span>
+            </button>
+            <button
+              className="oxy-model-switch-card"
+              type="button"
+              onClick={handleFreshStart}
+            >
+              <div className="oxy-model-switch-card-top">
+                <span className="oxy-model-switch-card-title">Fresh start</span>
+              </div>
+              <span className="oxy-model-switch-card-copy">
+                Start a new conversation with {pendingModelLabel}.
+              </span>
+            </button>
+          </div>
+          <div className="oxy-model-switch-footer">
+            <button
+              className="oxy-model-switch-cancel"
+              type="button"
               onClick={handleCancel}
             >
               Cancel
             </button>
-            <button
-              className="oxy-dialog-btn oxy-dialog-btn-secondary"
-              onClick={handleFreshStart}
-            >
-              Fresh start
-            </button>
-            <button
-              className="oxy-dialog-btn oxy-dialog-btn-primary"
-              onClick={handleIncludeHistory}
-            >
-              Include history
-            </button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </>

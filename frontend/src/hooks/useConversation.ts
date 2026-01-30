@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message, ModelOption } from "@/types";
 import { fetchMessages, streamChat } from "@/lib/api";
+import { toast } from "sonner";
 
 interface UseConversationOptions {
   onTitleUpdate?: (title: string) => void;
@@ -15,13 +16,10 @@ const MODEL_STORAGE_KEY = "oxy-chat-model";
 const VALID_MODELS: ModelOption[] = ["claude-sonnet-4.5", "claude-opus-4.5", "gpt-5.2", "grok-4"];
 
 // Get initial model from localStorage or default
+// NOTE: This must match server-side default to avoid hydration mismatch.
+// We sync with localStorage in a useEffect.
 function getInitialModel(): ModelOption {
-  if (typeof window === "undefined") return "gpt-5.2";
-  const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-  if (stored && VALID_MODELS.includes(stored as ModelOption)) {
-    return stored as ModelOption;
-  }
-  return "gpt-5.2";
+  return "claude-sonnet-4.5";
 }
 
 export function useConversation(
@@ -33,6 +31,16 @@ export function useConversation(
   const { onTitleUpdate } = options;
   const [messages, setMessages] = useState<Message[]>([]);
   const [model, setModel] = useState<ModelOption>(getInitialModel);
+
+  // Initialize model from localStorage on client mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(MODEL_STORAGE_KEY);
+      if (stored && VALID_MODELS.includes(stored as ModelOption)) {
+        setModel(stored as ModelOption);
+      }
+    }
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingContent, setThinkingContent] = useState("");
@@ -52,8 +60,7 @@ export function useConversation(
     }
     // Skip reset if we're transitioning to this conversation (just created it)
     if (isTransitioningRef.current === conversationId) {
-      isTransitioningRef.current = null;
-      return;
+      return; // Don't clear ref here - let onComplete handle it
     }
     // Skip loading if we're in the middle of a send operation to avoid race conditions
     if (isSendingRef.current) {
@@ -176,9 +183,18 @@ export function useConversation(
         setIsThinking(false);
         abortControllerRef.current = null;
         isSendingRef.current = false;
+        isTransitioningRef.current = null; // Clear transition flag on completion
       },
       onError: (err) => {
-        setError(err.message);
+        // Show toast instead of setting error state
+        toast.error("Failed to send message", {
+          description: err.message,
+          action: {
+            label: "Retry",
+            onClick: () => window.location.reload(),
+          },
+        });
+        setError(null);
         setIsLoading(false);
         setIsThinking(false);
         abortControllerRef.current = null;

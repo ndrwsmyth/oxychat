@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useImperativeHandle, forwardRef } from "react";
+import { useState, useEffect, useCallback, useImperativeHandle, forwardRef, useRef } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { formatRelativeDate } from "@/lib/utils";
 import type { Transcript } from "@/types";
@@ -23,13 +23,30 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
     ref
   ) {
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
     // Reset selection when popover opens or transcripts change
     useEffect(() => {
       if (open) {
         setSelectedIndex(0);
+        // Reset refs array when transcripts change
+        itemRefs.current = [];
       }
     }, [open, transcripts]);
+
+    // Auto-scroll selected item into view when selection changes
+    useEffect(() => {
+      if (!open || transcripts.length === 0) return;
+      
+      const selectedItem = itemRefs.current[selectedIndex];
+      if (selectedItem) {
+        selectedItem.scrollIntoView({
+          behavior: 'instant',
+          block: 'nearest',
+          inline: 'nearest',
+        });
+      }
+    }, [selectedIndex, open, transcripts.length]);
 
     const handleSelect = useCallback(
       (transcript: Transcript) => {
@@ -100,6 +117,9 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
               transcripts.map((t, index) => (
                 <button
                   key={t.id}
+                  ref={(el) => {
+                    itemRefs.current[index] = el;
+                  }}
                   className={`oxy-mention ${index === selectedIndex ? "oxy-mention-selected" : ""}`}
                   onClick={() => handleSelect(t)}
                   onMouseEnter={() => setSelectedIndex(index)}

@@ -1,69 +1,14 @@
 /**
- * Next.js proxy for Supabase authentication and route protection
- * Runs on every request to check auth state and refresh sessions
+ * Next.js proxy middleware
+ * Auth disabled for dev - will be replaced with Clerk when implemented
  */
 
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
-  // Skip auth if Supabase is not configured (local dev without auth)
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseKey) {
-    return NextResponse.next()
-  }
-
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
-  const supabase = createServerClient(
-    supabaseUrl,
-    supabaseKey,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  // Refresh session and check auth state
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const isLoginPage = request.nextUrl.pathname === '/login'
-
-  // If user is not authenticated and trying to access protected routes
-  if (!user && !isLoginPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  // If user is authenticated and on login page, redirect to home
-  if (user && isLoginPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
-  }
-
-  return supabaseResponse
+  // Auth disabled for dev - just pass through all requests
+  // TODO: Replace with Clerk auth middleware when implemented
+  return NextResponse.next()
 }
 
 export const config = {

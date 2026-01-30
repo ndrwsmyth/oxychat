@@ -103,11 +103,30 @@ button, [role="button"], a {
   --opacity-heavy: 0.5;
 
   /* Design Tokens - Layout */
-  --sidebar-width-collapsed: 56px;
+  --sidebar-width-collapsed: 50px;
   --sidebar-width-expanded: 280px;
   --panel-width-default: 320px;
   --msg-max-width: 450px;
   --composer-max-height: 336px;
+
+  /* Icon Rail - follows 4px grid */
+  --rail-width: 50px;
+  --rail-icon-size: 40px;
+  --rail-item-gap: 4px;
+  --rail-padding: 5px; /* Equal padding from viewport edge to gutter: (50px - 40px) / 2 */
+  --rail-icon-hover-bg: rgba(0, 0, 0, 0.05);
+
+  /* Search Modal */
+  --search-modal-max-width: 560px;
+  --search-modal-max-height: 500px;
+  --search-result-padding: 12px 16px;
+  --search-result-gap: 4px;
+  --search-modal-radius: 16px;
+  --search-input-radius: 12px;
+  --search-result-radius: 8px;
+
+  /* Easing - per design engineering */
+  --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
 
   /* Design Tokens - Line Height */
   --line-height-tight: 1.4;
@@ -143,6 +162,9 @@ button, [role="button"], a {
 
   --focus: rgba(255, 255, 255, 0.9);
   --focus-ring: rgba(255, 255, 255, 0.1);
+
+  /* Dark mode icon rail */
+  --rail-icon-hover-bg: rgba(255, 255, 255, 0.06);
 
   /* Dark mode shadows - lighter with lower opacity */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -659,32 +681,66 @@ button.oxy-mark:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
-  padding: var(--spacing-xs);
+  padding: 0 0 0 8px; /* Left padding only, no top/bottom so scrollbar goes edge-to-edge */
+  width: 320px; /* Fixed width - consistent regardless of content */
   max-height: 280px;
   overflow-y: auto;
+  overflow-x: visible; /* Allow selected state to extend through gutter */
   z-index: 1000;
-  animation: mentionsIn var(--duration-base) ease-out;
+  /* No animation - instant appearance when user types '@' */
+  animation: none !important;
 }
 
-@keyframes mentionsIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Custom scrollbar styling - thin rectangular like Cursor */
+.oxy-mentions::-webkit-scrollbar {
+  width: 6px; /* Thin scrollbar like Cursor */
+}
+
+.oxy-mentions::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 0; /* Ensure scrollbar starts at very top */
+  margin-bottom: 0;
+}
+
+.oxy-mentions::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 0; /* Rectangular, not rounded */
+  border: none;
+  /* Extend thumb to very top and bottom */
+  min-height: 20px; /* Ensure thumb is visible even when small */
+}
+
+.oxy-mentions::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* Firefox scrollbar */
+.oxy-mentions {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-300) transparent;
+}
+
+/* Disable any Radix Popover animations */
+.oxy-mentions[data-state] {
+  animation: none !important;
 }
 
 .oxy-mention {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  gap: 4px;
+  padding: 2px 10px 2px 0; /* Right padding creates gutter between content and scrollbar */
   background: none;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: 0; /* No border radius so selected state goes edge-to-edge */
   font-family: inherit;
   font-size: var(--font-base);
   color: var(--text-primary);
   cursor: pointer;
   transition: background-color var(--duration-fast) ease-out;
+  margin-left: -8px; /* Offset container's left padding */
+  padding-left: 8px; /* Restore left padding */
 }
 
 .oxy-mention > span:first-child {
@@ -693,6 +749,7 @@ button.oxy-mark:focus-visible {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 
 @media (hover: hover) {
@@ -703,6 +760,9 @@ button.oxy-mark:focus-visible {
 
 .oxy-mention-selected {
   background: var(--surface-overlay);
+  width: calc(100% + 10px); /* Extend selected state through gutter to right edge */
+  margin-right: -10px; /* Pull to right edge */
+  padding-right: 10px; /* Keep content padding so text doesn't shift */
 }
 
 .oxy-mention:focus-visible {
@@ -1176,8 +1236,6 @@ button.oxy-mark:focus-visible {
   height: 100vh;
   overflow: hidden;
   position: relative;
-  /* Fast, snappy grid transition */
-  transition: grid-template-columns var(--duration-base) var(--ease-smooth);
 }
 
 /* Left Sidebar */
@@ -1287,286 +1345,7 @@ button.oxy-mark:focus-visible {
   }
 }
 
-/* ========================================
-   SIDEBAR - COLLAPSED STATE (Icons only)
-   ======================================== */
-
-.oxy-sidebar-collapsed {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: var(--spacing-sm) 0;
-  cursor: pointer;
-}
-
-/* Hover expand indicator - appears on sidebar hover */
-.oxy-sidebar-expand-indicator {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateX(50%) translateY(-50%);
-  width: var(--size-xs);
-  height: var(--size-xs);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  color: var(--text-tertiary);
-  opacity: 0;
-  transition: opacity var(--duration-fast) ease-out, transform var(--duration-fast) ease-out;
-  pointer-events: none;
-  z-index: 10;
-  box-shadow: var(--shadow-sm);
-}
-
-@media (hover: hover) {
-  .oxy-sidebar-collapsed:hover .oxy-sidebar-expand-indicator {
-    opacity: 1;
-  }
-}
-
-.oxy-sidebar-collapsed-buttons {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding-top: var(--spacing-md);
-}
-
-.oxy-sidebar-icon-btn {
-  width: var(--size-lg);
-  height: var(--size-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  border-radius: var(--radius-base);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    background-color var(--duration-fast) ease-out,
-    color var(--duration-fast) ease-out,
-    transform var(--duration-fast) ease-out;
-}
-
-@media (hover: hover) {
-  .oxy-sidebar-icon-btn:hover {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
-  }
-}
-
-.oxy-sidebar-icon-btn:focus-visible {
-  outline: none;
-  background: var(--surface-overlay);
-  box-shadow: 0 0 0 2px var(--focus);
-}
-
-/* Logo button - special styling */
-.oxy-sidebar-logo-btn {
-  width: var(--size-lg);
-  height: var(--size-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  border-radius: var(--radius-base);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: opacity var(--duration-fast) ease-out;
-}
-
-@media (hover: hover) {
-  .oxy-sidebar-logo-btn:hover {
-    opacity: 0.6;
-  }
-}
-
-/* Subtle scale on press - feels responsive */
-.oxy-sidebar-icon-btn:active {
-  transform: scale(0.95);
-}
-
-.oxy-sidebar-icon-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ========================================
-   SIDEBAR - EXPANDED STATE
-   ======================================== */
-
-.oxy-sidebar-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  cursor: pointer;
-}
-
-/* Sidebar logo area */
-.oxy-sidebar-logo {
-  padding: var(--spacing-md) var(--spacing-base);
-  flex-shrink: 0;
-  /* Fixed position for animation stability */
-  position: relative;
-  height: 60px;
-  display: flex;
-  align-items: center;
-}
-
-/* Sidebar actions (search + new chat) */
-.oxy-sidebar-actions {
-  padding: 0 var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-/* Search button styled like a search bar */
-.oxy-sidebar-search-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  width: 100%;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: var(--surface-overlay);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-base);
-  font-family: inherit;
-  font-size: var(--font-base);
-  color: var(--text-tertiary);
-  cursor: pointer;
-  transition: border-color var(--duration-fast) ease-out, background-color var(--duration-fast) ease-out;
-}
-
-@media (hover: hover) {
-  .oxy-sidebar-search-btn:hover {
-    border-color: var(--border-strong);
-    background: var(--surface);
-  }
-}
-
-.oxy-sidebar-search-btn:focus-visible {
-  outline: none;
-  border-color: var(--focus);
-  box-shadow: 0 0 0 3px var(--focus-ring);
-}
-
-.oxy-sidebar-search-btn span {
-  flex: 1;
-  text-align: left;
-}
-
-.oxy-sidebar-search-btn kbd {
-  font-family: inherit;
-  font-size: var(--font-xs);
-  color: var(--text-faint);
-  background: var(--surface);
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-/* Menu items (New chat, etc.) */
-.oxy-sidebar-menu-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  width: 100%;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background: none;
-  border: none;
-  border-radius: var(--radius-base);
-  font-family: inherit;
-  font-size: var(--font-base);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) ease-out;
-}
-
-@media (hover: hover) {
-  .oxy-sidebar-menu-item:hover {
-    background: var(--surface-overlay);
-  }
-}
-
-.oxy-sidebar-menu-item:focus-visible {
-  outline: none;
-  background: var(--surface-overlay);
-  box-shadow: inset 0 0 0 2px var(--focus);
-}
-
-.oxy-sidebar-menu-item:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.oxy-sidebar-toggle {
-  width: var(--size-sm);
-  height: var(--size-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  border-radius: var(--radius-base);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
-  flex-shrink: 0;
-}
-
-@media (hover: hover) {
-  .oxy-sidebar-toggle:hover {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
-  }
-}
-
-/* Sidebar search */
-.oxy-sidebar-search {
-  position: relative;
-  padding: var(--spacing-xs) var(--spacing-base);
-  flex-shrink: 0;
-}
-
-.oxy-search-icon {
-  position: absolute;
-  left: 28px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-.oxy-search-input {
-  width: 100%;
-  padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-xs) var(--size-sm);
-  background: var(--surface-overlay);
-  border: 1px solid transparent;
-  border-radius: var(--radius-base);
-  font-family: inherit;
-  font-size: var(--font-base);
-  color: var(--text-primary);
-  transition: background-color var(--duration-base) ease-out, border-color var(--duration-base) ease-out;
-}
-
-.oxy-search-input:focus {
-  outline: none;
-  background: var(--surface);
-  border-color: var(--border-strong);
-  box-shadow: 0 0 0 3px var(--focus-ring);
-}
-
-.oxy-search-input::placeholder {
-  color: var(--text-faint);
-}
+/* Legacy sidebar styles removed - using oxy-sidebar-rail instead */
 
 /* Sidebar list */
 .oxy-sidebar-list {
@@ -1577,7 +1356,7 @@ button.oxy-mark:focus-visible {
 
 /* Conversation groups */
 .oxy-conversation-group {
-  padding: var(--spacing-base) var(--spacing-sm); /* 16px 12px */
+  padding: var(--spacing-sm) var(--spacing-xs); /* 12px 8px - tighter */
 }
 
 .oxy-conversation-group.pinned {
@@ -1590,13 +1369,13 @@ button.oxy-mark:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-tertiary);
-  padding: 0 var(--spacing-xs) var(--spacing-xs);
+  padding: 0 var(--spacing-xs) 4px;
 }
 
 .oxy-conversation-group-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: 2px; /* Tight spacing between items */
 }
 
 /* Conversation items */
@@ -1604,17 +1383,18 @@ button.oxy-mark:focus-visible {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm);
+  gap: 6px;
+  padding: 6px var(--spacing-xs); /* Compact vertical padding */
+  height: 36px; /* Fixed height for consistency */
   background: none;
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--duration-fast) ease-out;
   /* Fast stagger animation */
   animation: conversationIn var(--duration-fast) ease-out backwards;
   /* Performance: skip rendering for off-screen items */
   content-visibility: auto;
-  contain-intrinsic-size: auto 44px;
+  contain-intrinsic-size: auto 36px;
 }
 
 @keyframes conversationIn {
@@ -1636,7 +1416,6 @@ button.oxy-mark:focus-visible {
 
 .oxy-conversation-item:active {
   background: var(--surface-overlay);
-  transform: scale(0.99);
 }
 
 .oxy-conversation-item:focus-visible {
@@ -1656,7 +1435,7 @@ button.oxy-mark:focus-visible {
   top: 50%;
   transform: translateY(-50%);
   width: 3px;
-  height: 20px;
+  height: 18px;
   background: var(--text-primary);
   border-radius: 0 2px 2px 0;
 }
@@ -1688,45 +1467,132 @@ button.oxy-mark:focus-visible {
   outline: none;
 }
 
-.oxy-conversation-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-}
-
-.oxy-action-btn {
+/* Conversation Menu Trigger */
+.oxy-conversation-menu-trigger {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--size-lg);
-  min-height: var(--size-lg);
-  background: none;
-  border: none;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  flex-shrink: 0;
   border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
+  opacity: 0;
+  transition: opacity var(--duration-fast) ease-out,
+              background-color var(--duration-fast) ease-out,
+              color var(--duration-fast) ease-out;
+  touch-action: manipulation;
 }
 
+/* Hover state - wrapped for touch device support */
 @media (hover: hover) {
-  .oxy-action-btn:hover {
+  .oxy-conversation-item:hover .oxy-conversation-menu-trigger {
+    opacity: 1;
+  }
+
+  .oxy-conversation-menu-trigger:hover {
     background: var(--surface-raised);
     color: var(--text-primary);
   }
 }
 
-.oxy-action-btn:focus-visible {
+/* Always visible when menu is open or item focused */
+.oxy-conversation-item:focus-within .oxy-conversation-menu-trigger,
+.oxy-conversation-menu-trigger[data-state="open"] {
+  opacity: 1;
+}
+
+/* Focus visible state with 3px ring */
+.oxy-conversation-menu-trigger:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+  opacity: 1;
 }
 
-.oxy-action-btn.confirm {
+/* Active press feedback */
+.oxy-conversation-menu-trigger:active {
+  transform: scale(0.95);
+}
+
+/* Context Menu (conversation dropdown) */
+.oxy-context-menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 120px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-xs);
+  animation: contextMenuIn var(--duration-fast) var(--ease-smooth);
+}
+
+@keyframes contextMenuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.oxy-context-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-base);
   color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease-out;
+  touch-action: manipulation;
 }
 
-.oxy-action-btn.cancel {
+.oxy-context-menu-item svg {
   color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+@media (hover: hover) {
+  .oxy-context-menu-item:hover {
+    background: var(--surface-overlay);
+  }
+}
+
+.oxy-context-menu-item.selected {
+  background: var(--surface-overlay);
+}
+
+.oxy-context-menu-item:focus-visible {
+  outline: none;
+  background: var(--surface-overlay);
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+
+.oxy-context-menu-item.danger {
+  color: #dc2626;
+}
+
+.oxy-context-menu-item.danger svg {
+  color: #dc2626;
+}
+
+.dark .oxy-context-menu-item.danger {
+  color: #f87171;
+}
+
+.dark .oxy-context-menu-item.danger svg {
+  color: #f87171;
 }
 
 /* ========================================
@@ -2100,55 +1966,173 @@ button.oxy-mark:focus-visible {
    ======================================== */
 
 .oxy-model-switch-dialog {
-  max-width: 400px;
+  width: min(92vw, var(--search-modal-max-width));
+  max-width: min(92vw, var(--search-modal-max-width));
+  padding: var(--spacing-lg);
+  gap: var(--spacing-base);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-xl);
 }
 
-.oxy-model-switch-actions {
+.oxy-model-switch-dialog[data-state="open"] {
+  animation: modelSwitchIn var(--duration-base) var(--ease-out-quart);
+}
+
+.oxy-model-switch-dialog[data-state="closed"] {
+  animation: modelSwitchOut var(--duration-fast) ease-out;
+}
+
+@keyframes modelSwitchIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-xs)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modelSwitchOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.oxy-model-switch-header {
+  gap: var(--spacing-xs);
+  text-align: left;
+}
+
+.oxy-model-switch-grid {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.oxy-model-switch-card {
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: var(--spacing-base);
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-base);
+  min-height: calc(var(--size-xl) + var(--spacing-base));
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) ease-out,
+    background-color var(--duration-fast) ease-out,
+    transform var(--duration-fast) ease-out;
 }
 
-.oxy-dialog-btn {
-  padding: 8px 16px;
+@media (hover: hover) {
+  .oxy-model-switch-card:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-overlay);
+    transform: translateY(calc(var(--spacing-xs) / -8));
+  }
+}
+
+.oxy-model-switch-card:focus-visible {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.oxy-model-switch-card-primary {
+  border-color: var(--blue-200);
+  background: var(--blue-50);
+}
+
+@media (hover: hover) {
+  .oxy-model-switch-card-primary:hover {
+    border-color: var(--blue-300);
+    background: var(--blue-100);
+  }
+}
+
+.oxy-model-switch-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.oxy-model-switch-card-title {
+  font-size: var(--font-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.oxy-model-switch-card-copy {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  line-height: var(--line-height-base);
+}
+
+.oxy-model-switch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-xs) / 2);
+  padding: calc(var(--spacing-xs) / 2) var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--blue-100);
+  background: var(--blue-50);
+  color: var(--blue-700);
+  font-size: var(--font-xs);
+  font-weight: 500;
+}
+
+.oxy-model-switch-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.oxy-model-switch-cancel {
+  min-height: var(--size-xl);
+  padding: 0 var(--spacing-md);
   border-radius: var(--radius-base);
-  font-family: inherit;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
   font-size: var(--font-md);
   font-weight: 500;
   cursor: pointer;
-  transition: opacity var(--duration-fast) ease-out;
-}
-
-.oxy-dialog-btn-primary {
-  background: var(--text-primary);
-  color: var(--surface);
-  border: none;
+  transition:
+    border-color var(--duration-fast) ease-out,
+    background-color var(--duration-fast) ease-out,
+    color var(--duration-fast) ease-out;
 }
 
 @media (hover: hover) {
-  .oxy-dialog-btn-primary:hover {
-    opacity: 0.9;
-  }
-}
-
-.oxy-dialog-btn-secondary {
-  background: none;
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-}
-
-@media (hover: hover) {
-  .oxy-dialog-btn-secondary:hover {
+  .oxy-model-switch-cancel:hover {
+    border-color: var(--border-strong);
     background: var(--surface-overlay);
     color: var(--text-primary);
-    border-color: var(--border-strong);
   }
 }
 
-.oxy-dialog-btn:focus-visible {
+.oxy-model-switch-cancel:focus-visible {
   outline: none;
+  border-color: var(--focus);
   box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oxy-model-switch-dialog[data-state="open"],
+  .oxy-model-switch-dialog[data-state="closed"] {
+    animation: none;
+  }
+
+  .oxy-model-switch-card {
+    transition: none;
+  }
 }
 
 /* Attach button */
@@ -2381,6 +2365,16 @@ button.oxy-mark:focus-visible {
   flex-direction: column;
   height: 100%;
   width: 100%;
+  animation: transcriptsPanelIn var(--duration-base) ease-out;
+}
+
+@keyframes transcriptsPanelIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .oxy-transcripts-header {
@@ -2431,6 +2425,50 @@ button.oxy-mark:focus-visible {
   box-shadow: 0 0 0 2px var(--focus);
 }
 
+.oxy-transcripts-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.oxy-transcripts-refresh {
+  width: var(--size-lg);
+  height: var(--size-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) ease-out,
+    color var(--duration-fast) ease-out,
+    transform var(--duration-fast) ease-out;
+}
+
+@media (hover: hover) {
+  .oxy-transcripts-refresh:hover:not(:disabled) {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
+}
+
+.oxy-transcripts-refresh:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.oxy-transcripts-refresh:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.oxy-transcripts-refresh:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .oxy-transcripts-list {
   flex: 1;
   overflow: hidden;
@@ -2442,6 +2480,8 @@ button.oxy-mark:focus-visible {
   padding: var(--spacing-sm);
 }
 
+/* TODO: Re-enable cursor: pointer once UX/UI for viewing transcripts is developed */
+/* Currently disabled - transcripts are display-only until we build the transcript viewer */
 .oxy-transcripts-item {
   width: 100%;
   display: flex;
@@ -2452,18 +2492,12 @@ button.oxy-mark:focus-visible {
   background: none;
   border: none;
   border-radius: var(--radius-base);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) ease-out;
+  /* cursor: pointer; */
   text-align: left;
 }
 
-@media (hover: hover) {
-  .oxy-transcripts-item:hover {
-    background: var(--surface-overlay);
-  }
-}
-
-.oxy-transcripts-item:active {
+/* TODO: Re-enable active/focus states once UX/UI for viewing transcripts is developed */
+/* .oxy-transcripts-item:active {
   background: var(--surface-overlay);
   transform: scale(0.99);
 }
@@ -2472,7 +2506,7 @@ button.oxy-mark:focus-visible {
   outline: none;
   background: var(--surface-overlay);
   box-shadow: inset 0 0 0 2px var(--focus);
-}
+} */
 
 .oxy-transcripts-item-title {
   font-size: var(--font-md);
@@ -2769,5 +2803,495 @@ button.oxy-mark:focus-visible {
   .oxy-sidebar,
   .oxy-right-panel {
     transition: none !important;
+  }
+
+  .oxy-rail-item-label {
+    transition: none !important;
+  }
+
+  .oxy-rail-label {
+    transition: none !important;
+  }
+
+  .oxy-conversation-menu-trigger {
+    transition: none !important;
+  }
+
+  .oxy-search-deeper {
+    animation: none !important;
+    background: none !important;
+    -webkit-text-fill-color: var(--text-tertiary) !important;
+  }
+}
+
+/* ========================================
+   SIDEBAR RAIL - Single Column Layout
+   ======================================== */
+
+.oxy-sidebar-rail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* Equal padding from viewport edge to gutter line */
+  padding: var(--spacing-xs) var(--rail-padding);
+  transition: width var(--duration-base) var(--ease-smooth);
+}
+
+.oxy-sidebar-rail.collapsed {
+  width: var(--rail-width);
+  /* No align-items: center - buttons align left naturally to match expanded state */
+}
+
+/* Resize cursor on both states for background click to toggle */
+.oxy-sidebar-rail {
+  cursor: ew-resize;
+}
+
+/* Buttons and interactive elements override to pointer */
+.oxy-sidebar-rail button,
+.oxy-sidebar-rail [role="button"],
+.oxy-sidebar-rail .oxy-conversation-item {
+  cursor: pointer;
+}
+
+.oxy-sidebar-rail.expanded {
+  width: 100%;
+}
+
+/* Top section with logo and action buttons */
+.oxy-rail-top {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  padding-bottom: var(--spacing-xs);
+}
+
+/* Rail buttons - icon always at same x-position in both states */
+.oxy-rail-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  /* Equal padding on left and right for symmetric hover state */
+  padding: var(--spacing-xs) var(--rail-padding);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) ease,
+    width var(--duration-base) var(--ease-smooth),
+    height var(--duration-base) var(--ease-smooth);
+  width: 100%;
+}
+
+/* Icon wrapper - fixed size, never moves */
+.oxy-rail-btn svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+/* Collapsed: make button square with equal padding, centered */
+.oxy-sidebar-rail.collapsed .oxy-rail-btn {
+  width: var(--rail-icon-size);  /* 40px - fits within 50px with 5px padding on each side */
+  height: var(--rail-icon-size);
+  /* Equal padding on all sides ensures symmetric hover state and proper centering */
+  padding: var(--spacing-xs) var(--rail-padding);
+  /* Center icon when collapsed for proper alignment */
+  justify-content: center;
+}
+
+@media (hover: hover) {
+  .oxy-rail-btn:hover {
+    background: var(--surface-overlay);
+  }
+}
+
+.oxy-rail-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.oxy-rail-btn:active {
+  transform: scale(0.98);
+}
+
+.oxy-rail-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Logo button special styling */
+.oxy-rail-logo {
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Labels animate in smoothly */
+.oxy-rail-label {
+  font-size: var(--font-base);
+  font-weight: 450;
+  white-space: nowrap;
+  line-height: 18px; /* Match icon height to prevent Y-shift */
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity var(--duration-fast) ease-out, transform var(--duration-fast) ease-out;
+}
+
+.oxy-sidebar-rail.collapsed .oxy-rail-label {
+  opacity: 0;
+  transform: translateX(-4px);
+  pointer-events: none;
+  /* Ensure it doesn't take space when collapsed */
+  position: absolute;
+  visibility: hidden;
+}
+
+/* Keyboard shortcut badge */
+.oxy-rail-kbd {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: var(--font-xs);
+  line-height: 14px; /* 14px + 4px padding = 18px total, matching icon height */
+  color: var(--text-faint);
+  background: var(--surface-overlay);
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 1;
+  transition: opacity var(--duration-fast) ease-out;
+}
+
+.oxy-sidebar-rail.collapsed .oxy-rail-kbd {
+  opacity: 0;
+  pointer-events: none;
+  /* Same technique as label - remove from flow without layout jump */
+  position: absolute;
+  visibility: hidden;
+}
+
+/* Conversation list */
+.oxy-rail-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0 calc(-1 * var(--spacing-xs));
+  padding: 0 var(--spacing-xs);
+}
+
+/* Footer with theme toggle and collapse button */
+.oxy-rail-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--border);
+  margin-top: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.oxy-rail-collapse {
+  width: var(--size-sm);
+  height: var(--size-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+  .oxy-rail-collapse:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
+}
+
+.oxy-rail-collapse:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+/* Bottom section when collapsed (theme toggle) */
+.oxy-rail-bottom {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-xs);
+}
+
+/* ========================================
+   SEARCH MODAL - STRIPE-LEVEL POLISH
+   ======================================== */
+
+/* Override base search modal styles */
+.oxy-search-modal-v2 {
+  max-width: var(--search-modal-max-width);
+  max-height: var(--search-modal-max-height);
+  width: 90vw;
+  padding: 0;
+  border-radius: var(--search-modal-radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.dark .oxy-search-modal-v2 {
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+}
+
+/* Search header */
+.oxy-search-header-v2 {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-base);
+  border-bottom: 1px solid var(--border);
+}
+
+.oxy-search-input-v2 {
+  flex: 1;
+  padding: var(--spacing-xs) 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--font-lg);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.oxy-search-input-v2::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Search results container */
+.oxy-search-results-v2 {
+  padding: var(--spacing-xs);
+  max-height: calc(var(--search-modal-max-height) - 100px);
+  overflow-y: auto;
+}
+
+/* Search section */
+.oxy-search-section-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--search-result-gap);
+}
+
+.oxy-search-section-label {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+/* Search result item - NO icons, clean design */
+.oxy-search-result-v2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--search-result-padding);
+  border: none;
+  border-radius: var(--search-result-radius);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background var(--duration-fast) ease;
+}
+
+.oxy-search-result-v2:hover,
+.oxy-search-result-v2[data-selected="true"] {
+  background: var(--surface-overlay);
+}
+
+.oxy-search-result-v2:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+
+.oxy-search-result-title-v2 {
+  font-size: var(--font-md);
+  font-weight: 450;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oxy-search-result-time-v2 {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: var(--spacing-sm);
+}
+
+/* New chat item special styling */
+.oxy-search-new-chat-v2 {
+  background: var(--surface-overlay);
+  margin-bottom: var(--spacing-xs);
+}
+
+.oxy-search-new-chat-v2 .oxy-search-result-title-v2 {
+  font-weight: 500;
+}
+
+/* Keyboard hints footer */
+.oxy-search-hints-v2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-base);
+  padding: var(--spacing-xs) var(--spacing-base);
+  border-top: 1px solid var(--border);
+  background: var(--surface-overlay);
+}
+
+.oxy-search-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+}
+
+.oxy-search-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--surface);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+/* Searching deeper shimmer */
+.oxy-search-deeper {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  background: linear-gradient(
+    90deg,
+    var(--text-tertiary) 25%,
+    var(--text-secondary) 50%,
+    var(--text-tertiary) 75%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-text 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer-text {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Empty/Loading states */
+.oxy-search-state-v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-base);
+}
+
+/* ========================================
+   MESSAGE ACTIONS (Copy, Thumbs Up/Down)
+   ======================================== */
+
+.oxy-msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--spacing-xs);
+  pointer-events: none;
+}
+
+.oxy-msg-actions.visible {
+  pointer-events: auto;
+}
+
+.oxy-msg-actions .oxy-msg-action-btn {
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity var(--duration-fast) ease-out,
+    transform var(--duration-fast) var(--ease-smooth);
+}
+
+.oxy-msg-actions.visible .oxy-msg-action-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.oxy-msg-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) ease-out,
+    border-color var(--duration-fast) ease-out,
+    color var(--duration-fast) ease-out,
+    transform var(--duration-fast) ease-out;
+}
+
+@media (hover: hover) {
+  .oxy-msg-action-btn:hover {
+    background: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+}
+
+.oxy-msg-action-btn:active {
+  transform: scale(0.95);
+}
+
+.oxy-msg-action-btn:focus-visible {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.oxy-msg-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.oxy-msg-action-btn.active {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--surface);
+}
+
+@media (hover: hover) {
+  .oxy-msg-action-btn.active:hover {
+    opacity: 0.9;
   }
 }

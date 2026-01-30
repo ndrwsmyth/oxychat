@@ -32,13 +32,13 @@ export function useTranscriptRealtime(callbacks: RealtimeCallbacks) {
     // Capture reference for cleanup function
     const client = supabase;
 
-    console.log("[Realtime] Subscribing to meetings table changes");
+    console.log("[Realtime] Subscribing to transcripts table changes");
 
     const channel = client
-      .channel("meetings-changes")
+      .channel("transcripts-changes")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "meetings" },
+        { event: "*", schema: "public", table: "transcripts" },
         (payload) => {
           console.log(`[Realtime] Change received: ${payload.eventType}`);
 

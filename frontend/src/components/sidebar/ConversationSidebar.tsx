@@ -5,7 +5,7 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { ConversationGroup } from "./ConversationGroup";
 import { IOSThemeToggle } from "./IOSThemeToggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, ChevronRight, ChevronsLeft } from "lucide-react";
+import { Plus, Search, ChevronsLeft } from "lucide-react";
 
 // Oxy logo component
 function OxyLogo({ size = 20 }: { size?: number }) {
@@ -49,171 +49,148 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
     router.push(`/?c=${newConv.id}`);
   };
 
-  // Collapsed state - show only icon buttons with hover-to-expand
-  if (collapsed) {
-    return (
-      <div className="oxy-sidebar-collapsed" onClick={toggle}>
-        {/* Hover expand indicator - shows on sidebar hover */}
-        <div className="oxy-sidebar-expand-indicator">
-          <ChevronRight className="w-4 h-4" />
-        </div>
+  const handleGoHome = () => {
+    router.push("/");
+  };
 
-        <div className="oxy-sidebar-collapsed-buttons">
-          {/* Logo - click to expand */}
-          <button
-            onClick={(e) => { e.stopPropagation(); toggle(); }}
-            className="oxy-sidebar-icon-btn oxy-sidebar-logo-btn"
-            aria-label="Expand sidebar"
-            title="Expand sidebar"
-          >
-            <OxyLogo size={28} />
-          </button>
-
-          {/* Search - first action */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenSearch?.(); }}
-            className="oxy-sidebar-icon-btn"
-            aria-label="Search (Cmd+K)"
-            title="Search (Cmd+K)"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-
-          {/* New chat - second action */}
-          <button
-            onClick={(e) => { e.stopPropagation(); handleNewChat(); }}
-            className="oxy-sidebar-icon-btn"
-            aria-label="New chat"
-            title="New chat"
-            disabled={isLoading}
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle background click to collapse
+  // Click on background area expands when collapsed
   const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    // Don't collapse if clicking on interactive elements
-    if (target.closest('button, a, input, [role="button"], .oxy-sidebar-item, .oxy-conversation-item')) return;
+    if (target.closest('button, a, [role="button"], .oxy-conversation-item')) return;
     toggle();
   };
 
-  // Expanded state - show full content
   return (
-    <div className="oxy-sidebar-content" onClick={handleBackgroundClick}>
-      {/* Logo */}
-      <div className="oxy-sidebar-logo">
-        <OxyLogo size={28} />
-      </div>
-
-      {/* Search bar - clickable, opens search modal */}
-      <div className="oxy-sidebar-actions">
+    <div
+      className={`oxy-sidebar-rail ${collapsed ? 'collapsed' : 'expanded'}`}
+      onClick={handleBackgroundClick}
+    >
+      {/* Top section: Logo + Actions */}
+      <div className="oxy-rail-top">
+        {/* Logo - goes home */}
         <button
           type="button"
-          onClick={onOpenSearch}
-          className="oxy-sidebar-search-btn"
+          onClick={handleGoHome}
+          className="oxy-rail-btn oxy-rail-logo"
+          aria-label="Home"
+          title="Home"
         >
-          <Search size={16} />
-          <span>Search</span>
-          <kbd>⌘K</kbd>
+          <OxyLogo size={20} />
         </button>
 
-        {/* New chat item */}
+        {/* New Chat */}
         <button
           type="button"
           onClick={handleNewChat}
-          className="oxy-sidebar-menu-item"
+          className="oxy-rail-btn"
+          aria-label="New chat (⇧⌘O)"
+          title="New chat (⇧⌘O)"
           disabled={isLoading}
         >
-          <Plus size={16} />
-          <span>New chat</span>
+          <Plus size={18} />
+          <span className="oxy-rail-label">New chat</span>
         </button>
-      </div>
 
-      <ScrollArea className="oxy-sidebar-list">
-        {isLoading ? (
-          <div className="oxy-conversation-group">
-            <div className="oxy-conversation-group-title">Loading</div>
-            <div className="oxy-conversation-group-list">
-              {[85, 70, 90, 75, 80].map((width, i) => (
-                <div key={i} className="oxy-skeleton-item">
-                  <div className="oxy-skeleton oxy-skeleton-text" style={{ width: `${width}%` }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            <ConversationGroup
-              title="Pinned"
-              conversations={conversations.pinned}
-              activeConversationId={activeConversationId}
-              isPinned
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
-            />
-            <ConversationGroup
-              title="Today"
-              conversations={conversations.today}
-              activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
-            />
-            <ConversationGroup
-              title="Yesterday"
-              conversations={conversations.yesterday}
-              activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
-            />
-            <ConversationGroup
-              title="Last 7 days"
-              conversations={conversations.last_7_days}
-              activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
-            />
-            <ConversationGroup
-              title="Last 30 days"
-              conversations={conversations.last_30_days}
-              activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
-            />
-            <ConversationGroup
-              title="Older"
-              conversations={conversations.older}
-              activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
-            />
-          </>
-        )}
-      </ScrollArea>
-
-      {/* Footer with theme toggle and collapse button */}
-      <div className="oxy-sidebar-footer">
-        <IOSThemeToggle />
+        {/* Search */}
         <button
           type="button"
-          onClick={toggle}
-          className="oxy-sidebar-collapse-btn"
-          aria-label="Collapse sidebar"
-          title="Collapse sidebar"
+          onClick={onOpenSearch}
+          className="oxy-rail-btn"
+          aria-label="Search (⌘K)"
+          title="Search (⌘K)"
         >
-          <ChevronsLeft size={18} />
+          <Search size={18} />
+          <span className="oxy-rail-label">Search</span>
+          <kbd className="oxy-rail-kbd">⌘K</kbd>
         </button>
       </div>
+
+      {/* Conversation list - only visible when expanded */}
+      {!collapsed && (
+        <>
+          <ScrollArea className="oxy-rail-list">
+            {isLoading ? (
+              <div className="oxy-conversation-group">
+                <div className="oxy-conversation-group-title">Loading</div>
+                <div className="oxy-conversation-group-list">
+                  {[85, 70, 90, 75, 80].map((width, i) => (
+                    <div key={i} className="oxy-skeleton-item">
+                      <div className="oxy-skeleton oxy-skeleton-text" style={{ width: `${width}%` }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <ConversationGroup
+                  title="Pinned"
+                  conversations={conversations.pinned}
+                  activeConversationId={activeConversationId}
+                  isPinned
+                  onUpdate={updateConversation}
+                  onDelete={deleteConversation}
+                  onTogglePin={togglePin}
+                />
+                <ConversationGroup
+                  title="Today"
+                  conversations={conversations.today}
+                  activeConversationId={activeConversationId}
+                  onUpdate={updateConversation}
+                  onDelete={deleteConversation}
+                  onTogglePin={togglePin}
+                />
+                <ConversationGroup
+                  title="Yesterday"
+                  conversations={conversations.yesterday}
+                  activeConversationId={activeConversationId}
+                  onUpdate={updateConversation}
+                  onDelete={deleteConversation}
+                  onTogglePin={togglePin}
+                />
+                <ConversationGroup
+                  title="Last 7 days"
+                  conversations={conversations.last_7_days}
+                  activeConversationId={activeConversationId}
+                  onUpdate={updateConversation}
+                  onDelete={deleteConversation}
+                  onTogglePin={togglePin}
+                />
+                <ConversationGroup
+                  title="Last 30 days"
+                  conversations={conversations.last_30_days}
+                  activeConversationId={activeConversationId}
+                  onUpdate={updateConversation}
+                  onDelete={deleteConversation}
+                  onTogglePin={togglePin}
+                />
+                <ConversationGroup
+                  title="Older"
+                  conversations={conversations.older}
+                  activeConversationId={activeConversationId}
+                  onUpdate={updateConversation}
+                  onDelete={deleteConversation}
+                  onTogglePin={togglePin}
+                />
+              </>
+            )}
+          </ScrollArea>
+
+          {/* Footer */}
+          <div className="oxy-rail-footer">
+            <IOSThemeToggle />
+            <button
+              type="button"
+              onClick={toggle}
+              className="oxy-rail-collapse"
+              aria-label="Collapse sidebar (⌘B)"
+              title="Collapse sidebar (⌘B)"
+            >
+              <ChevronsLeft size={16} />
+            </button>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }

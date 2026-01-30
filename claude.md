@@ -4,133 +4,165 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # OxyChat
 
-AI workspace platform for Oxy design agency. Context-aware AI that uses meeting transcripts as primary knowledge base. Transitioning from ChatKit-based Q&A tool to full workspace with custom UI.
+Internal AI workspace for Oxy design agency. Context-aware chat with meeting transcripts as primary knowledge base. Multi-model (Anthropic + OpenAI), multi-user (Google OAuth, @oxy.so domain).
+
+Built on the **Sediment framework** — composable Tasks, full observability, effects-as-data.
 
 ## Project Architecture
 
 ### Monorepo Structure
-- **Root**: Orchestrates both services via pnpm scripts
-- **backend/**: FastAPI Python service (Python 3.11+)
-- **frontend/**: Next.js React app (TypeScript, Tailwind, shadcn/ui)
+- **Root**: Orchestrates both services via pnpm + concurrently
+- **backend/**: Hono TypeScript service (Sediment framework)
+- **frontend/**: Next.js 16 React app (TypeScript, Tailwind 4, shadcn/ui)
 
-### Backend Architecture (FastAPI)
+### Backend Architecture (Hono + Sediment)
 
-**Core Services**:
-- **app/main.py** - FastAPI entrypoint, registers routers, CORS, database init
-- **app/routers/** - API route handlers organized by domain:
-  - `chat.py` - Streaming chat with SSE, @mention context injection
-  - `conversations.py` - CRUD for conversations, auto-titling, pinning
-  - `transcripts.py` - List/search transcripts from DB or files
-- **app/services/** - Business logic layer:
-  - `chat_service.py` - OpenAI API integration, message formatting
-  - `vector_store.py` - ChromaDB RAG for transcript search
-  - `auto_title.py` - LLM-based conversation titling
-- **app/database.py** - SQLAlchemy async ORM, Supabase PostgreSQL connection
-  - Models: `Meeting` (transcripts), `Conversation`, `Message`, `Draft`
-  - Handles both DB-stored and file-based transcripts
+**Entrypoint**: `src/index.ts` — Hono app with CORS, health check, auth middleware, route mounting. Port 8000.
 
-**Data Flow**:
-1. CircleBack webhook → `webhook.py` → parse/store in Supabase → index in ChromaDB
-2. User query → `chat.py` router → resolve @mentions from DB → inject context → stream LLM response
-3. File-based transcripts in `raw_transcripts/` auto-loaded as `@doc_{slug}` mentions
+**Routes** (`src/routes/`):
+- `conversations.ts` — CRUD, pin toggle, date-grouped list
+- `chat.ts` — `POST /api/conversations/:id/messages` → SSE streaming via Sediment ChatPipelineTask
+- `transcripts.ts` — List/search for @mention autocomplete
+
+**Sediment Tasks** (`src/tasks/`):
+- `chat-pipeline.ts` — Layer 3 orchestrator: parse → load → save user msg → stream LLM → save assistant msg → auto-title
+- `chat-agent.ts` — Layer 2: builds prompt with system + conversation history + @mention context, streams via CompletionsAdapter
+- `load-conversation.ts` — Fetches conversation + message history from Supabase
+- `parse-input.ts` — Extracts @mention IDs from frontend payload
+- `save-message.ts` — Persists user/assistant messages
+- `update-conversation.ts` — Updates timestamp, auto-titles via LLM if no title exists
+
+**Core Lib** (`src/lib/`):
+- `runtime.ts` — Sediment Runtime factory. Singleton Anthropic + OpenAI adapters. Creates per-request Runtime with CompositeLogger (console + SupabaseLogStore)
+- `supabase.ts` — Singleton Supabase client (service role key)
+- `constants.ts` — System prompt (XML-structured Oxy Agent persona), model configs, context limits
+
+**Middleware** (`src/middleware/`):
+- `auth.ts` — Validates Supabase JWT from `Authorization: Bearer` header, rejects non-@oxy.so emails, sets `c.get('user')`
+
+**Adapters** (`src/adapters/`):
+- `supabase-log-store.ts` — Sediment `Logger` interface → `completion_logs` table. Fire-and-forget inserts.
 
 **Key Patterns**:
-- Async/await throughout (AsyncSession, async generators for SSE)
-- @mentions converted to full transcript context via `converters.py`
-- SSE streaming with `data: {json}\n\n` format for real-time responses
-- Dual storage: Supabase (webhook data) + filesystem (markdown transcripts)
+- All LLM calls go through Sediment's CompletionsAdapter (unified interface for Anthropic + OpenAI)
+- SSE events: `token`, `title_update`, `done`, `error` — streamed via Hono's `streamSSE`
+- Tasks are async generators using `defineTask` / `runTask` / `runTaskToCompletion` from Sediment
+- Service-role Supabase client for all DB operations (no per-user RLS in backend — auth middleware handles access control)
 
 ### Frontend Architecture (Next.js)
 
 **App Structure** (App Router):
-- **src/app/page.tsx** - Main chat interface, orchestrates all components
-- **src/components/** - Organized by domain:
-  - `layout/AppLayout.tsx` - Grid layout with collapsible sidebar
-  - `sidebar/ConversationSidebar.tsx` - Conversation list with grouping (Today, Yesterday, etc.)
-  - `chat/` - Core chat UI: OxyComposer, OxyMessageThread, OxyEmptyState
-  - `library/OxyLibraryDrawer.tsx` - Transcript picker with search
-  - `mentions/OxyMentionPopover.tsx` - @mention autocomplete
+- **src/app/page.tsx** — Main chat interface, orchestrates all components
+- **src/components/** — Organized by domain:
+  - `layout/AppLayout.tsx` — Grid layout with collapsible sidebar
+  - `sidebar/ConversationSidebar.tsx` — Conversation list with grouping (Today, Yesterday, etc.)
+  - `chat/` — Core chat UI: OxyComposer, OxyMessageThread, OxyEmptyState
+  - `library/OxyLibraryDrawer.tsx` — Transcript picker with search
+  - `mentions/OxyMentionPopover.tsx` — @mention autocomplete
 
 **State Management**:
-- **src/hooks/** - Custom hooks for data and UI state:
-  - `useConversation.ts` - Active conversation messages, streaming, model switching
-  - `useConversations.ts` - Sidebar conversation list, CRUD operations
-  - `useDraft.ts` - Autosave composer content to backend
-  - `useTranscripts.ts` - Fetch/cache available transcripts
-  - `useSidebar.ts` - Sidebar open/close state
-- **src/lib/api.ts** - Centralized API client (fetch wrappers, SSE parsing)
+- **src/hooks/** — Custom hooks for data and UI state:
+  - `useConversation.ts` — Active conversation messages, streaming, model switching
+  - `useConversations.ts` — Sidebar conversation list, CRUD with optimistic updates
+  - `useDraft.ts` — Stubbed out (draft autosave deferred)
+  - `useTranscripts.ts` — Fetch/cache available transcripts
+  - `useSidebar.ts` — Sidebar open/close state
+- **src/lib/api.ts** — Centralized API client (fetch wrappers, SSE parsing, auth headers from Supabase session)
 
 **Data Flow**:
-1. User types → `useDraft` debounces → saves to `/api/conversations/:id/draft`
-2. User sends → `useConversation` → POST `/api/chat/stream` → parse SSE chunks → update UI
-3. First message → auto-create conversation → auto-generate title via backend
-4. @mention trigger → `OxyMentionPopover` → filter transcripts → insert into composer
+1. User sends → `useConversation` → POST `/api/conversations/:id/messages` → parse SSE chunks → update UI
+2. First message → auto-create conversation → backend auto-titles via SSE `title_update` event
+3. @mention trigger → `OxyMentionPopover` → filter transcripts → insert chip into composer → IDs sent with message
 
 **Key Patterns**:
 - URL-based routing: `?c={conversationId}` for shareable links
 - Optimistic updates for conversation list (pin, delete, rename)
-- SSE streaming parsed in `streamChat()` with `data: [DONE]` termination
+- SSE parser handles both `token` and `content` event types (backward compat)
+- `[DONE]` termination signal
 - shadcn/ui primitives for consistent styling (Dialog, Popover, ScrollArea)
+
+### Database (Supabase PostgreSQL)
+
+Schema defined in `backend/schema.sql`. Key tables:
+- `user_profiles` — extends Supabase auth.users
+- `conversations` — with model, pinned, soft delete (deleted_at)
+- `messages` — with citations JSONB, mentions JSONB, model, token_count
+- `transcripts` — with tsvector full-text search on title
+- `transcript_chunks` — with pgvector embeddings (for future RAG)
+- `completion_logs` — Sediment CompletionRecord storage
+- `effects` — Sediment effect store
+
+Extensions: `pgvector`, `pg_trgm`. RLS enabled on all tables.
 
 ## Development Commands
 
 ### Running the App
 
-Start both services (requires `uv` and `OPENAI_API_KEY`):
+Start both services:
 ```bash
 pnpm start
 ```
 
 Start individually:
 ```bash
-# Backend only (from root)
+# Backend (from root)
 pnpm run backend
 # Or from backend/
-cd backend && uv run uvicorn app.main:app --reload --port 8000
+cd backend && pnpm run dev
 
-# Frontend only (from root)
+# Frontend (from root)
 pnpm run frontend
 # Or from frontend/
 cd frontend && pnpm run dev
 ```
 
-Backend runs on `http://localhost:8000`, frontend on `http://localhost:3000`
+Backend: `http://localhost:8000`, Frontend: `http://localhost:3000`
 
 ### Environment Variables
 
-Required:
-- `OPENAI_API_KEY` - OpenAI API key for LLM calls
-- `SUPABASE_DATABASE_URL` - PostgreSQL connection string (format: `postgresql+asyncpg://user:pass@host:5432/db`)
+**Backend** (in `backend/.env`):
+- `SUPABASE_URL` — Supabase project URL (required)
+- `SUPABASE_SERVICE_KEY` — Supabase service role key (required)
+- `ANTHROPIC_API_KEY` — Anthropic API key (required for Claude models)
+- `OPENAI_API_KEY` — OpenAI API key (required for GPT models)
+- `PORT` — Server port (default: 8000)
+- `NODE_ENV` — development | production
 
-Optional:
-- `NEXT_PUBLIC_API_URL` - Frontend API base URL (defaults to `http://localhost:8000`)
+**Frontend** (in `frontend/.env.local`):
+- `NEXT_PUBLIC_API_URL` — Backend URL (default: `http://localhost:8000`)
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
 
 ### Backend Development
 
 ```bash
+cd backend
+
 # Install dependencies
-cd backend && uv sync
+pnpm install
 
-# Run with auto-reload
-uv run uvicorn app.main:app --reload --port 8000
-
-# Lint/format
-uv run ruff check app/
-uv run ruff format app/
+# Dev server with auto-reload
+pnpm run dev
 
 # Type check
-uv run mypy app/
-```
+pnpm run lint
 
-Database tables auto-create on startup via `init_db()` in `main.py`
+# Build for production
+pnpm run build
+
+# Run tests
+pnpm test
+```
 
 ### Frontend Development
 
 ```bash
-# Install dependencies
-cd frontend && pnpm install
+cd frontend
 
-# Run dev server
+# Install dependencies
+pnpm install
+
+# Dev server
 pnpm run dev
 
 # Build for production
@@ -138,61 +170,57 @@ pnpm run build
 
 # Lint
 pnpm run lint
+
+# Tests
+pnpm test
 ```
 
-## Key Features Implementation
+## Sediment Framework
 
-### @Mention System
-- Frontend: `OxyMentionPopover` detects `@` trigger → shows transcript picker
-- Backend: `parseMentions()` extracts doc IDs → `build_context_from_mentions()` fetches full transcripts → injected into system prompt
-- Supports both DB transcripts (`doc_{meeting_id}`) and file transcripts (`doc_{slug}`)
+Private package installed from `github:ndrwsmyth/sediment`. Key APIs used in this project:
 
-### Conversation Persistence
-- Auto-create conversation on first message with UUID
-- Auto-title after first exchange via `auto_title.py` (summarizes user intent)
-- Draft autosave every 500ms to backend for recovery
-- Grouped sidebar: Pinned, Today, Yesterday, Last 7 Days, Last 30 Days, Older
+```typescript
+// Core
+import { defineTask, runTask, runTaskToCompletion, completionTask, Runtime } from 'sediment';
 
-### Streaming Responses
-- Backend yields `data: {"type": "content", "content": "..."}\n\n` chunks
-- Frontend `streamChat()` parses SSE → accumulates text → updates UI in real-time
-- Handles `[DONE]` termination and error propagation
+// Adapters
+import { createAnthropicAdapter, createOpenAIAdapter } from 'sediment';
 
-### RAG (Phase 1D - Planned)
-- `vector_store.py` uses ChromaDB with OpenAI embeddings
-- Transcripts chunked and indexed on webhook ingestion
-- Query embedding → cosine similarity search → inject top-k chunks as context
-- Currently toggled off (`use_rag: false` default in frontend)
+// Logging
+import { ConsoleLogger, CompositeLogger } from 'sediment';
+
+// Types
+import type { CompletionsAdapterInterface, Logger, CompletionRecordInterface, RuntimeDeps } from 'sediment';
+```
+
+**Task pattern**: Every task is an async generator defined with `defineTask<Input, Output>`. Tasks receive `RuntimeDeps` (completions adapter, logger, etc.) and yield outputs. Higher-layer tasks call lower-layer tasks via `runTask`/`runTaskToCompletion`.
+
+**Model routing**: `lib/runtime.ts` maps friendly model names (e.g., `claude-opus-4.5`) to provider-specific IDs (e.g., `claude-opus-4-5-20251101`) and routes to the correct adapter.
+
+## Supported Models
+
+| Frontend Key | Provider | Model ID |
+|---|---|---|
+| `claude-opus-4.5` | Anthropic | `claude-opus-4-5-20251101` |
+| `claude-sonnet-4.5` | Anthropic | `claude-sonnet-4-5-20250929` |
+| `gpt-5.2` | OpenAI | `gpt-5.2` |
+| `grok-4` | OpenAI | `grok-4` |
+
+Default model: `gpt-5.2`
 
 ## Tech Stack
 
-**Backend**:
-- FastAPI 0.114+ - async Python web framework
-- SQLAlchemy 2.0 - async ORM with asyncpg driver
-- OpenAI SDK 1.40+ - LLM API calls
-- ChromaDB 0.4+ - vector database for RAG
-- Supabase PostgreSQL - primary data store
+**Backend**: Hono, TypeScript, Sediment, @supabase/supabase-js, @anthropic-ai/sdk, openai, zod
+**Frontend**: Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, shadcn/ui, Radix UI, Supabase Auth
+**Database**: Supabase PostgreSQL + pgvector + pg_trgm
+**Deployment**: Railway (backend Docker container), Vercel-compatible (frontend)
 
-**Frontend**:
-- Next.js 16 (App Router) - React framework
-- TypeScript 5 - type safety
-- Tailwind CSS 4 - utility-first styling
-- shadcn/ui - accessible component primitives
-- Radix UI - unstyled accessible components
+## Phase Status
 
-**External Services**:
-- OpenAI API - GPT-4/Claude models for chat
-- Supabase - managed PostgreSQL database
-- CircleBack - meeting transcript webhook source
-
-## Important Notes
-
-- **Frontend recently migrated** from Vite to Next.js (commit 1cb0487) - some legacy ChatKit references may remain
-- **Database is optional** - app gracefully degrades if `SUPABASE_DATABASE_URL` unset (file transcripts only)
-- **Raw markdown transcripts** in `backend/app/raw_transcripts/` auto-load with slug-based IDs
-- **Model switching** supported via `ModelPicker` component (claude-sonnet-4.5, gpt-4, etc.)
-- **API-first design** - backend is UI-agnostic, frontend is swappable
-- **Human-in-the-loop** philosophy - agent outputs reviewed before final delivery (future feature)
+- **Phase 1: Foundation** ✅ — Hono backend, Supabase schema, auth, Sediment runtime, chat streaming, conversation CRUD, @mentions, frontend updated
+- **Phase 2: Transcript Ingestion** — Webhook endpoint, chunking, embeddings (not started)
+- **Phase 3+: RAG/Hybrid Search** — Vector + BM25 search, reranking (not started)
+- **File Attachments** — Upload, parse, context injection (not started)
 
 ---
 
@@ -204,53 +232,42 @@ Always verify changes work before considering a task complete:
 
 ```bash
 # Backend verification
-cd backend && uv run ruff check app/ && uv run ruff format --check app/ && uv run mypy app/
+cd backend && pnpm run lint
 
 # Frontend verification
 cd frontend && pnpm run lint && pnpm run build
 
 # Run tests if they exist
-cd backend && uv run pytest tests/
+cd backend && pnpm test
 cd frontend && pnpm test
 ```
 
-### Recommended Workflow
-
-1. **Explore first**: Use Plan Mode or subagents to understand relevant code before making changes
-2. **Plan for multi-file changes**: For features touching >2-3 files, create a plan before implementing
-3. **Implement incrementally**: Make changes file by file, verifying as you go
-4. **Verify before committing**: Run lint, type check, and tests before any commit
-
 ### Code Style
 
-**Python (backend)**:
-- Use async/await consistently - all database operations must be async
-- Follow existing patterns in `routers/` for new endpoints
-- SSE responses use `data: {json}\n\n` format with `[DONE]` termination
+**TypeScript (backend)**:
+- Use Sediment's `defineTask` / `runTask` patterns for all LLM orchestration
+- Hono route handlers should be thin — delegate to Sediment tasks
+- Use `getSupabase()` singleton for all DB operations
+- SSE responses use `streamSSE` from Hono with `data: {json}` format + `[DONE]` termination
+- All imports use `.js` extensions (Node16 module resolution)
 
 **TypeScript (frontend)**:
 - Use named exports, not default exports
 - Hooks go in `src/hooks/`, API calls in `src/lib/api.ts`
-- shadcn/ui components for UI primitives - don't reinvent
-- Tailwind for styling - avoid inline styles or CSS modules
-
-### Context Management
-
-- Use `/clear` between unrelated tasks to reset context
-- For large investigations, ask to "use a subagent to investigate X" to keep main context clean
-- When debugging, scope investigations narrowly (specific file, function, or error)
+- shadcn/ui components for UI primitives — don't reinvent
+- Tailwind for styling — avoid inline styles or CSS modules
 
 ### Common Gotchas
 
-- **SSE streaming**: Frontend expects `data: {"type": "content", "content": "..."}\n\n` - don't change the format
-- **Database sessions**: Always use `async with get_session() as session` - never raw sessions
+- **SSE streaming**: Frontend handles both `token` and `content` event types — backend sends `token`
+- **Auth**: Backend validates Supabase JWT and restricts to @oxy.so emails. Frontend sends `Authorization: Bearer` header via `getAuthHeaders()`
+- **Model IDs**: Frontend uses friendly names (`claude-opus-4.5`), backend maps to provider IDs (`claude-opus-4-5-20251101`) in `lib/runtime.ts`
 - **Environment variables**: Backend reads from env directly, frontend uses `NEXT_PUBLIC_` prefix
-- **@mentions**: IDs are `doc_{meeting_id}` for DB records, `doc_{slug}` for file transcripts
-- **CORS**: Backend allows all origins in dev - don't commit restrictive CORS for production without updating deployment config
+- **CORS**: Backend allows all origins in dev — don't commit restrictive CORS for production without updating deployment config
+- **Sediment Logger**: `SupabaseLogStore` implements the full `Logger` interface (log, getRecords, getByRequestId, logTool, getToolRecords, getToolRecordsByRequestId, clear)
+- **Draft autosave**: Currently stubbed out on frontend — `useDraft.ts` and api.ts draft functions are no-ops
 
 ### Repeat Mistakes to Avoid
-
-These issues have been fixed multiple times - check for them before committing:
 
 **Accessibility (fixed 3+ times)**:
 - Radix `Dialog` components MUST have `DialogTitle` (use `className="sr-only"` if visually hidden)
@@ -259,18 +276,24 @@ These issues have been fixed multiple times - check for them before committing:
 - Loading states need `role="status"` and `aria-label`
 
 **CSS Design Tokens (fixed 47+ hardcoded values)**:
-- NEVER use raw pixel values - use `var(--spacing-*)`, `var(--size-*)`, etc.
-- NEVER use raw colors - use `var(--gray-*)`, `var(--blue-*)`, etc.
+- NEVER use raw pixel values — use `var(--spacing-*)`, `var(--size-*)`, etc.
+- NEVER use raw colors — use `var(--gray-*)`, `var(--blue-*)`, etc.
 - Check `globals.css` for existing tokens before adding new ones
 - Both light and dark mode tokens must be defined
 
 **@Mention System (multiple critical bugs)**:
-- The composer uses DOM manipulation for mention pills - test insertion/deletion thoroughly
+- The composer uses DOM manipulation for mention pills — test insertion/deletion thoroughly
 - Watch for duplication bugs when inserting mentions
-- Mention IDs must match exactly: `doc_{meeting_id}` or `doc_{slug}`
+- Mention IDs are transcript UUIDs sent as array from frontend
 
 **Radix UI Components**:
 - `Dialog` → requires `DialogTitle`
 - `AlertDialog` → requires `AlertDialogTitle` and `AlertDialogDescription`
 - `Popover` → check keyboard navigation works
 - Always test with keyboard-only navigation
+
+**Sediment Integration**:
+- `CompletionRecordInterface` uses `context?.productName`, NOT `productName` at top level
+- `Logger` interface requires `getByRequestId`, `getToolRecordsByRequestId`, and `clear` methods
+- `completionTask` requires a typed input parameter — cannot pass `undefined`
+- Always use `Runtime.create()` then `runtime.getDeps()` — never construct deps manually

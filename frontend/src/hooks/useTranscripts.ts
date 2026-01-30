@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchTranscripts, searchTranscripts, TranscriptResponse } from "@/lib/api";
 import type { Transcript } from "@/types";
-import { useTranscriptRealtime } from "./useTranscriptRealtime";
-import { toast } from "sonner";
 
 function toTranscript(response: TranscriptResponse): Transcript {
   return {
@@ -51,33 +49,36 @@ export function useTranscripts() {
     }
   }, [loadTranscripts]);
 
+  // Track if we're in a search state (don't poll during search)
+  const isSearchingRef = useRef(false);
+
   useEffect(() => {
     loadTranscripts();
   }, [loadTranscripts]);
 
-  // Real-time subscription callbacks
-  const realtimeCallbacks = useMemo(
-    () => ({
-      onInsert: (data: Record<string, unknown>) => {
-        const title = (data.title as string) || "New transcript";
-        toast.success(`New transcript: ${title}`);
+  // Poll every 60 seconds for new transcripts (Supabase Realtime not available)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only poll if not actively searching
+      if (!isSearchingRef.current) {
         loadTranscripts();
-      },
-      onUpdate: () => {
-        loadTranscripts();
-      },
-    }),
-    [loadTranscripts]
-  );
+      }
+    }, 60000);
 
-  // Subscribe to real-time updates from Supabase
-  useTranscriptRealtime(realtimeCallbacks);
+    return () => clearInterval(interval);
+  }, [loadTranscripts]);
+
+  // Wrap search to track search state
+  const searchWithTracking = useCallback(async (query: string) => {
+    isSearchingRef.current = !!query.trim();
+    await search(query);
+  }, [search]);
 
   return {
     transcripts,
     isLoading,
     error,
     reload: loadTranscripts,
-    search,
+    search: searchWithTracking,
   };
 }
