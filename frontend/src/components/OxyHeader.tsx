@@ -9,7 +9,7 @@ interface OxyHeaderProps {
 
 export function OxyHeader({ showHomeButton = false }: OxyHeaderProps) {
   const router = useRouter();
-  const { toggle: toggleTranscripts } = useTranscriptsPanel();
+  const { open: panelOpen, toggle: toggleTranscripts } = useTranscriptsPanel();
 
   const handleLogoClick = () => {
     if (showHomeButton) {
@@ -45,9 +45,10 @@ export function OxyHeader({ showHomeButton = false }: OxyHeaderProps) {
       )}
       <div className="oxy-bar-actions">
         <button
-          className="oxy-bar-btn"
+          className={`oxy-bar-btn ${panelOpen ? 'oxy-bar-btn-active' : ''}`}
           onClick={toggleTranscripts}
-          aria-label="Toggle transcripts"
+          aria-label={panelOpen ? "Close transcripts" : "Open transcripts"}
+          aria-expanded={panelOpen}
           title="Transcripts"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import { useTranscriptsPanel } from "@/hooks/useTranscriptsPanel";
 import { formatRelativeDate } from "@/lib/utils";
@@ -19,12 +20,19 @@ export function TranscriptsPanel({
   isLoading = false,
   onRefresh,
 }: TranscriptsPanelProps) {
-  const { open, setOpen } = useTranscriptsPanel();
+  const { setOpen } = useTranscriptsPanel();
+  const [rotation, setRotation] = useState(0);
 
-  if (!open) {
-    return null;
-  }
+  const handleRefresh = useCallback(() => {
+    // Rotate 180 degrees and stay there
+    setRotation(prev => prev + 180);
+    
+    // Call the actual refresh
+    onRefresh?.();
+  }, [onRefresh]);
 
+  // Always render content - parent container handles visibility via transform animation
+  // This allows the panel to animate out smoothly when closing
   return (
     <div className="oxy-transcripts-panel">
       <div className="oxy-transcripts-header">
@@ -32,12 +40,17 @@ export function TranscriptsPanel({
         <div className="oxy-transcripts-header-actions">
           {onRefresh && (
             <button
-              onClick={onRefresh}
+              onClick={handleRefresh}
               className="oxy-transcripts-refresh"
               aria-label="Refresh transcripts"
-              disabled={isLoading}
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+              <RefreshCw 
+                className="w-4 h-4" 
+                style={{ 
+                  transform: `rotate(${rotation}deg)`,
+                  transition: 'transform 0.35s var(--ease-out-quart)'
+                }} 
+              />
             </button>
           )}
           <button
@@ -52,7 +65,9 @@ export function TranscriptsPanel({
 
       <ScrollArea.Root className="oxy-transcripts-list">
         <ScrollArea.Viewport className="oxy-transcripts-viewport">
-          {isLoading ? (
+          {/* Only show skeletons on initial load when we have no data yet */}
+          {/* During refresh, keep showing existing transcripts - the spinning icon indicates loading */}
+          {isLoading && transcripts.length === 0 ? (
             <div className="oxy-conversation-group-list">
               {[85, 70, 90, 65, 80].map((width, i) => (
                 <div key={i} className="oxy-skeleton-item">

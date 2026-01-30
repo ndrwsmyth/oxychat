@@ -12,14 +12,13 @@ interface AppLayoutProps {
 
 export function AppLayout({ sidebar, main, rightPanel }: AppLayoutProps) {
   const { collapsed, setCollapsed } = useSidebar();
-  const { open: panelOpen } = useTranscriptsPanel();
+  const { open: panelOpen, setOpen: setPanelOpen } = useTranscriptsPanel();
 
   return (
     <div
       className="oxy-app-layout"
       style={{
         "--sidebar-width": collapsed ? "var(--sidebar-width-collapsed)" : "var(--sidebar-width-expanded)",
-        "--panel-width": panelOpen ? "var(--panel-width-default)" : "0px",
       } as React.CSSProperties}
     >
       {/* Mobile backdrop - only visible on mobile when sidebar is open */}
@@ -43,8 +42,15 @@ export function AppLayout({ sidebar, main, rightPanel }: AppLayoutProps) {
         </div>
       </main>
 
-      {/* Right Panel (Transcripts) */}
-      <aside className="oxy-right-panel" data-open={panelOpen}>
+      {/* Right Panel (Transcripts) - Fixed overlay, not part of grid */}
+      {panelOpen && (
+        <div
+          className="oxy-panel-backdrop"
+          onClick={() => setPanelOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <aside className="oxy-right-panel-overlay" data-open={panelOpen}>
         {rightPanel}
       </aside>
     </div>

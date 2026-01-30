@@ -323,6 +323,19 @@ button.oxy-mark:focus-visible {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+/* Active state when panel is open */
+.oxy-bar-btn-active {
+  background: var(--surface-overlay);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+@media (hover: hover) {
+  .oxy-bar-btn-active:hover {
+    background: var(--surface);
+  }
+}
+
 /* Theme toggle */
 .oxy-theme-toggle {
   background: none;
@@ -1246,13 +1259,11 @@ button.oxy-mark:focus-visible {
 
 .oxy-app-layout {
   display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr var(--panel-width);
+  grid-template-columns: var(--sidebar-width) 1fr;
   height: 100vh;
   overflow: hidden;
   position: relative;
-  transition:
-    --sidebar-width var(--duration-slow) var(--ease-in-out-quart),
-    --panel-width var(--duration-slow) var(--ease-in-out-quart);
+  transition: --sidebar-width var(--duration-slow) var(--ease-in-out-quart);
 }
 
 /* Left Sidebar */
@@ -1286,15 +1297,34 @@ button.oxy-mark:focus-visible {
   padding: 0 var(--spacing-lg);
 }
 
-/* Right Panel (Transcripts) */
-.oxy-right-panel {
+/* Right Panel (Transcripts) - Fixed overlay */
+.oxy-right-panel-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--panel-width-default);
   background: var(--surface);
   border-left: 1px solid var(--border);
   overflow: hidden;
+  z-index: 50;
+  transform: translateX(100%);
+  /* Match sidebar easing for consistent feel */
+  transition: transform var(--duration-slow) var(--ease-in-out-quart);
+  will-change: transform;
 }
 
-.oxy-right-panel[data-open="false"] {
-  border-left: none;
+.oxy-right-panel-overlay[data-open="true"] {
+  transform: translateX(0);
+}
+
+/* Panel backdrop - subtle, for click-outside */
+.oxy-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  /* Transparent backdrop - just for click handling, no visual */
+  background: transparent;
 }
 
 /* Responsive - Tablet */
@@ -1326,18 +1356,10 @@ button.oxy-mark:focus-visible {
     transform: translateX(0);
   }
 
-  .oxy-right-panel {
-    position: fixed;
-    inset: 0;
+  /* Mobile: Panel takes full width */
+  .oxy-right-panel-overlay {
+    width: 100%;
     z-index: 100;
-    transform: translateX(100%);
-    transition: transform var(--duration-base) var(--ease-smooth);
-    will-change: transform;
-    border-left: none;
-  }
-
-  .oxy-right-panel[data-open="true"] {
-    transform: translateX(0);
   }
 
   .oxy-chat-container {
@@ -2383,16 +2405,8 @@ button.oxy-mark:focus-visible {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  animation: transcriptsPanelIn var(--duration-base) ease-out;
-}
-
-@keyframes transcriptsPanelIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  /* No animation on the panel itself - parent handles slide transition */
+  /* This prevents text scrambling caused by opacity animation during layout */
 }
 
 .oxy-transcripts-header {
@@ -2487,6 +2501,12 @@ button.oxy-mark:focus-visible {
   opacity: 0.5;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .oxy-transcripts-refresh svg {
+    transition: none !important;
+  }
+}
+
 .oxy-transcripts-list {
   flex: 1;
   overflow: hidden;
@@ -2495,7 +2515,10 @@ button.oxy-mark:focus-visible {
 .oxy-transcripts-viewport {
   height: 100%;
   width: 100%;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
+  /* Stabilize content during panel slide animation */
+  transform: translateZ(0);
+  contain: layout style;
 }
 
 /* TODO: Re-enable cursor: pointer once UX/UI for viewing transcripts is developed */
@@ -2505,13 +2528,16 @@ button.oxy-mark:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
-  padding: var(--spacing-sm) var(--spacing-base);
+  gap: 2px;
+  padding: 10px var(--spacing-sm);
   background: none;
   border: none;
-  border-radius: var(--radius-base);
+  border-radius: var(--radius-sm);
   /* cursor: pointer; */
   text-align: left;
+  /* Prevent text scrambling during panel animation by creating stable paint layer */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* TODO: Re-enable active/focus states once UX/UI for viewing transcripts is developed */
@@ -2819,7 +2845,7 @@ button.oxy-mark:focus-visible {
   }
 
   .oxy-sidebar,
-  .oxy-right-panel {
+  .oxy-right-panel-overlay {
     transition: none !important;
   }
 
