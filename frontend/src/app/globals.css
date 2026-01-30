@@ -12,6 +12,18 @@ button, [role="button"], a {
   touch-action: manipulation;
 }
 
+@property --sidebar-width {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 280px;
+}
+
+@property --panel-width {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
 :root {
   --black: #121212;
   --gray-900: #1a1a1a;
@@ -88,6 +100,7 @@ button, [role="button"], a {
   --duration-slow: 300ms;
   --ease-smooth: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
 
   /* Design Tokens - Shadow Scale */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -112,9 +125,10 @@ button, [role="button"], a {
   /* Icon Rail - follows 4px grid */
   --rail-width: 50px;
   --rail-icon-size: 40px;
-  --rail-item-gap: 4px;
+  --rail-item-gap: 8px;
   --rail-padding: 5px; /* Equal padding from viewport edge to gutter: (50px - 40px) / 2 */
   --rail-icon-hover-bg: rgba(0, 0, 0, 0.05);
+  --rail-content-left: calc(var(--rail-icon-size) + var(--spacing-sm));
 
   /* Search Modal */
   --search-modal-max-width: 560px;
@@ -1232,10 +1246,13 @@ button.oxy-mark:focus-visible {
 
 .oxy-app-layout {
   display: grid;
-  grid-template-columns: var(--sidebar-width, var(--sidebar-width-expanded)) 1fr var(--panel-width, 0px);
+  grid-template-columns: var(--sidebar-width) 1fr var(--panel-width);
   height: 100vh;
   overflow: hidden;
   position: relative;
+  transition:
+    --sidebar-width var(--duration-slow) var(--ease-in-out-quart),
+    --panel-width var(--duration-slow) var(--ease-in-out-quart);
 }
 
 /* Left Sidebar */
@@ -1389,6 +1406,7 @@ button.oxy-mark:focus-visible {
   background: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  overflow: hidden; /* Clip content for reveal effect */
   transition: background-color var(--duration-fast) ease-out;
   /* Fast stagger animation */
   animation: conversationIn var(--duration-fast) ease-out backwards;
@@ -2832,19 +2850,11 @@ button.oxy-mark:focus-visible {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%; /* Always 100% of parent - parent width transitions via grid */
+  overflow: hidden; /* Clip content - this creates the physical reveal effect */
   /* Equal padding from viewport edge to gutter line */
   padding: var(--spacing-xs) var(--rail-padding);
-  transition: width var(--duration-base) var(--ease-smooth);
-}
-
-.oxy-sidebar-rail.collapsed {
-  width: var(--rail-width);
-  /* No align-items: center - buttons align left naturally to match expanded state */
-}
-
-/* Resize cursor on both states for background click to toggle */
-.oxy-sidebar-rail {
-  cursor: ew-resize;
+  cursor: ew-resize; /* Resize cursor for background click to toggle */
 }
 
 /* Buttons and interactive elements override to pointer */
@@ -2854,15 +2864,11 @@ button.oxy-mark:focus-visible {
   cursor: pointer;
 }
 
-.oxy-sidebar-rail.expanded {
-  width: 100%;
-}
-
 /* Top section with logo and action buttons */
 .oxy-rail-top {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--rail-item-gap);
   flex-shrink: 0;
   padding-bottom: var(--spacing-xs);
 }
@@ -2871,36 +2877,34 @@ button.oxy-mark:focus-visible {
 .oxy-rail-btn {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  /* Equal padding on left and right for symmetric hover state */
-  padding: var(--spacing-xs) var(--rail-padding);
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-xs) 0 0;
   background: none;
   border: none;
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   cursor: pointer;
   transition:
-    background var(--duration-fast) ease,
-    width var(--duration-base) var(--ease-smooth),
-    height var(--duration-base) var(--ease-smooth);
+    background var(--duration-fast) ease;
   width: 100%;
+  height: var(--size-xl);
+  overflow: hidden;
 }
 
 /* Icon wrapper - fixed size, never moves */
-.oxy-rail-btn svg {
+.oxy-rail-icon {
+  width: var(--rail-icon-size);
+  height: var(--rail-icon-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.oxy-rail-icon svg {
   flex-shrink: 0;
   width: 18px;
   height: 18px;
-}
-
-/* Collapsed: make button square with equal padding, centered */
-.oxy-sidebar-rail.collapsed .oxy-rail-btn {
-  width: var(--rail-icon-size);  /* 40px - fits within 50px with 5px padding on each side */
-  height: var(--rail-icon-size);
-  /* Equal padding on all sides ensures symmetric hover state and proper centering */
-  padding: var(--spacing-xs) var(--rail-padding);
-  /* Center icon when collapsed for proper alignment */
-  justify-content: center;
 }
 
 @media (hover: hover) {
@@ -2928,27 +2932,15 @@ button.oxy-mark:focus-visible {
   margin-bottom: var(--spacing-xs);
 }
 
-/* Labels animate in smoothly */
+/* Labels - no opacity transition, clipping reveals them */
 .oxy-rail-label {
   font-size: var(--font-base);
   font-weight: 450;
   white-space: nowrap;
   line-height: 18px; /* Match icon height to prevent Y-shift */
-  opacity: 1;
-  transform: translateX(0);
-  transition: opacity var(--duration-fast) ease-out, transform var(--duration-fast) ease-out;
 }
 
-.oxy-sidebar-rail.collapsed .oxy-rail-label {
-  opacity: 0;
-  transform: translateX(-4px);
-  pointer-events: none;
-  /* Ensure it doesn't take space when collapsed */
-  position: absolute;
-  visibility: hidden;
-}
-
-/* Keyboard shortcut badge */
+/* Keyboard shortcut badge - no opacity transition */
 .oxy-rail-kbd {
   margin-left: auto;
   font-family: inherit;
@@ -2958,16 +2950,27 @@ button.oxy-mark:focus-visible {
   background: var(--surface-overlay);
   padding: 2px 6px;
   border-radius: 4px;
-  opacity: 1;
-  transition: opacity var(--duration-fast) ease-out;
+  flex-shrink: 0; /* Don't shrink - let it clip instead */
 }
 
-.oxy-sidebar-rail.collapsed .oxy-rail-kbd {
-  opacity: 0;
+/* Text elements in sidebar - NO opacity transitions
+   The physical reveal comes from overflow clipping as the sidebar width changes */
+.oxy-sidebar-rail .oxy-rail-label,
+.oxy-sidebar-rail .oxy-rail-kbd,
+.oxy-sidebar-rail .oxy-conversation-title,
+.oxy-sidebar-rail .oxy-conversation-group-title,
+.oxy-sidebar-rail .oxy-conversation-menu-trigger {
+  opacity: 1; /* Always visible - clipping handles visibility */
+  white-space: nowrap; /* Prevent text wrapping during transition */
+}
+
+/* When collapsed, disable pointer events on clipped text */
+.oxy-sidebar-rail.collapsed .oxy-rail-label,
+.oxy-sidebar-rail.collapsed .oxy-rail-kbd,
+.oxy-sidebar-rail.collapsed .oxy-conversation-title,
+.oxy-sidebar-rail.collapsed .oxy-conversation-group-title,
+.oxy-sidebar-rail.collapsed .oxy-conversation-menu-trigger {
   pointer-events: none;
-  /* Same technique as label - remove from flow without layout jump */
-  position: absolute;
-  visibility: hidden;
 }
 
 /* Conversation list */
@@ -2976,7 +2979,10 @@ button.oxy-mark:focus-visible {
   overflow-y: auto;
   overflow-x: hidden;
   margin: 0 calc(-1 * var(--spacing-xs));
-  padding: 0 var(--spacing-xs);
+  padding-top: 0;
+  padding-right: var(--spacing-xs);
+  padding-bottom: 0;
+  padding-left: calc(var(--rail-content-left) - var(--spacing-xs));
 }
 
 /* Footer with theme toggle and collapse button */
