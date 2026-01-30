@@ -2985,23 +2985,25 @@ button.oxy-mark:focus-visible {
   padding-left: calc(var(--rail-content-left) - var(--spacing-xs));
 }
 
-/* Footer with theme toggle and collapse button */
+/* Footer with collapse button (icon position) and theme toggle (clips when collapsed) */
 .oxy-rail-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--spacing-sm);
   padding-top: var(--spacing-xs);
   border-top: 1px solid var(--border);
   margin-top: var(--spacing-xs);
   flex-shrink: 0;
+  overflow: hidden; /* Clip theme toggle when collapsed */
 }
 
 .oxy-rail-collapse {
-  width: var(--size-sm);
-  height: var(--size-sm);
+  width: var(--rail-icon-size); /* Match icon size for consistent positioning */
+  height: var(--rail-icon-size);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0; /* Don't shrink - stay in icon position */
   background: none;
   border: none;
   border-radius: var(--radius-sm);

@@ -179,9 +179,8 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
         )}
       </ScrollArea>
 
-      {/* Footer */}
+      {/* Footer - collapse button first (icon position), theme toggle second (clips when collapsed) */}
       <div className="oxy-rail-footer" aria-hidden={collapsed}>
-        <IOSThemeToggle />
         <button
           type="button"
           onClick={toggle}
@@ -191,6 +190,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
         >
           <ChevronsLeft size={16} />
         </button>
+        <IOSThemeToggle />
       </div>
 
     </div>
