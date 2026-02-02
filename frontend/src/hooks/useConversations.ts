@@ -12,7 +12,7 @@ import {
 
 type GroupKey = keyof GroupedConversations;
 
-const GROUP_KEYS: GroupKey[] = ['pinned', 'today', 'yesterday', 'last_7_days', 'last_30_days', 'older'];
+const GROUP_KEYS: GroupKey[] = ['pinned', 'today', 'yesterday', 'two_days_ago', 'last_7_days', 'last_week', 'older'];
 
 function findConversationGroup(
   conversations: GroupedConversations,
@@ -41,8 +41,9 @@ export function useConversations() {
     pinned: [],
     today: [],
     yesterday: [],
+    two_days_ago: [],
     last_7_days: [],
-    last_30_days: [],
+    last_week: [],
     older: [],
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +73,7 @@ export function useConversations() {
     const now = new Date();
     const optimisticConv: Conversation = {
       id: tempId,
-      title: title || "New conversation",
+      title: title || null, // Null title until auto-generated
       auto_titled: false,
       model: "claude-sonnet-4.5",
       pinned: false,
@@ -210,9 +211,26 @@ export function useConversations() {
     }
   }, [conversations, loadConversations]);
 
-  // searchConversations is just a wrapper - could use loadConversations directly
-  // but keeping for semantic clarity at call sites
   const searchConversations = loadConversations;
+
+  /**
+   * Optimistically update a conversation's title in the sidebar.
+   * Used when title_update SSE event is received to avoid full refetch.
+   */
+  const updateConversationTitle = useCallback((id: string, title: string) => {
+    console.log('[useConversations] updateConversationTitle called:', { id, title });
+    setConversations(prev => {
+      console.log('[useConversations] Current conversations:', prev);
+      const result = { ...prev };
+      for (const group of GROUP_KEYS) {
+        result[group] = prev[group].map(c =>
+          c.id === id ? { ...c, title, auto_titled: true } : c
+        );
+      }
+      console.log('[useConversations] Updated conversations:', result);
+      return result;
+    });
+  }, []);
 
   return {
     conversations,
@@ -220,6 +238,7 @@ export function useConversations() {
     error,
     createConversation,
     updateConversation,
+    updateConversationTitle,
     deleteConversation,
     togglePin,
     searchConversations,

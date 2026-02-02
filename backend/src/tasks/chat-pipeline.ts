@@ -4,6 +4,8 @@ import { loadConversationTask, type ConversationData } from './load-conversation
 import { saveMessageTask } from './save-message.js';
 import { updateConversationTask } from './update-conversation.js';
 import { chatAgentTask } from './chat-agent.js';
+import { generateTitleTask } from './generate-title.js';
+import { createTitleRuntime } from '../lib/runtime.js';
 
 export interface ChatPipelineInput {
   conversationId: string;
@@ -51,6 +53,25 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       mentions: parsed.mentionIds,
     }, deps);
 
+    // 3.5. Generate title for first message (uses fast nano model)
+    // Runs early so title appears in sidebar before streaming completes
+    const isFirstMessage = conversation.messages.length === 0;
+    console.log('[chat-pipeline] isFirstMessage:', isFirstMessage, 'messageCount:', conversation.messages.length);
+    if (isFirstMessage) {
+      const titleDeps = createTitleRuntime().getDeps();
+      console.log('[chat-pipeline] Generating title for conversation:', input.conversationId);
+      const title = await runTaskToCompletion(generateTitleTask, {
+        conversationId: input.conversationId,
+        userMessage: input.content,
+      }, titleDeps);
+
+      console.log('[chat-pipeline] Generated title:', title);
+      if (title) {
+        yield { type: 'title_update' as const, title };
+        console.log('[chat-pipeline] Yielded title_update event');
+      }
+    }
+
     // 4. Stream LLM response
     let fullContent = '';
     for await (const token of chatAgentTask.execute({
@@ -72,17 +93,10 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       requestId: deps._requestId,
     }, deps);
 
-    // 6. Update conversation (auto-title)
-    const updateResult = await runTaskToCompletion(updateConversationTask, {
+    // 6. Update conversation timestamp
+    await runTaskToCompletion(updateConversationTask, {
       conversationId: input.conversationId,
-      model: input.model,
-      userMessage: input.content,
-      assistantMessage: fullContent,
     }, deps);
-
-    if (updateResult && typeof updateResult === 'object' && 'title' in updateResult && updateResult.title) {
-      yield { type: 'title_update' as const, title: updateResult.title as string };
-    }
 
     const msgId = savedAssistant && typeof savedAssistant === 'object' && 'id' in savedAssistant
       ? (savedAssistant as { id: string }).id

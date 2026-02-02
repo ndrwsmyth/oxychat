@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { Conversation } from "@/types";
-import { Pin, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Pin, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { useTypewriter } from "@/hooks/useTypewriter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +38,13 @@ export function ConversationItem({
 }: ConversationItemProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(conversation.title);
+  const [editTitle, setEditTitle] = useState(conversation.title || "");
+
+  // Animate title when auto-generated (not when manually renamed)
+  const displayTitle = useTypewriter(conversation.title || "Untitled", {
+    speed: 35,
+    enabled: conversation.auto_titled,
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition>({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -103,7 +110,7 @@ export function ConversationItem({
       handleTitleSave();
     } else if (e.key === "Escape") {
       setIsEditing(false);
-      setEditTitle(conversation.title);
+      setEditTitle(conversation.title || "");
     }
   };
 
@@ -115,8 +122,8 @@ export function ConversationItem({
       if (triggerRef.current) {
         const rect = triggerRef.current.getBoundingClientRect();
         setMenuPosition({
-          top: rect.bottom + 4,
-          left: rect.left,
+          top: rect.top,
+          left: rect.right + 8, // Pop out to the right
         });
       }
       setMenuOpen(true);
@@ -127,7 +134,7 @@ export function ConversationItem({
     setMenuOpen(false);
     if (action === "rename") {
       setIsEditing(true);
-      setEditTitle(conversation.title);
+      setEditTitle(conversation.title || "");
     } else if (action === "delete") {
       setDeleteDialogOpen(true);
     }
@@ -193,7 +200,7 @@ export function ConversationItem({
           />
         ) : (
           <span className="oxy-conversation-title">
-            {conversation.title}
+            {displayTitle}
           </span>
         )}
 
@@ -213,7 +220,7 @@ export function ConversationItem({
             aria-haspopup="menu"
             data-state={menuOpen ? "open" : "closed"}
           >
-            <MoreHorizontal size={16} />
+            <MoreVertical size={16} />
           </button>
         )}
       </div>
@@ -250,7 +257,7 @@ export function ConversationItem({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete &quot;{conversation.title}&quot;. This action cannot be undone.
+              This will permanently delete &quot;{conversation.title || "Untitled"}&quot;. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

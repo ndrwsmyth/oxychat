@@ -6,7 +6,7 @@ import { fetchMessages, streamChat } from "@/lib/api";
 import { toast } from "sonner";
 
 interface UseConversationOptions {
-  onTitleUpdate?: (title: string) => void;
+  onTitleUpdate?: (title: string, conversationId: string) => void;
 }
 
 // Storage key for persisting model selection
@@ -41,7 +41,12 @@ export function useConversation(
       }
     }
   }, []);
-  const [isLoading, setIsLoading] = useState(false);
+
+  // isFetching: loading messages for conversation switch
+  // isStreaming: LLM is generating response
+  const [isFetching, setIsFetching] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const isLoading = isFetching || isStreaming;
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingContent, setThinkingContent] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +59,11 @@ export function useConversation(
   messagesRef.current = messages;
 
   useEffect(() => {
+    // Clear messages immediately on conversation switch to prevent flash of old content
+    setMessages([]);
+    setError(null);
+
     if (!conversationId) {
-      setMessages([]);
       return;
     }
     // Skip reset if we're transitioning to this conversation (just created it)
@@ -73,13 +81,13 @@ export function useConversation(
     if (!conversationId) return;
 
     try {
-      setIsLoading(true);
+      setIsFetching(true);
       const msgs = await fetchMessages(conversationId);
       setMessages(msgs);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load messages");
     } finally {
-      setIsLoading(false);
+      setIsFetching(false);
     }
   }, [conversationId]);
 
@@ -115,7 +123,7 @@ export function useConversation(
     };
 
     setMessages((prev) => isNewConversation ? [userMessage] : [...prev, userMessage]);
-    setIsLoading(true);
+    setIsStreaming(true);
     setIsThinking(false);
     setThinkingContent("");
     setError(null);
@@ -175,11 +183,11 @@ export function useConversation(
       onThinkingEnd: () => {
         setIsThinking(false);
       },
-      onTitleUpdate: (title) => {
-        onTitleUpdate?.(title);
+      onTitleUpdate: (title, convId) => {
+        onTitleUpdate?.(title, convId);
       },
       onComplete: () => {
-        setIsLoading(false);
+        setIsStreaming(false);
         setIsThinking(false);
         abortControllerRef.current = null;
         isSendingRef.current = false;
@@ -195,7 +203,7 @@ export function useConversation(
           },
         });
         setError(null);
-        setIsLoading(false);
+        setIsStreaming(false);
         setIsThinking(false);
         abortControllerRef.current = null;
         isSendingRef.current = false;
@@ -225,6 +233,8 @@ export function useConversation(
     messages,
     model,
     isLoading,
+    isFetching,
+    isStreaming,
     isThinking,
     thinkingContent,
     error,

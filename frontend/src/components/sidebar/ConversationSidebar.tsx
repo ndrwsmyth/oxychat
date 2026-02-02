@@ -1,11 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useConversations } from "@/hooks/useConversations";
 import { useSidebar } from "@/hooks/useSidebar";
 import { ConversationGroup } from "./ConversationGroup";
 import { IOSThemeToggle } from "./IOSThemeToggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Search, ChevronsLeft } from "lucide-react";
+import type { Conversation, GroupedConversations } from "@/types";
 
 // Oxy logo component
 function OxyLogo({ size = 20 }: { size?: number }) {
@@ -30,24 +30,26 @@ function OxyLogo({ size = 20 }: { size?: number }) {
 interface ConversationSidebarProps {
   activeConversationId: string | null;
   onOpenSearch?: () => void;
+  conversations: GroupedConversations;
+  isLoading: boolean;
+  onNewChat: () => void;
+  onUpdateConversation: (id: string, updates: Partial<Conversation>) => Promise<void>;
+  onDeleteConversation: (id: string) => Promise<void>;
+  onTogglePin: (id: string) => Promise<void>;
 }
 
-export function ConversationSidebar({ activeConversationId, onOpenSearch }: ConversationSidebarProps) {
+export function ConversationSidebar({
+  activeConversationId,
+  onOpenSearch,
+  conversations,
+  isLoading,
+  onNewChat,
+  onUpdateConversation,
+  onDeleteConversation,
+  onTogglePin,
+}: ConversationSidebarProps) {
   const router = useRouter();
   const { collapsed, toggle } = useSidebar();
-  const {
-    conversations,
-    isLoading,
-    createConversation,
-    updateConversation,
-    deleteConversation,
-    togglePin,
-  } = useConversations();
-
-  const handleNewChat = async () => {
-    const newConv = await createConversation("New conversation");
-    router.push(`/?c=${newConv.id}`);
-  };
 
   const handleGoHome = () => {
     router.push("/");
@@ -70,7 +72,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
         {/* Logo - goes home */}
         <button
           type="button"
-          onClick={handleGoHome}
+          onClick={() => router.push("/")}
           className="oxy-rail-btn oxy-rail-logo"
           aria-label="Home"
           title="Home"
@@ -83,7 +85,7 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
         {/* New Chat */}
         <button
           type="button"
-          onClick={handleNewChat}
+          onClick={onNewChat}
           className="oxy-rail-btn"
           aria-label="New chat (⇧⌘O)"
           title="New chat (⇧⌘O)"
@@ -131,49 +133,57 @@ export function ConversationSidebar({ activeConversationId, onOpenSearch }: Conv
               conversations={conversations.pinned}
               activeConversationId={activeConversationId}
               isPinned
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
+              onUpdate={onUpdateConversation}
+              onDelete={onDeleteConversation}
+              onTogglePin={onTogglePin}
             />
             <ConversationGroup
               title="Today"
               conversations={conversations.today}
               activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
+              onUpdate={onUpdateConversation}
+              onDelete={onDeleteConversation}
+              onTogglePin={onTogglePin}
             />
             <ConversationGroup
               title="Yesterday"
               conversations={conversations.yesterday}
               activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
+              onUpdate={onUpdateConversation}
+              onDelete={onDeleteConversation}
+              onTogglePin={onTogglePin}
+            />
+            <ConversationGroup
+              title="2 days ago"
+              conversations={conversations.two_days_ago}
+              activeConversationId={activeConversationId}
+              onUpdate={onUpdateConversation}
+              onDelete={onDeleteConversation}
+              onTogglePin={onTogglePin}
             />
             <ConversationGroup
               title="Last 7 days"
               conversations={conversations.last_7_days}
               activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
+              onUpdate={onUpdateConversation}
+              onDelete={onDeleteConversation}
+              onTogglePin={onTogglePin}
             />
             <ConversationGroup
-              title="Last 30 days"
-              conversations={conversations.last_30_days}
+              title="Last week"
+              conversations={conversations.last_week}
               activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
+              onUpdate={onUpdateConversation}
+              onDelete={onDeleteConversation}
+              onTogglePin={onTogglePin}
             />
             <ConversationGroup
               title="Older"
               conversations={conversations.older}
               activeConversationId={activeConversationId}
-              onUpdate={updateConversation}
-              onDelete={deleteConversation}
-              onTogglePin={togglePin}
+              onUpdate={onUpdateConversation}
+              onDelete={onDeleteConversation}
+              onTogglePin={onTogglePin}
             />
           </>
         )}

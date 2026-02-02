@@ -46,15 +46,17 @@ conversationsRouter.get('/conversations', async (c) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today.getTime() - 86400000);
+  const twoDaysAgo = new Date(today.getTime() - 2 * 86400000);
   const last7 = new Date(today.getTime() - 7 * 86400000);
-  const last30 = new Date(today.getTime() - 30 * 86400000);
+  const last14 = new Date(today.getTime() - 14 * 86400000);
 
   const groups = {
     pinned: [] as typeof data,
     today: [] as typeof data,
     yesterday: [] as typeof data,
+    two_days_ago: [] as typeof data,
     last_7_days: [] as typeof data,
-    last_30_days: [] as typeof data,
+    last_week: [] as typeof data,
     older: [] as typeof data,
   };
 
@@ -66,8 +68,9 @@ conversationsRouter.get('/conversations', async (c) => {
     const updated = new Date(conv.updated_at);
     if (updated >= today) groups.today.push(conv);
     else if (updated >= yesterday) groups.yesterday.push(conv);
+    else if (updated >= twoDaysAgo) groups.two_days_ago.push(conv);
     else if (updated >= last7) groups.last_7_days.push(conv);
-    else if (updated >= last30) groups.last_30_days.push(conv);
+    else if (updated >= last14) groups.last_week.push(conv);
     else groups.older.push(conv);
   }
 

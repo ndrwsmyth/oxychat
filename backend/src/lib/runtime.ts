@@ -73,3 +73,17 @@ export function createIngestRuntime(): ReturnType<typeof Runtime.create> {
     requestId: crypto.randomUUID(),
   });
 }
+
+/**
+ * Creates a dedicated runtime for title generation.
+ * Uses OpenAI adapter for the nano model (fast, cheap).
+ */
+export function createTitleRuntime(): ReturnType<typeof Runtime.create> {
+  return Runtime.create({
+    completions: getOpenAIAdapter(),
+    logger: createLogger(),
+    productName: 'oxychat',
+    productStep: 'title_generation',
+    requestId: crypto.randomUUID(),
+  });
+}

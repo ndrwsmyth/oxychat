@@ -61,6 +61,7 @@ button, [role="button"], a {
   --font-lg: 15px;    /* Body text, composer */
 
   /* Design Tokens - Spacing Scale */
+  --spacing-2xs: 4px;
   --spacing-xs: 8px;
   --spacing-sm: 12px;
   --spacing-base: 16px;
@@ -125,7 +126,7 @@ button, [role="button"], a {
   /* Icon Rail - follows 4px grid */
   --rail-width: 50px;
   --rail-icon-size: 40px;
-  --rail-item-gap: 8px;
+  --rail-item-gap: 0;
   --rail-padding: 5px; /* Equal padding from viewport edge to gutter: (50px - 40px) / 2 */
   --rail-icon-hover-bg: rgba(0, 0, 0, 0.05);
   --rail-content-left: calc(var(--rail-icon-size) + var(--spacing-sm));
@@ -275,7 +276,7 @@ button.oxy-mark {
 
 button.oxy-mark:focus-visible {
   outline: none;
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
@@ -1414,7 +1415,7 @@ button.oxy-mark:focus-visible {
 .oxy-conversation-group-list {
   display: flex;
   flex-direction: column;
-  gap: 2px; /* Tight spacing between items */
+  gap: 0;
 }
 
 /* Conversation items */
@@ -1423,12 +1424,11 @@ button.oxy-mark:focus-visible {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px var(--spacing-xs); /* Compact vertical padding */
+  padding: 6px var(--spacing-sm) 6px var(--spacing-xs); /* Extra right padding for menu trigger */
   height: 36px; /* Fixed height for consistency */
   background: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  overflow: hidden; /* Clip content for reveal effect */
   transition: background-color var(--duration-fast) ease-out;
   /* Fast stagger animation */
   animation: conversationIn var(--duration-fast) ease-out backwards;
@@ -1486,7 +1486,7 @@ button.oxy-mark:focus-visible {
 }
 
 .oxy-conversation-title {
-  flex: 1;
+  flex: 1 1 0; /* Grow, shrink, zero basis for proper truncation */
   font-size: var(--font-base); /* 13px */
   color: var(--text-primary);
   white-space: nowrap;
@@ -1507,36 +1507,40 @@ button.oxy-mark:focus-visible {
   outline: none;
 }
 
-/* Conversation Menu Trigger */
+/* Conversation Menu Trigger - wrapper with gradient fade */
 .oxy-conversation-menu-trigger {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: auto;
-  flex-shrink: 0;
-  border-radius: var(--radius-sm);
-  color: var(--text-tertiary);
-  background: transparent;
+  justify-content: flex-end;
+  padding-left: 24px;
+  padding-right: 4px;
+  height: 100%;
   border: none;
   cursor: pointer;
   opacity: 0;
-  transition: opacity var(--duration-fast) ease-out,
-              background-color var(--duration-fast) ease-out,
-              color var(--duration-fast) ease-out;
+  /* Gradient fade from transparent to background */
+  background: linear-gradient(to right, transparent, var(--surface) 40%);
+  transition: opacity var(--duration-fast) ease-out;
   touch-action: manipulation;
 }
 
-/* Hover state - wrapped for touch device support */
+.oxy-conversation-menu-trigger svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.oxy-conversation-menu-trigger:hover svg {
+  color: var(--text-primary);
+}
+
+/* Show trigger on hover */
 @media (hover: hover) {
   .oxy-conversation-item:hover .oxy-conversation-menu-trigger {
     opacity: 1;
-  }
-
-  .oxy-conversation-menu-trigger:hover {
-    background: var(--surface-raised);
-    color: var(--text-primary);
   }
 }
 
@@ -1546,16 +1550,14 @@ button.oxy-mark:focus-visible {
   opacity: 1;
 }
 
-/* Focus visible state with 3px ring */
+/* Focus visible state */
 .oxy-conversation-menu-trigger:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--focus-ring);
   opacity: 1;
 }
 
-/* Active press feedback */
-.oxy-conversation-menu-trigger:active {
-  transform: scale(0.95);
+.oxy-conversation-menu-trigger:focus-visible svg {
+  color: var(--text-primary);
 }
 
 /* Context Menu (conversation dropdown) */
@@ -1574,11 +1576,11 @@ button.oxy-mark:focus-visible {
 @keyframes contextMenuIn {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(-4px);
+    transform: scale(0.95) translateX(-4px);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1) translateX(0);
   }
 }
 
@@ -2956,6 +2958,17 @@ button.oxy-mark:focus-visible {
 /* Logo button special styling */
 .oxy-rail-logo {
   margin-bottom: var(--spacing-xs);
+  width: var(--size-xl);
+  padding: 0;
+  justify-content: center;
+  align-self: flex-start;
+  background: none;
+}
+
+@media (hover: hover) {
+  .oxy-rail-logo:hover {
+    background: none;
+  }
 }
 
 /* Labels - no opacity transition, clipping reveals them */
@@ -2984,8 +2997,7 @@ button.oxy-mark:focus-visible {
 .oxy-sidebar-rail .oxy-rail-label,
 .oxy-sidebar-rail .oxy-rail-kbd,
 .oxy-sidebar-rail .oxy-conversation-title,
-.oxy-sidebar-rail .oxy-conversation-group-title,
-.oxy-sidebar-rail .oxy-conversation-menu-trigger {
+.oxy-sidebar-rail .oxy-conversation-group-title {
   opacity: 1; /* Always visible - clipping handles visibility */
   white-space: nowrap; /* Prevent text wrapping during transition */
 }
@@ -2994,8 +3006,7 @@ button.oxy-mark:focus-visible {
 .oxy-sidebar-rail.collapsed .oxy-rail-label,
 .oxy-sidebar-rail.collapsed .oxy-rail-kbd,
 .oxy-sidebar-rail.collapsed .oxy-conversation-title,
-.oxy-sidebar-rail.collapsed .oxy-conversation-group-title,
-.oxy-sidebar-rail.collapsed .oxy-conversation-menu-trigger {
+.oxy-sidebar-rail.collapsed .oxy-conversation-group-title {
   pointer-events: none;
 }
 
@@ -3006,7 +3017,7 @@ button.oxy-mark:focus-visible {
   overflow-x: hidden;
   margin: 0 calc(-1 * var(--spacing-xs));
   padding-top: 0;
-  padding-right: var(--spacing-xs);
+  padding-right: var(--spacing-sm); /* Extra space for menu trigger */
   padding-bottom: 0;
   padding-left: calc(var(--rail-content-left) - var(--spacing-xs));
 }

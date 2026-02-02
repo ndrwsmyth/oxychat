@@ -12,8 +12,9 @@ function flattenConversations(grouped: GroupedConversations): Conversation[] {
     ...grouped.pinned,
     ...grouped.today,
     ...grouped.yesterday,
+    ...grouped.two_days_ago,
     ...grouped.last_7_days,
-    ...grouped.last_30_days,
+    ...grouped.last_week,
     ...grouped.older,
   ]
 }
@@ -67,7 +68,7 @@ export function useSearch(options: UseSearchOptions = {}): UseSearchReturn {
     const lowerQuery = query.toLowerCase()
 
     return flatList.filter(conv =>
-      conv.title.toLowerCase().includes(lowerQuery)
+      conv.title?.toLowerCase().includes(lowerQuery)
     )
   }, [query, conversations])
 

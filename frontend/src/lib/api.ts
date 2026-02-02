@@ -97,7 +97,7 @@ export interface ChatStreamOptions {
   onThinkingChunk?: (chunk: string) => void;
   onThinkingEnd?: () => void;
   onSources?: (sources: SourceInfo[], truncationInfo?: TruncationInfo[]) => void;
-  onTitleUpdate?: (title: string) => void;
+  onTitleUpdate?: (title: string, conversationId: string) => void;
   onComplete: () => void;
   onError: (error: Error) => void;
 }
@@ -176,11 +176,19 @@ export async function streamChat({
         if (done) break;
 
         const text = decoder.decode(value);
+        // Log raw SSE data for debugging
+        if (text.includes('title_update')) {
+          console.log('[api.streamChat] Raw SSE chunk containing title_update:', text);
+        }
         const lines = text.split("\n");
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const data = line.slice(6);
+            // Log all parsed data for debugging
+            if (data.includes('title')) {
+              console.log('[api.streamChat] Parsed line with title:', data);
+            }
             // Legacy [DONE] format (kept for backward compatibility)
             if (data === "[DONE]") {
               onComplete();
@@ -206,7 +214,11 @@ export async function streamChat({
                   onThinkingEnd?.();
                   break;
                 case "title_update":
-                  if (parsed.title) onTitleUpdate?.(parsed.title);
+                  console.log('[api.streamChat] Received title_update event:', parsed);
+                  if (parsed.title && conversationId) {
+                    console.log('[api.streamChat] Calling onTitleUpdate with:', parsed.title, conversationId);
+                    onTitleUpdate?.(parsed.title, conversationId);
+                  }
                   break;
                 case "done":
                   onComplete();
@@ -302,8 +314,9 @@ export async function fetchConversations(search?: string): Promise<GroupedConver
     pinned: data.pinned.map(convertDates),
     today: data.today.map(convertDates),
     yesterday: data.yesterday.map(convertDates),
+    two_days_ago: data.two_days_ago.map(convertDates),
     last_7_days: data.last_7_days.map(convertDates),
-    last_30_days: data.last_30_days.map(convertDates),
+    last_week: data.last_week.map(convertDates),
     older: data.older.map(convertDates),
   };
 }

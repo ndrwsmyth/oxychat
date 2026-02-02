@@ -95,6 +95,9 @@ export const MAX_MENTIONS_PER_MODEL: Record<string, number> = {
 
 export const CHARS_PER_TOKEN = 4;
 
+// Fast, cheap model for title generation
+export const TITLE_MODEL = 'gpt-4.1-nano-2025-04-14';
+
 export function getContextLimit(model: string): number {
   return MODEL_CONTEXT_LIMITS[model] ?? 100_000;
 }

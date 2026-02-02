@@ -25,7 +25,7 @@ export interface ChatState {
 // Conversation types
 export interface Conversation {
   id: string;
-  title: string;
+  title: string | null; // Null until auto-titled on first message
   auto_titled: boolean;
   model: string;
   pinned: boolean;
@@ -38,8 +38,9 @@ export interface GroupedConversations {
   pinned: Conversation[];
   today: Conversation[];
   yesterday: Conversation[];
+  two_days_ago: Conversation[];
   last_7_days: Conversation[];
-  last_30_days: Conversation[];
+  last_week: Conversation[];
   older: Conversation[];
 }
 

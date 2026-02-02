@@ -24,21 +24,27 @@ function HomeContent() {
   const conversationId = searchParams.get("c");
 
   const { transcripts, isLoading: transcriptsLoading, reload: reloadTranscripts } = useTranscripts();
-  const { conversations, createConversation, refresh: refreshConversations } = useConversations();
+  const {
+    conversations,
+    isLoading: conversationsLoading,
+    createConversation,
+    updateConversation,
+    updateConversationTitle,
+    deleteConversation,
+    togglePin,
+  } = useConversations();
 
-  // Refresh conversations list when title is auto-updated
-  const handleTitleUpdate = useCallback((title: string) => {
-    console.log("[Page] Title update received, refreshing conversations:", title);
-    refreshConversations();
-  }, [refreshConversations]);
+  const handleTitleUpdate = useCallback((title: string, convId: string) => {
+    updateConversationTitle(convId, title);
+  }, [updateConversationTitle]);
 
-  const { messages, model, isLoading, isThinking, error, sendMessage, stopGenerating, changeModel } =
+  const { messages, model, isLoading, isStreaming, isThinking, error, sendMessage, stopGenerating, changeModel } =
     useConversation(conversationId, transcripts, { onTitleUpdate: handleTitleUpdate });
   const { draft, setDraft } = useDraft(conversationId);
   const [mentions, setMentions] = useState<MentionChip[]>([]);
 
   const handleNewChat = useCallback(async () => {
-    const newConv = await createConversation("New conversation");
+    const newConv = await createConversation();
     router.push(`/?c=${newConv.id}`);
   }, [createConversation, router]);
 
@@ -71,7 +77,7 @@ function HomeContent() {
       draftLength: currentDraft.length,
       mentionCount: currentMentions.length,
       mentions: currentMentions.map(m => m.id),
-      isLoading,
+      isStreaming,
       conversationId,
     });
 
@@ -80,8 +86,8 @@ function HomeContent() {
       return;
     }
 
-    if (isLoading) {
-      console.warn("[Page.send] Blocked - already loading");
+    if (isStreaming) {
+      console.warn("[Page.send] Blocked - already streaming");
       return;
     }
 
@@ -90,7 +96,7 @@ function HomeContent() {
     // Create conversation on first message if needed
     if (!targetConversationId) {
       try {
-        const newConv = await createConversation("New conversation");
+        const newConv = await createConversation(); // No title - will be auto-generated
         targetConversationId = newConv.id;
         console.log("[Page.send] Created new conversation:", targetConversationId);
         router.push(`/?c=${targetConversationId}`, { scroll: false });
@@ -114,7 +120,7 @@ function HomeContent() {
     });
 
     await sendMessage(currentDraft, targetConversationId ?? undefined, mentionIds);
-  }, [isLoading, sendMessage, setDraft, conversationId, createConversation, router]);
+  }, [isStreaming, sendMessage, setDraft, conversationId, createConversation, router]);
 
   const handleTranscriptClick = (transcript: { id: string; title: string }) => {
     // Add as a chip instead of inserting text
@@ -163,6 +169,12 @@ function HomeContent() {
             <ConversationSidebar
               activeConversationId={conversationId}
               onOpenSearch={handleOpenSearch}
+              conversations={conversations}
+              isLoading={conversationsLoading}
+              onNewChat={handleNewChat}
+              onUpdateConversation={updateConversation}
+              onDeleteConversation={deleteConversation}
+              onTogglePin={togglePin}
             />
           }
           rightPanel={
@@ -209,8 +221,8 @@ function HomeContent() {
                 onSend={send}
                 onStop={stopGenerating}
                 onNewConversation={handleNewChat}
-                disabled={isLoading}
-                isGenerating={isLoading}
+                disabled={isStreaming}
+                isGenerating={isStreaming}
                 hasMessages={messages.length > 0}
                 transcripts={transcripts}
                 model={model}
