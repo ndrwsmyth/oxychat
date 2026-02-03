@@ -4,12 +4,10 @@ import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { OxyMentionPopover, type MentionPopoverHandle } from "@/components/mentions/OxyMentionPopover";
 import { ModelPicker } from "./ModelPicker";
 import type { Transcript, ModelOption } from "@/types";
+import type { DraftData, MentionChip } from "@/hooks/useDrafts";
 import { Paperclip, Square } from "lucide-react";
 
-export interface MentionChip {
-  id: string;
-  title: string;
-}
+export type { MentionChip };
 
 interface OxyComposerProps {
   value: string;
@@ -25,6 +23,8 @@ interface OxyComposerProps {
   transcripts: Transcript[];
   model: ModelOption;
   onModelChange: (model: ModelOption) => void;
+  draftToRestore?: DraftData | null;
+  onDraftRestored?: () => void;
 }
 
 // Utility: Check if a node is a mention pill
@@ -146,10 +146,51 @@ function escapeHTML(str: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// SVG icon for mention pills (FileText)
+const MENTION_PILL_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="oxy-mention-pill-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`;
+
+// Create a mention pill DOM element
+function createMentionPill(
+  mention: { id: string; title: string },
+  onRemove: () => void
+): HTMLSpanElement {
+  const pill = document.createElement("span");
+  pill.contentEditable = "false";
+  pill.className = "oxy-mention-pill";
+  pill.dataset.mentionId = mention.id;
+  pill.dataset.mentionTitle = mention.title;
+
+  pill.innerHTML = `
+    ${MENTION_PILL_ICON}
+    <span class="oxy-mention-pill-title">${escapeHTML(mention.title)}</span>
+  `;
+
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "oxy-mention-pill-remove";
+  removeBtn.tabIndex = 0;
+  removeBtn.type = "button";
+  removeBtn.setAttribute("aria-label", `Remove ${mention.title}`);
+  removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+
+  removeBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onRemove();
+  };
+  removeBtn.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      removeBtn.click();
+    }
+  };
+
+  pill.appendChild(removeBtn);
+  return pill;
+}
+
 export function OxyComposer({
   value,
   onChange,
-  mentions,
   onMentionsChange,
   onSend,
   onStop,
@@ -160,6 +201,8 @@ export function OxyComposer({
   transcripts,
   model,
   onModelChange,
+  draftToRestore,
+  onDraftRestored,
 }: OxyComposerProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<MentionPopoverHandle>(null);
@@ -178,6 +221,7 @@ export function OxyComposer({
     if (value === "" && !isEditorEmpty(editor)) {
       editor.innerHTML = "";
       onMentionsChange([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing with DOM after external value change
       setHasContent(false);
     }
   }, [value, onMentionsChange]);
@@ -202,6 +246,73 @@ export function OxyComposer({
     onMentionsChange(extractedMentions);
     setHasContent(raw.trim().length > 0);
   }, [onChange, onMentionsChange]);
+
+  // Helper to create a mention pill with remove callback that syncs state
+  const createMentionPillWithSync = useCallback((mention: MentionChip, syncFn: () => void) => {
+    return createMentionPill(mention, () => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const pill = editor.querySelector(`[data-mention-id="${mention.id}"]`);
+      if (pill?.parentNode) {
+        pill.parentNode.removeChild(pill);
+        editor.normalize();
+        syncFn();
+        editor.focus();
+      }
+    });
+  }, []);
+
+  // Restore draft content when draftToRestore changes
+  useEffect(() => {
+    if (!draftToRestore) return;
+
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.innerHTML = "";
+
+    const mentionRegex = /@\[([^\]]+)\]/g;
+    const text = draftToRestore.text;
+    const mentionMap = new Map(draftToRestore.mentions.map(m => [m.title, m]));
+
+    let lastIndex = 0;
+    let match;
+
+    while ((match = mentionRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        editor.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+
+      const mention = mentionMap.get(match[1]);
+      if (mention) {
+        const pill = createMentionPillWithSync(mention, syncToParent);
+        editor.appendChild(pill);
+        editor.appendChild(document.createTextNode(" "));
+      } else {
+        editor.appendChild(document.createTextNode(match[0]));
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      editor.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+
+    const hasContentValue = text.trim().length > 0 || draftToRestore.mentions.length > 0;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing state after DOM restoration from external draft
+    setHasContent(hasContentValue);
+    onDraftRestored?.();
+
+    // Focus and move cursor to end
+    editor.focus();
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }, [draftToRestore, onDraftRestored, createMentionPillWithSync, syncToParent]);
 
   const handleInput = useCallback(() => {
     if (isComposingRef.current) return; // Skip during IME composition
@@ -236,20 +347,14 @@ export function OxyComposer({
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
-    const range = selection.getRangeAt(0);
-    const { textNode, offsetInNode, text, atIndex } = getTextBeforeCursor(editor);
+    const { textNode, offsetInNode, atIndex } = getTextBeforeCursor(editor);
 
     if (!textNode || atIndex === -1) {
       setShowMentions(false);
       return;
     }
 
-    // Calculate positions within the text node
     const nodeText = textNode.textContent || "";
-
-    // Find @ position relative to this text node
-    // The atIndex is in the "full text before cursor", we need to find it in the current text node
-    const textBeforeNode = text.slice(0, text.length - offsetInNode);
     const atPositionInNode = nodeText.lastIndexOf("@", offsetInNode);
 
     if (atPositionInNode === -1) {
@@ -257,53 +362,19 @@ export function OxyComposer({
       return;
     }
 
-    // Split the text node around the @query
     const beforeAt = nodeText.slice(0, atPositionInNode);
     const afterCursor = nodeText.slice(offsetInNode);
 
-    // Create the pill element
-    const pill = document.createElement("span");
-    pill.contentEditable = "false";
-    pill.className = "oxy-mention-pill";
-    pill.dataset.mentionId = transcript.id;
-    pill.dataset.mentionTitle = transcript.title;
-
-    // Create icon using SVG string (FileText icon)
-    const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="oxy-mention-pill-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>`;
-
-    pill.innerHTML = `
-      ${iconSvg}
-      <span class="oxy-mention-pill-title">${escapeHTML(transcript.title)}</span>
-    `;
-
-    // Create remove button
-    const removeBtn = document.createElement("button");
-    removeBtn.className = "oxy-mention-pill-remove";
-    removeBtn.tabIndex = 0; // Allow keyboard focus
-    removeBtn.type = "button";
-    removeBtn.setAttribute("aria-label", `Remove ${transcript.title}`);
-    removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
-    removeBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const parent = pill.parentNode;
-      if (parent) {
-        parent.removeChild(pill);
+    const pill = createMentionPill(
+      { id: transcript.id, title: transcript.title },
+      () => {
+        pill.parentNode?.removeChild(pill);
         editor.normalize();
         syncToParent();
         editor.focus();
       }
-    };
-    // Handle keyboard activation
-    removeBtn.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        removeBtn.click();
-      }
-    };
-    pill.appendChild(removeBtn);
+    );
 
-    // Replace the text node with: before text + pill + space + after text
     const parent = textNode.parentNode;
     if (!parent) return;
 
@@ -315,9 +386,8 @@ export function OxyComposer({
     parent.insertBefore(afterNode, textNode);
     parent.removeChild(textNode);
 
-    // Position cursor after the pill (in the afterNode, after the space)
     const newRange = document.createRange();
-    newRange.setStart(afterNode, 1); // After the space
+    newRange.setStart(afterNode, 1);
     newRange.collapse(true);
     selection.removeAllRanges();
     selection.addRange(newRange);

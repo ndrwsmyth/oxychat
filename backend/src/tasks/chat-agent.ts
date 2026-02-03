@@ -8,6 +8,7 @@ export interface ChatAgentInput {
   conversationMessages: Array<{ role: string; content: string }>;
   userContent: string;
   mentionIds: string[];
+  userContext?: string;
 }
 
 /**
@@ -46,7 +47,8 @@ export const chatAgentTask = defineTask<ChatAgentInput, string>(
       }
     }
 
-    const systemPrompt = getSystemPrompt() + mentionContext;
+    // Build system prompt with optional user context
+    const systemPrompt = getSystemPrompt(input.userContext) + mentionContext;
 
     // Build messages
     const messages = [
@@ -59,7 +61,6 @@ export const chatAgentTask = defineTask<ChatAgentInput, string>(
 
     // Stream via Sediment adapter
     const modelId = getModelId(input.model);
-    let fullContent = '';
 
     for await (const chunk of deps.completions.complete({
       model: modelId,
@@ -67,7 +68,6 @@ export const chatAgentTask = defineTask<ChatAgentInput, string>(
       maxTokens: 8192,
     })) {
       if (chunk.type === 'token') {
-        fullContent += chunk.content;
         yield chunk.content;
       }
     }

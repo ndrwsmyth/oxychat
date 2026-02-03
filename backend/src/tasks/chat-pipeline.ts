@@ -12,6 +12,7 @@ export interface ChatPipelineInput {
   content: string;
   mentionIds?: string[];
   model: string;
+  userContext?: string;
 }
 
 export interface ChatPipelineEvent {
@@ -53,22 +54,18 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       mentions: parsed.mentionIds,
     }, deps);
 
-    // 3.5. Generate title for first message (uses fast nano model)
+    // Generate title for first message (uses fast nano model)
     // Runs early so title appears in sidebar before streaming completes
     const isFirstMessage = conversation.messages.length === 0;
-    console.log('[chat-pipeline] isFirstMessage:', isFirstMessage, 'messageCount:', conversation.messages.length);
     if (isFirstMessage) {
       const titleDeps = createTitleRuntime().getDeps();
-      console.log('[chat-pipeline] Generating title for conversation:', input.conversationId);
       const title = await runTaskToCompletion(generateTitleTask, {
         conversationId: input.conversationId,
         userMessage: input.content,
       }, titleDeps);
 
-      console.log('[chat-pipeline] Generated title:', title);
       if (title) {
         yield { type: 'title_update' as const, title };
-        console.log('[chat-pipeline] Yielded title_update event');
       }
     }
 
@@ -79,6 +76,7 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       conversationMessages: conversation.messages,
       userContent: input.content,
       mentionIds: parsed.mentionIds,
+      userContext: input.userContext,
     }, deps)) {
       fullContent += token;
       yield { type: 'token' as const, content: token };

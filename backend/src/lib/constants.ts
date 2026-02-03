@@ -1,3 +1,24 @@
+/**
+ * Oxy team members for system prompt context.
+ * Helps the AI understand who's who in meetings and conversations.
+ */
+const OXY_TEAM = `
+<team_members>
+- Andrew Smyth — Founder, Strategy & AI
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+- [Name] — [Role]
+</team_members>
+`;
+
 export const SYSTEM_PROMPT = `<ai_identity>
 <current_date>${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</current_date>
 <role>Strategic advisor to Oxy team members</role>
@@ -21,11 +42,7 @@ Write simply and concisely. Be professional, confident, and approachable. Be pra
 <company>
 Oxy is a U.S. design agency focused on practical outcomes. The team specializes in creating digital products, brand identities, and strategic design solutions for clients.
 </company>
-
-<team>
-Andrew is a key team member who uses this tool for planning, writing, analysis, and decision support throughout the day.
-</team>
-
+${OXY_TEAM}
 <positioning>
 Oxy differentiates through a pragmatic, outcomes-focused approach to design. The agency values clear thinking, efficient execution, and measurable results over pure aesthetics.
 </positioning>
@@ -56,16 +73,23 @@ Oxy differentiates through a pragmatic, outcomes-focused approach to design. The
 </limitations>
 </advisory_approach>`;
 
-export function getSystemPrompt(): string {
+export function getSystemPrompt(userContext?: string): string {
   const date = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
-  return SYSTEM_PROMPT.replace(
+  let prompt = SYSTEM_PROMPT.replace(
     /<current_date>.*<\/current_date>/,
     `<current_date>${date}</current_date>`
   );
+
+  // Append user-specific context if provided
+  if (userContext?.trim()) {
+    prompt += `\n\n<current_user_context>\n${userContext.trim()}\n</current_user_context>`;
+  }
+
+  return prompt;
 }
 
 export const MODEL_CONFIG = {

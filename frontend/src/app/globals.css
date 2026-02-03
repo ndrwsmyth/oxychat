@@ -3323,3 +3323,300 @@ button.oxy-mark:focus-visible {
     opacity: 0.9;
   }
 }
+
+/* ================================================================
+   AUTH & USER AVATAR STYLES
+   ================================================================ */
+
+/* Auth container (sign-in page) */
+.oxy-auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--surface);
+}
+
+/* Clerk component overrides */
+.oxy-clerk-root {
+  --clerk-font-family: inherit;
+}
+
+.oxy-clerk-card {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.oxy-clerk-title {
+  color: var(--text-primary) !important;
+}
+
+.oxy-clerk-subtitle {
+  color: var(--text-secondary) !important;
+}
+
+.oxy-clerk-social-btn {
+  background: var(--surface-overlay) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  transition: background-color var(--duration-fast) ease-out !important;
+}
+
+.oxy-clerk-social-btn:hover {
+  background: var(--surface) !important;
+}
+
+.oxy-clerk-primary-btn {
+  background: var(--text-primary) !important;
+  color: var(--surface) !important;
+}
+
+.oxy-clerk-link {
+  color: var(--text-secondary) !important;
+}
+
+/* User Avatar */
+.oxy-user-avatar {
+  width: var(--size-sm);
+  height: var(--size-sm);
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  border: none;
+  background: var(--surface-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) ease-out, box-shadow var(--duration-fast) ease-out;
+}
+
+@media (hover: hover) {
+  .oxy-user-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.oxy-user-avatar:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.oxy-user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.oxy-user-avatar-initials {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+.oxy-user-avatar-skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* User Menu (popover) */
+.oxy-user-menu {
+  width: 240px !important;
+  padding: var(--spacing-sm) !important;
+}
+
+.oxy-user-menu-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+}
+
+.oxy-user-menu-avatar {
+  width: var(--size-lg);
+  height: var(--size-lg);
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.oxy-user-menu-avatar.oxy-user-avatar-initials {
+  background: var(--surface-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-md);
+}
+
+.oxy-user-menu-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.oxy-user-menu-name {
+  font-size: var(--font-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oxy-user-menu-email {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oxy-user-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--spacing-xs) 0;
+}
+
+.oxy-user-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-base);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease-out;
+}
+
+.oxy-user-menu-item svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+@media (hover: hover) {
+  .oxy-user-menu-item:hover {
+    background: var(--surface-overlay);
+  }
+
+  .oxy-user-menu-item:hover svg {
+    color: var(--text-secondary);
+  }
+}
+
+.oxy-user-menu-item:focus-visible {
+  outline: none;
+  background: var(--surface-overlay);
+}
+
+.oxy-user-menu-item-danger {
+  color: #dc2626;
+}
+
+.oxy-user-menu-item-danger svg {
+  color: #dc2626;
+}
+
+/* Settings Modal */
+.oxy-settings-modal {
+  max-width: 400px !important;
+}
+
+.oxy-settings-profile {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0;
+}
+
+.oxy-settings-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.oxy-settings-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-overlay);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.oxy-settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xs);
+}
+
+.oxy-settings-name {
+  font-size: var(--font-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.oxy-settings-email {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.oxy-settings-placeholder {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--font-sm);
+}
+
+/* Keyboard Shortcuts Modal */
+.oxy-shortcuts-modal {
+  max-width: 440px !important;
+}
+
+.oxy-shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.oxy-shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) 0;
+}
+
+.oxy-shortcut-description {
+  font-size: var(--font-base);
+  color: var(--text-primary);
+}
+
+.oxy-shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2xs);
+}
+
+.oxy-shortcut-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--spacing-xs);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}

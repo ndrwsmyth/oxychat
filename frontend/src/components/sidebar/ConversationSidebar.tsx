@@ -3,9 +3,25 @@ import { useRouter } from "next/navigation";
 import { useSidebar } from "@/hooks/useSidebar";
 import { ConversationGroup } from "./ConversationGroup";
 import { IOSThemeToggle } from "./IOSThemeToggle";
+import { UserAvatar } from "./UserAvatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Search, ChevronsLeft } from "lucide-react";
 import type { Conversation, GroupedConversations } from "@/types";
+
+// Conversation group configuration for rendering
+const CONVERSATION_GROUPS: Array<{
+  key: keyof GroupedConversations;
+  title: string;
+  isPinned?: boolean;
+}> = [
+  { key: "pinned", title: "Pinned", isPinned: true },
+  { key: "today", title: "Today" },
+  { key: "yesterday", title: "Yesterday" },
+  { key: "two_days_ago", title: "2 days ago" },
+  { key: "last_7_days", title: "Last 7 days" },
+  { key: "last_week", title: "Last week" },
+  { key: "older", title: "Older" },
+];
 
 // Oxy logo component
 function OxyLogo({ size = 20 }: { size?: number }) {
@@ -123,70 +139,24 @@ export function ConversationSidebar({
             </div>
           </div>
         ) : (
-          <>
+          CONVERSATION_GROUPS.map(({ key, title, isPinned }) => (
             <ConversationGroup
-              title="Pinned"
-              conversations={conversations.pinned}
+              key={key}
+              title={title}
+              conversations={conversations[key]}
               activeConversationId={activeConversationId}
-              isPinned
+              isPinned={isPinned}
               onUpdate={onUpdateConversation}
               onDelete={onDeleteConversation}
               onTogglePin={onTogglePin}
             />
-            <ConversationGroup
-              title="Today"
-              conversations={conversations.today}
-              activeConversationId={activeConversationId}
-              onUpdate={onUpdateConversation}
-              onDelete={onDeleteConversation}
-              onTogglePin={onTogglePin}
-            />
-            <ConversationGroup
-              title="Yesterday"
-              conversations={conversations.yesterday}
-              activeConversationId={activeConversationId}
-              onUpdate={onUpdateConversation}
-              onDelete={onDeleteConversation}
-              onTogglePin={onTogglePin}
-            />
-            <ConversationGroup
-              title="2 days ago"
-              conversations={conversations.two_days_ago}
-              activeConversationId={activeConversationId}
-              onUpdate={onUpdateConversation}
-              onDelete={onDeleteConversation}
-              onTogglePin={onTogglePin}
-            />
-            <ConversationGroup
-              title="Last 7 days"
-              conversations={conversations.last_7_days}
-              activeConversationId={activeConversationId}
-              onUpdate={onUpdateConversation}
-              onDelete={onDeleteConversation}
-              onTogglePin={onTogglePin}
-            />
-            <ConversationGroup
-              title="Last week"
-              conversations={conversations.last_week}
-              activeConversationId={activeConversationId}
-              onUpdate={onUpdateConversation}
-              onDelete={onDeleteConversation}
-              onTogglePin={onTogglePin}
-            />
-            <ConversationGroup
-              title="Older"
-              conversations={conversations.older}
-              activeConversationId={activeConversationId}
-              onUpdate={onUpdateConversation}
-              onDelete={onDeleteConversation}
-              onTogglePin={onTogglePin}
-            />
-          </>
+          ))
         )}
       </ScrollArea>
 
-      {/* Footer - collapse button first (icon position), theme toggle second (clips when collapsed) */}
+      {/* Footer - user avatar, collapse button, theme toggle */}
       <div className="oxy-rail-footer" aria-hidden={collapsed}>
+        <UserAvatar collapsed={collapsed} />
         <button
           type="button"
           onClick={toggle}

@@ -2,8 +2,9 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { chatPipelineTask, type ChatPipelineEvent } from '../tasks/chat-pipeline.js';
 import { createChatRuntime } from '../lib/runtime.js';
+import type { AppVariables } from '../types.js';
 
-export const chatRouter = new Hono();
+export const chatRouter = new Hono<{ Variables: AppVariables }>();
 
 // Send message and stream response
 chatRouter.post('/conversations/:id/messages', async (c) => {
@@ -20,6 +21,7 @@ chatRouter.post('/conversations/:id/messages', async (c) => {
   }
 
   const selectedModel = model ?? 'claude-sonnet-4.5';
+  const user = c.get('user');
 
   return streamSSE(c, async (stream) => {
     try {
@@ -34,6 +36,7 @@ chatRouter.post('/conversations/:id/messages', async (c) => {
         content,
         mentionIds: mentions,
         model: selectedModel,
+        userContext: user.context ?? undefined,
       };
 
       // Stream directly from task execution instead of buffering

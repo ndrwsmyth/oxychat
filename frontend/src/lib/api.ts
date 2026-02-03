@@ -3,6 +3,17 @@ import { toast } from "sonner";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Token getter that will be set by useAuthSetup
+let getTokenFn: (() => Promise<string | null>) | null = null;
+
+/**
+ * Set the auth token getter function.
+ * Called by useAuthSetup hook to wire up Clerk's getToken.
+ */
+export function setAuthTokenGetter(fn: () => Promise<string | null>) {
+  getTokenFn = fn;
+}
+
 /**
  * Fetch with automatic retry and toast notifications
  */
@@ -56,12 +67,21 @@ async function fetchWithRetry(
 
 /**
  * Get headers for API requests.
- * Auth removed for dev - will be replaced with Clerk when implemented.
+ * Includes Clerk auth token when available.
  */
 async function getAuthHeaders(): Promise<HeadersInit> {
-  return {
+  const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
+
+  if (getTokenFn) {
+    const token = await getTokenFn();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
+  return headers;
 }
 
 /**
@@ -176,19 +196,11 @@ export async function streamChat({
         if (done) break;
 
         const text = decoder.decode(value);
-        // Log raw SSE data for debugging
-        if (text.includes('title_update')) {
-          console.log('[api.streamChat] Raw SSE chunk containing title_update:', text);
-        }
         const lines = text.split("\n");
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const data = line.slice(6);
-            // Log all parsed data for debugging
-            if (data.includes('title')) {
-              console.log('[api.streamChat] Parsed line with title:', data);
-            }
             // Legacy [DONE] format (kept for backward compatibility)
             if (data === "[DONE]") {
               onComplete();
@@ -214,9 +226,7 @@ export async function streamChat({
                   onThinkingEnd?.();
                   break;
                 case "title_update":
-                  console.log('[api.streamChat] Received title_update event:', parsed);
                   if (parsed.title && conversationId) {
-                    console.log('[api.streamChat] Calling onTitleUpdate with:', parsed.title, conversationId);
                     onTitleUpdate?.(parsed.title, conversationId);
                   }
                   break;

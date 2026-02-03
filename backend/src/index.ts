@@ -8,6 +8,7 @@ import { chatRouter } from './routes/chat.js';
 import { transcriptsRouter } from './routes/transcripts.js';
 import { webhooksRouter } from './routes/webhooks.js';
 import { feedbackRouter } from './routes/feedback.js';
+import { authMiddleware } from './middleware/auth.js';
 
 const app = new Hono();
 
@@ -33,6 +34,12 @@ app.use(
 
 // Health check
 app.get('/health', (c) => c.json({ status: 'ok' }));
+
+// Auth middleware for protected routes (excludes webhooks)
+app.use('/api/conversations/*', authMiddleware);
+app.use('/api/transcripts/*', authMiddleware);
+app.use('/api/messages/*', authMiddleware);
+app.use('/api/search/*', authMiddleware);
 
 // Routes
 app.route('/api', conversationsRouter);

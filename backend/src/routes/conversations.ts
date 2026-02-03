@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
 import { getSupabase } from '../lib/supabase.js';
+import type { AppVariables } from '../types.js';
 
-// Hardcoded dev user ID - replace with Clerk auth when implemented
-const DEV_USER_ID = '00000000-0000-0000-0000-000000000000';
-
-export const conversationsRouter = new Hono();
+export const conversationsRouter = new Hono<{ Variables: AppVariables }>();
 
 // Create conversation
 conversationsRouter.post('/conversations', async (c) => {
@@ -15,7 +13,7 @@ conversationsRouter.post('/conversations', async (c) => {
   const { data, error } = await supabase
     .from('conversations')
     .insert({
-      user_id: DEV_USER_ID,
+      user_id: c.get('user').id,
       title: title ?? null,
       model: model ?? 'claude-sonnet-4.5',
     })
@@ -36,7 +34,7 @@ conversationsRouter.get('/conversations', async (c) => {
   const { data, error } = await supabase
     .from('conversations')
     .select('id, title, auto_titled, model, pinned, pinned_at, created_at, updated_at')
-    .eq('user_id', DEV_USER_ID)
+    .eq('user_id', c.get('user').id)
     .is('deleted_at', null)
     .order('updated_at', { ascending: false });
 
@@ -86,7 +84,7 @@ conversationsRouter.get('/conversations/:id', async (c) => {
     .from('conversations')
     .select('*')
     .eq('id', id)
-    .eq('user_id', DEV_USER_ID)
+    .eq('user_id', c.get('user').id)
     .is('deleted_at', null)
     .single();
 
@@ -119,7 +117,7 @@ conversationsRouter.patch('/conversations/:id', async (c) => {
     .from('conversations')
     .update(updates)
     .eq('id', id)
-    .eq('user_id', DEV_USER_ID)
+    .eq('user_id', c.get('user').id)
     .select()
     .single();
 
@@ -136,7 +134,7 @@ conversationsRouter.delete('/conversations/:id', async (c) => {
     .from('conversations')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('user_id', DEV_USER_ID);
+    .eq('user_id', c.get('user').id);
 
   if (error) return c.json({ error: error.message }, 500);
   return c.json({ ok: true });
@@ -152,7 +150,7 @@ conversationsRouter.post('/conversations/:id/pin', async (c) => {
     .from('conversations')
     .select('pinned')
     .eq('id', id)
-    .eq('user_id', DEV_USER_ID)
+    .eq('user_id', c.get('user').id)
     .single();
 
   if (!conv) return c.json({ error: 'Not found' }, 404);
@@ -166,7 +164,7 @@ conversationsRouter.post('/conversations/:id/pin', async (c) => {
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .eq('user_id', DEV_USER_ID)
+    .eq('user_id', c.get('user').id)
     .select()
     .single();
 

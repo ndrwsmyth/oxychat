@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useTranscripts } from "@/hooks/useTranscripts";
 import { useConversation } from "@/hooks/useConversation";
-import { useDraft } from "@/hooks/useDraft";
+import { getDraft, saveDraft, clearDraft, cleanupDrafts, type DraftData, type MentionChip } from "@/hooks/useDrafts";
 import { useSearch } from "@/hooks/useSearch";
 import { useConversations } from "@/hooks/useConversations";
+import { useAuthSetup } from "@/hooks/useAuthSetup";
 import { SidebarProvider } from "@/hooks/useSidebar";
 import { TranscriptsPanelProvider } from "@/hooks/useTranscriptsPanel";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -16,9 +18,11 @@ import { SearchModal } from "@/components/search/SearchModal";
 import { OxyHeader } from "@/components/OxyHeader";
 import { OxyEmptyState } from "@/components/chat/OxyEmptyState";
 import { OxyMessageThread } from "@/components/chat/OxyMessageThread";
-import { OxyComposer, type MentionChip } from "@/components/chat/OxyComposer";
+import { OxyComposer } from "@/components/chat/OxyComposer";
 
 function HomeContent() {
+  // Wire up Clerk auth to API client
+  useAuthSetup();
   const router = useRouter();
   const searchParams = useSearchParams();
   const conversationId = searchParams.get("c");
@@ -40,13 +44,73 @@ function HomeContent() {
 
   const { messages, model, isLoading, isStreaming, isThinking, error, sendMessage, stopGenerating, changeModel } =
     useConversation(conversationId, transcripts, { onTitleUpdate: handleTitleUpdate });
-  const { draft, setDraft } = useDraft(conversationId);
-  const [mentions, setMentions] = useState<MentionChip[]>([]);
 
-  const handleNewChat = useCallback(async () => {
-    const newConv = await createConversation();
-    router.push(`/?c=${newConv.id}`);
-  }, [createConversation, router]);
+  // Draft persistence state - initialized from localStorage based on current conversation
+  const initialDraft = getDraft(conversationId);
+  const [mentions, setMentions] = useState<MentionChip[]>(initialDraft?.mentions ?? []);
+  const [draftText, setDraftText] = useState(initialDraft?.text ?? "");
+  const [draftToRestore, setDraftToRestore] = useState<DraftData | null>(initialDraft);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const prevConversationIdRef = useRef<string | null>(conversationId);
+
+  // Clean up expired drafts on mount
+  useEffect(() => {
+    cleanupDrafts();
+  }, []);
+
+  // Load draft when conversation changes
+  // This synchronizes React state with localStorage (external state) on navigation
+  useEffect(() => {
+    if (prevConversationIdRef.current === conversationId) return;
+    prevConversationIdRef.current = conversationId;
+
+    const draft = getDraft(conversationId);
+    /* eslint-disable react-hooks/set-state-in-effect -- Synchronizing with external localStorage state on navigation */
+    setDraftToRestore(draft);
+    setDraftText(draft?.text ?? "");
+    setMentions(draft?.mentions ?? []);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    if (draft?.model && draft.model !== model) {
+      changeModel(draft.model);
+    }
+  }, [conversationId, model, changeModel]);
+
+  // Debounced save of draft
+  const handleDraftChange = useCallback((text: string, newMentions: MentionChip[]) => {
+    setDraftText(text);
+    setMentions(newMentions);
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(() => {
+      if (text.trim() || newMentions.length > 0) {
+        saveDraft(conversationId, { text, mentions: newMentions, model });
+      } else {
+        clearDraft(conversationId);
+      }
+    }, 500);
+  }, [conversationId, model]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  // Handle draft restoration complete
+  const handleDraftRestored = useCallback(() => {
+    setDraftToRestore(null);
+  }, []);
+
+  const handleNewChat = useCallback(() => {
+    clearDraft(null);
+    setDraftText("");
+    setMentions([]);
+    setDraftToRestore(null);
+    prevConversationIdRef.current = null;
+    router.push("/");
+  }, [router]);
 
   const handleSelectConversation = useCallback((id: string) => {
     router.push(`/?c=${id}`);
@@ -79,21 +143,29 @@ function HomeContent() {
       try {
         const newConv = await createConversation();
         targetConversationId = newConv.id;
+        // Clear the "new" draft since we're creating a conversation
+        clearDraft(null);
+        prevConversationIdRef.current = targetConversationId;
         router.push(`/?c=${targetConversationId}`, { scroll: false });
-      } catch (err) {
-        console.error("Failed to create conversation:", err);
+      } catch {
+        toast.error("Failed to start conversation", {
+          description: "Please try again.",
+        });
         return;
       }
+    } else {
+      // Clear the draft for this conversation
+      clearDraft(targetConversationId);
     }
 
     const mentionIds = passedMentions.map(m => m.id);
 
     // Clear input immediately before streaming starts
-    setDraft("");
+    setDraftText("");
     setMentions([]);
 
     await sendMessage(currentDraft, targetConversationId ?? undefined, mentionIds);
-  }, [isStreaming, sendMessage, setDraft, conversationId, createConversation, router]);
+  }, [isStreaming, sendMessage, conversationId, createConversation, router]);
 
   const handleTranscriptClick = (transcript: { id: string; title: string }) => {
     // Add as a chip instead of inserting text
@@ -187,10 +259,10 @@ function HomeContent() {
 
               {/* Composer */}
               <OxyComposer
-                value={draft}
-                onChange={setDraft}
+                value={draftText}
+                onChange={(text) => handleDraftChange(text, mentions)}
                 mentions={mentions}
-                onMentionsChange={setMentions}
+                onMentionsChange={(newMentions) => handleDraftChange(draftText, newMentions)}
                 onSend={send}
                 onStop={stopGenerating}
                 onNewConversation={handleNewChat}
@@ -200,6 +272,8 @@ function HomeContent() {
                 transcripts={transcripts}
                 model={model}
                 onModelChange={changeModel}
+                draftToRestore={draftToRestore}
+                onDraftRestored={handleDraftRestored}
               />
             </main>
           }
