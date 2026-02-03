@@ -32,6 +32,7 @@ export class SupabaseLogStore implements Logger {
         completion: record.response as Record<string, unknown>,
         timing: record.timing as Record<string, unknown> | undefined,
         tokens: record.response?.usage as Record<string, unknown> | undefined,
+        cost: record.cost as Record<string, unknown> | undefined,
         error: record.error ? { message: record.error } : undefined,
       })
       .then(({ error }) => {

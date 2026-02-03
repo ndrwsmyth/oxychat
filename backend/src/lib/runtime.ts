@@ -6,7 +6,7 @@ import {
   ConsoleLogger,
 } from 'sediment';
 import type { CompletionsAdapterInterface } from 'sediment';
-import { MODEL_CONFIG, type ModelKey } from './constants.js';
+import { MODEL_CONFIG, OXYCHAT_PRICING, type ModelKey } from './constants.js';
 import { SupabaseLogStore } from '../adapters/supabase-log-store.js';
 
 // Singleton adapters
@@ -58,6 +58,7 @@ export function createChatRuntime(opts: {
   return Runtime.create({
     completions: getAdapterForModel(opts.model),
     logger: createLogger(),
+    pricing: OXYCHAT_PRICING,
     productName: 'oxychat',
     productStep: 'chat_pipeline',
     requestId: crypto.randomUUID(),
@@ -68,6 +69,7 @@ export function createIngestRuntime(): ReturnType<typeof Runtime.create> {
   return Runtime.create({
     completions: getOpenAIAdapter(),
     logger: createLogger(),
+    pricing: OXYCHAT_PRICING,
     productName: 'oxychat',
     productStep: 'transcript_ingestion',
     requestId: crypto.randomUUID(),
@@ -82,6 +84,7 @@ export function createTitleRuntime(): ReturnType<typeof Runtime.create> {
   return Runtime.create({
     completions: getOpenAIAdapter(),
     logger: createLogger(),
+    pricing: OXYCHAT_PRICING,
     productName: 'oxychat',
     productStep: 'title_generation',
     requestId: crypto.randomUUID(),

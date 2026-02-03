@@ -28,7 +28,7 @@ importers:
         version: 4.104.0(ws@8.19.0)(zod@3.25.76)
       sediment:
         specifier: github:ndrwsmyth/sediment
-        version: git+https://git@github.com:ndrwsmyth/sediment.git#f926c8df3354ec021db2e76060586fe50f7fdb1c(ws@8.19.0)(zod@3.25.76)
+        version: git+https://git@github.com:ndrwsmyth/sediment.git#a3101e55ece9c89e63c646bf7d40e7a64e670241(ws@8.19.0)(zod@3.25.76)
       zod:
         specifier: ^3.24.0
         version: 3.25.76
@@ -810,8 +810,8 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
-  sediment@git+https://git@github.com:ndrwsmyth/sediment.git#f926c8df3354ec021db2e76060586fe50f7fdb1c:
-    resolution: {commit: f926c8df3354ec021db2e76060586fe50f7fdb1c, repo: git@github.com:ndrwsmyth/sediment.git, type: git}
+  sediment@git+https://git@github.com:ndrwsmyth/sediment.git#a3101e55ece9c89e63c646bf7d40e7a64e670241:
+    resolution: {commit: a3101e55ece9c89e63c646bf7d40e7a64e670241, repo: git@github.com:ndrwsmyth/sediment.git, type: git}
     version: 0.1.0
     engines: {node: '>=18'}
 
@@ -1596,7 +1596,7 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.57.0
       fsevents: 2.3.3
 
-  sediment@git+https://git@github.com:ndrwsmyth/sediment.git#f926c8df3354ec021db2e76060586fe50f7fdb1c(ws@8.19.0)(zod@3.25.76):
+  sediment@git+https://git@github.com:ndrwsmyth/sediment.git#a3101e55ece9c89e63c646bf7d40e7a64e670241(ws@8.19.0)(zod@3.25.76):
     dependencies:
       '@anthropic-ai/sdk': 0.72.1(zod@3.25.76)
       openai: 6.17.0(ws@8.19.0)(zod@3.25.76)
