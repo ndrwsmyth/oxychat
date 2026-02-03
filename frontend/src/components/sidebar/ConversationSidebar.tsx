@@ -51,10 +51,6 @@ export function ConversationSidebar({
   const router = useRouter();
   const { collapsed, toggle } = useSidebar();
 
-  const handleGoHome = () => {
-    router.push("/");
-  };
-
   // Click on background area expands when collapsed
   const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;

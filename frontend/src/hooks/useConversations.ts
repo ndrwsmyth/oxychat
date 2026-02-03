@@ -68,42 +68,12 @@ export function useConversations() {
   }, [loadConversations]);
 
   const createConversation = useCallback(async (title?: string): Promise<Conversation> => {
-    // Create optimistic conversation
-    const tempId = `temp-${Date.now()}`;
-    const now = new Date();
-    const optimisticConv: Conversation = {
-      id: tempId,
-      title: title || null, // Null title until auto-generated
-      auto_titled: false,
-      model: "claude-sonnet-4.5",
-      pinned: false,
-      pinned_at: null,
-      created_at: now,
-      updated_at: now,
-    };
-
-    // Optimistically add to today
+    const newConv = await apiCreateConversation(title);
     setConversations(prev => ({
       ...prev,
-      today: [optimisticConv, ...prev.today],
+      today: [newConv, ...prev.today],
     }));
-
-    try {
-      const newConv = await apiCreateConversation(title);
-      // Replace temp with real conversation
-      setConversations(prev => ({
-        ...prev,
-        today: prev.today.map(c => c.id === tempId ? newConv : c),
-      }));
-      return newConv;
-    } catch (err) {
-      // Rollback on error
-      setConversations(prev => ({
-        ...prev,
-        today: prev.today.filter(c => c.id !== tempId),
-      }));
-      throw err;
-    }
+    return newConv;
   }, []);
 
   const updateConversation = useCallback(async (
@@ -218,16 +188,13 @@ export function useConversations() {
    * Used when title_update SSE event is received to avoid full refetch.
    */
   const updateConversationTitle = useCallback((id: string, title: string) => {
-    console.log('[useConversations] updateConversationTitle called:', { id, title });
     setConversations(prev => {
-      console.log('[useConversations] Current conversations:', prev);
       const result = { ...prev };
       for (const group of GROUP_KEYS) {
         result[group] = prev[group].map(c =>
           c.id === id ? { ...c, title, auto_titled: true } : c
         );
       }
-      console.log('[useConversations] Updated conversations:', result);
       return result;
     });
   }, []);

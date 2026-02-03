@@ -35,6 +35,7 @@ export function ConversationItem({
   isActive,
   onUpdate,
   onDelete,
+  // onTogglePin is passed for future use but not currently used in the menu
 }: ConversationItemProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);

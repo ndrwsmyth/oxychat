@@ -70,54 +70,27 @@ function HomeContent() {
 
   const send = useCallback(async (content: string, passedMentions: MentionChip[]) => {
     const currentDraft = content.trim();
-    const currentMentions = [...passedMentions];
-
-    console.log("[Page.send] Starting send:", {
-      draft: currentDraft.substring(0, 100),
-      draftLength: currentDraft.length,
-      mentionCount: currentMentions.length,
-      mentions: currentMentions.map(m => m.id),
-      isStreaming,
-      conversationId,
-    });
-
-    if (!currentDraft) {
-      console.warn("[Page.send] Blocked - no content passed");
-      return;
-    }
-
-    if (isStreaming) {
-      console.warn("[Page.send] Blocked - already streaming");
-      return;
-    }
+    if (!currentDraft || isStreaming) return;
 
     let targetConversationId = conversationId;
 
     // Create conversation on first message if needed
     if (!targetConversationId) {
       try {
-        const newConv = await createConversation(); // No title - will be auto-generated
+        const newConv = await createConversation();
         targetConversationId = newConv.id;
-        console.log("[Page.send] Created new conversation:", targetConversationId);
         router.push(`/?c=${targetConversationId}`, { scroll: false });
       } catch (err) {
         console.error("Failed to create conversation:", err);
-        return; // Don't continue without a valid conversation
+        return;
       }
     }
 
-    // Extract mention IDs directly from the pills (not re-parsing from text)
-    const mentionIds = currentMentions.map(m => m.id);
+    const mentionIds = passedMentions.map(m => m.id);
 
     // Clear input immediately before streaming starts
     setDraft("");
     setMentions([]);
-
-    console.log("[Page.send] Calling sendMessage with:", {
-      content: currentDraft.substring(0, 100),
-      targetConversationId,
-      mentionIds,
-    });
 
     await sendMessage(currentDraft, targetConversationId ?? undefined, mentionIds);
   }, [isStreaming, sendMessage, setDraft, conversationId, createConversation, router]);
