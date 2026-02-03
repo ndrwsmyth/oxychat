@@ -1430,22 +1430,9 @@ button.oxy-mark:focus-visible {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--duration-fast) ease-out;
-  /* Fast stagger animation */
-  animation: conversationIn var(--duration-fast) ease-out backwards;
   /* Performance: skip rendering for off-screen items */
   content-visibility: auto;
   contain-intrinsic-size: auto 36px;
-}
-
-@keyframes conversationIn {
-  from {
-    opacity: 0;
-    transform: translateX(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 @media (hover: hover) {
@@ -2958,10 +2945,6 @@ button.oxy-mark:focus-visible {
 /* Logo button special styling */
 .oxy-rail-logo {
   margin-bottom: var(--spacing-xs);
-  width: var(--size-xl);
-  padding: 0;
-  justify-content: center;
-  align-self: flex-start;
   background: none;
 }
 

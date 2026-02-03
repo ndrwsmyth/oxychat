@@ -3,7 +3,7 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Oxy",
+  title: "Oxychat",
   description: "AI workspace for Oxy",
 };
 
