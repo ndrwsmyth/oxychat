@@ -191,12 +191,13 @@ OPENAI_API_KEY=sk-...
 ## 5. Railway Setup
 
 1. Create project at [railway.app](https://railway.app)
-2. Deploy from GitHub → select repo
-3. Configure service:
-   - **Root Directory**: `backend`
-   - **Build Command**: `pnpm install && pnpm run build`
-   - **Start Command**: `pnpm start`
-4. Add environment variables
+2. Deploy from GitHub → select repo (`ndrwsmyth/oxychat`)
+3. Railway auto-detects the `backend/Dockerfile`
+4. Add **Docker build argument** for private GitHub dependency (`sediment`):
+   - Go to service **Settings** → **Build** section
+   - Add build arg: `GITHUB_TOKEN` = a GitHub Personal Access Token with read access to `ndrwsmyth/sediment`
+   - To create the token: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → give it **Contents: Read** on the `ndrwsmyth/sediment` repo
+5. Add environment variables (see section 3)
 
 ### Environments
 
