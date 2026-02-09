@@ -20,38 +20,46 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="oxy-settings-modal">
-        <DialogHeader>
+        <DialogHeader className="oxy-settings-header">
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription className="sr-only">
             User settings and preferences
           </DialogDescription>
         </DialogHeader>
 
-        {/* Profile section */}
-        <div className="oxy-settings-profile">
-          {user?.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={user.imageUrl}
-              alt=""
-              className="oxy-settings-avatar"
-            />
-          ) : (
-            <div className="oxy-settings-avatar oxy-settings-avatar-fallback">
-              {user?.firstName?.[0] ?? "?"}
+        <div className="oxy-settings-body">
+          {/* Account section */}
+          <div className="oxy-settings-section">
+            <div className="oxy-settings-section-label">Account</div>
+            <div className="oxy-settings-profile">
+              {user?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.imageUrl}
+                  alt=""
+                  className="oxy-settings-avatar"
+                />
+              ) : (
+                <div className="oxy-settings-avatar oxy-settings-avatar-fallback">
+                  {user?.firstName?.[0] ?? "?"}
+                </div>
+              )}
+              <div className="oxy-settings-info">
+                <span className="oxy-settings-name">{user?.fullName ?? "User"}</span>
+                <span className="oxy-settings-email">
+                  {user?.emailAddresses[0]?.emailAddress}
+                </span>
+              </div>
             </div>
-          )}
-          <div className="oxy-settings-info">
-            <span className="oxy-settings-name">{user?.fullName ?? "User"}</span>
-            <span className="oxy-settings-email">
-              {user?.emailAddresses[0]?.emailAddress}
-            </span>
           </div>
-        </div>
 
-        {/* Placeholder content */}
-        <div className="oxy-settings-placeholder">
-          <p>More settings coming soon</p>
+          <div className="oxy-settings-divider" />
+
+          {/* General section */}
+          <div className="oxy-settings-section">
+            <div className="oxy-settings-section-label">General</div>
+            <p className="oxy-settings-coming-soon">More settings coming soon</p>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

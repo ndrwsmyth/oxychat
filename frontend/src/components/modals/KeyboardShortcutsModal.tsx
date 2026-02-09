@@ -26,7 +26,7 @@ export function KeyboardShortcutsModal({ open, onOpenChange }: KeyboardShortcuts
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="oxy-shortcuts-modal">
-        <DialogHeader>
+        <DialogHeader className="oxy-shortcuts-header">
           <DialogTitle>Keyboard shortcuts</DialogTitle>
           <DialogDescription className="sr-only">
             Available keyboard shortcuts for the application

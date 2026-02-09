@@ -3017,6 +3017,16 @@ button.oxy-mark:focus-visible {
   overflow: hidden; /* Clip theme toggle when collapsed */
 }
 
+/* Avatar wrapper - matches rail-icon-size to center 32px avatar with 40px icon column */
+.oxy-rail-footer-avatar {
+  width: var(--rail-icon-size);
+  height: var(--rail-icon-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .oxy-rail-collapse {
   width: var(--rail-icon-size); /* Match icon size for consistent positioning */
   height: var(--rail-icon-size);
@@ -3423,9 +3433,33 @@ button.oxy-mark:focus-visible {
 }
 
 /* User Menu (popover) */
+.oxy-dialog-surface,
+.oxy-popover-surface {
+  background: var(--surface) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow-lg);
+}
+
+.oxy-user-menu,
+.oxy-settings-modal,
+.oxy-shortcuts-modal {
+  background: var(--surface) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow-lg) !important;
+}
+
 .oxy-user-menu {
   width: 240px !important;
   padding: var(--spacing-sm) !important;
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow-md) !important;
 }
 
 .oxy-user-menu-header {
@@ -3526,18 +3560,43 @@ button.oxy-mark:focus-visible {
 /* Settings Modal */
 .oxy-settings-modal {
   max-width: 400px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+.oxy-settings-header {
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-xs);
+}
+
+.oxy-settings-body {
+  padding: 0 0 var(--spacing-sm);
+}
+
+.oxy-settings-section {
+  padding: var(--spacing-xs) var(--spacing-md);
+}
+
+.oxy-settings-section-label {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  padding-bottom: var(--spacing-xs);
 }
 
 .oxy-settings-profile {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) 0;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--surface-overlay);
+  border-radius: var(--radius-base);
 }
 
 .oxy-settings-avatar {
-  width: 64px;
-  height: 64px;
+  width: var(--size-lg);
+  height: var(--size-lg);
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -3548,7 +3607,8 @@ button.oxy-mark:focus-visible {
   align-items: center;
   justify-content: center;
   background: var(--surface-overlay);
-  font-size: 24px;
+  border: 1px solid var(--border);
+  font-size: var(--font-lg);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -3556,11 +3616,12 @@ button.oxy-mark:focus-visible {
 .oxy-settings-info {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2xs);
+  gap: 1px;
+  min-width: 0;
 }
 
 .oxy-settings-name {
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -3568,55 +3629,78 @@ button.oxy-mark:focus-visible {
 .oxy-settings-email {
   font-size: var(--font-sm);
   color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.oxy-settings-placeholder {
-  padding: var(--spacing-lg);
+.oxy-settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--spacing-xs) var(--spacing-md);
+}
+
+.oxy-settings-coming-soon {
+  padding: var(--spacing-base) var(--spacing-sm);
   text-align: center;
-  color: var(--text-tertiary);
+  color: var(--text-faint);
   font-size: var(--font-sm);
 }
 
 /* Keyboard Shortcuts Modal */
 .oxy-shortcuts-modal {
-  max-width: 440px !important;
+  max-width: 420px !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+.oxy-shortcuts-header {
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-xs);
 }
 
 .oxy-shortcuts-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md) var(--spacing-md);
 }
 
 .oxy-shortcut-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-xs) 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.oxy-shortcut-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .oxy-shortcut-description {
   font-size: var(--font-base);
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .oxy-shortcut-keys {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2xs);
+  gap: 3px;
 }
 
 .oxy-shortcut-key {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 var(--spacing-xs);
-  background: var(--surface-overlay);
-  border: 1px solid var(--border);
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
+  box-shadow: 0 1px 0 var(--border-strong);
   font-family: inherit;
   font-size: var(--font-sm);
-  color: var(--text-secondary);
+  font-weight: 500;
+  color: var(--text-primary);
 }

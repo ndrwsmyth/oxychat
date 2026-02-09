@@ -156,7 +156,9 @@ export function ConversationSidebar({
 
       {/* Footer - user avatar, collapse button, theme toggle */}
       <div className="oxy-rail-footer" aria-hidden={collapsed}>
-        <UserAvatar collapsed={collapsed} />
+        <div className="oxy-rail-footer-avatar">
+          <UserAvatar collapsed={collapsed} />
+        </div>
         <button
           type="button"
           onClick={toggle}
