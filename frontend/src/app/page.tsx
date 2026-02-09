@@ -43,7 +43,7 @@ function HomeContent() {
   }, [updateConversationTitle]);
 
   const { messages, model, isLoading, isStreaming, isThinking, error, sendMessage, stopGenerating, changeModel } =
-    useConversation(conversationId, transcripts, { onTitleUpdate: handleTitleUpdate });
+    useConversation(conversationId, { onTitleUpdate: handleTitleUpdate });
 
   // Draft persistence state - initialized from localStorage based on current conversation
   const initialDraft = getDraft(conversationId);
@@ -167,11 +167,6 @@ function HomeContent() {
     await sendMessage(currentDraft, targetConversationId ?? undefined, mentionIds);
   }, [isStreaming, sendMessage, conversationId, createConversation, router]);
 
-  const handleTranscriptClick = (transcript: { id: string; title: string }) => {
-    // Add as a chip instead of inserting text
-    setMentions(prev => [...prev, { id: transcript.id, title: transcript.title }]);
-  };
-
   const handleOpenSearch = useCallback(() => {
     setSearchOpen(true);
   }, [setSearchOpen]);
@@ -225,7 +220,6 @@ function HomeContent() {
           rightPanel={
             <TranscriptsPanel
               transcripts={transcripts}
-              onTranscriptClick={handleTranscriptClick}
               isLoading={transcriptsLoading}
               onRefresh={reloadTranscripts}
             />

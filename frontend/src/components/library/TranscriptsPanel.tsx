@@ -9,14 +9,12 @@ import type { Transcript } from "@/types";
 
 interface TranscriptsPanelProps {
   transcripts: Transcript[];
-  onTranscriptClick: (transcript: { id: string; title: string }) => void;
   isLoading?: boolean;
   onRefresh?: () => void;
 }
 
 export function TranscriptsPanel({
   transcripts,
-  onTranscriptClick,
   isLoading = false,
   onRefresh,
 }: TranscriptsPanelProps) {

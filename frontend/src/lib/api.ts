@@ -1,6 +1,14 @@
 import type { Conversation, GroupedConversations, Message, TruncationInfo, SourceInfo } from "@/types";
 import { toast } from "sonner";
 
+type RawConversation = Omit<Conversation, 'pinned_at' | 'created_at' | 'updated_at'> & {
+  pinned_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type RawMessage = Omit<Message, 'timestamp'> & { created_at: string };
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // Token getter that will be set by useAuthSetup
@@ -313,7 +321,7 @@ export async function fetchConversations(search?: string): Promise<GroupedConver
   const data = await response.json();
 
   // Convert date strings to Date objects
-  const convertDates = (conv: any): Conversation => ({
+  const convertDates = (conv: RawConversation): Conversation => ({
     ...conv,
     pinned_at: conv.pinned_at ? new Date(conv.pinned_at) : null,
     created_at: new Date(conv.created_at),
@@ -399,25 +407,10 @@ export async function fetchMessages(conversationId: string): Promise<Message[]> 
   if (!response.ok) throw new Error("Failed to fetch messages");
 
   const data = await response.json();
-  return (data.messages || []).map((msg: any) => ({
+  return (data.messages || []).map((msg: RawMessage) => ({
     ...msg,
     timestamp: new Date(msg.created_at),
   }));
-}
-
-// Auto-titling is now handled via SSE title_update events from the chat pipeline.
-// Draft autosave is deferred — stubbed out for now.
-
-export async function fetchDraft(_conversationId: string): Promise<string> {
-  return "";
-}
-
-export async function saveDraft(_conversationId: string, _content: string): Promise<void> {
-  // No-op: draft autosave deferred
-}
-
-export async function deleteDraft(_conversationId: string): Promise<void> {
-  // No-op: draft autosave deferred
 }
 
 // Feedback API

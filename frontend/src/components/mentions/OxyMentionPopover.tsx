@@ -28,8 +28,8 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
     // Reset selection when popover opens or transcripts change
     useEffect(() => {
       if (open) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing selection index with popover open state
         setSelectedIndex(0);
-        // Reset refs array when transcripts change
         itemRefs.current = [];
       }
     }, [open, transcripts]);

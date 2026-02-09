@@ -29,9 +29,8 @@ export function MentionPopover({
   );
 
   // Reset selection when filter changes
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [searchQuery]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing derived state (selection index) with search filter
+  useEffect(() => { setSelectedIndex(0); }, [searchQuery]);
 
   // Handle keyboard navigation
   useEffect(() => {

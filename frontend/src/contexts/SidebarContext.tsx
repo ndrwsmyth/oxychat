@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -11,19 +11,13 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  // Default to collapsed (closed)
-  const [collapsed, setCollapsed] = useState(true);
-
-  // Load from localStorage after hydration (client-side only)
-  useEffect(() => {
+  const [collapsed, setCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("sidebar_collapsed");
-      // Only override default if user has explicitly set a preference
-      if (stored !== null) {
-        setCollapsed(stored === "true");
-      }
+      return stored !== null ? stored === "true" : true;
     }
-  }, []);
+    return true;
+  });
 
   const toggle = useCallback(() => {
     setCollapsed((prev) => {

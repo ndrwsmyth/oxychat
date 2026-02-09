@@ -24,10 +24,8 @@ function getInitialModel(): ModelOption {
 
 export function useConversation(
   conversationId: string | null,
-  _transcripts: any[] = [],
   options: UseConversationOptions = {}
 ) {
-  // Note: _transcripts parameter is kept for API compatibility but currently unused
   const { onTitleUpdate } = options;
   const [messages, setMessages] = useState<Message[]>([]);
   const [model, setModel] = useState<ModelOption>(getInitialModel);
@@ -58,6 +56,20 @@ export function useConversation(
   const messagesRef = useRef<Message[]>([]);
   messagesRef.current = messages;
 
+  const loadMessages = useCallback(async () => {
+    if (!conversationId) return;
+
+    try {
+      setIsFetching(true);
+      const msgs = await fetchMessages(conversationId);
+      setMessages(msgs);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load messages");
+    } finally {
+      setIsFetching(false);
+    }
+  }, [conversationId]);
+
   useEffect(() => {
     // Clear messages immediately on conversation switch to prevent flash of old content
     setMessages([]);
@@ -75,21 +87,7 @@ export function useConversation(
       return;
     }
     loadMessages();
-  }, [conversationId]);
-
-  const loadMessages = useCallback(async () => {
-    if (!conversationId) return;
-
-    try {
-      setIsFetching(true);
-      const msgs = await fetchMessages(conversationId);
-      setMessages(msgs);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load messages");
-    } finally {
-      setIsFetching(false);
-    }
-  }, [conversationId]);
+  }, [conversationId, loadMessages]);
 
   const sendMessage = useCallback(async (
     content: string,

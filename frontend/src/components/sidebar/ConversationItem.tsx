@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { Conversation } from "@/types";
@@ -54,10 +54,10 @@ export function ConversationItem({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const menuItems: Array<{ label: string; icon: typeof Pencil; action: string; danger?: boolean }> = [
+  const menuItems = useMemo<Array<{ label: string; icon: typeof Pencil; action: string; danger?: boolean }>>(() => [
     { label: "Rename", icon: Pencil, action: "rename" },
     { label: "Delete", icon: Trash2, action: "delete", danger: true },
-  ];
+  ], []);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -87,9 +87,8 @@ export function ConversationItem({
 
   // Reset selection when menu opens
   useEffect(() => {
-    if (menuOpen) {
-      setSelectedIndex(0);
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing selection index with menu open state
+    if (menuOpen) { setSelectedIndex(0); }
   }, [menuOpen]);
 
   const handleClick = () => {
@@ -163,7 +162,7 @@ export function ConversationItem({
         triggerRef.current?.focus();
         break;
     }
-  }, [menuOpen, selectedIndex, handleMenuAction, menuItems.length]);
+  }, [menuOpen, selectedIndex, handleMenuAction, menuItems]);
 
   const handleDeleteConfirm = async () => {
     await onDelete(conversation.id);
