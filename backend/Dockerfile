@@ -15,7 +15,7 @@ ARG GITHUB_TOKEN
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:" \
  && git config --global --add url."https://${GITHUB_TOKEN}@github.com/".insteadOf "ssh://git@github.com/" \
  && pnpm install --prod --no-frozen-lockfile
- 
+
 # Stage 2: Build the application
 FROM base AS build
 # Fix: Added 'typescript' here as well
@@ -26,7 +26,7 @@ COPY package.json pnpm-lock.yaml ./
 ARG GITHUB_TOKEN
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:" \
  && git config --global --add url."https://${GITHUB_TOKEN}@github.com/".insteadOf "ssh://git@github.com/" \
- && pnpm install --frozen-lockfile
+ && pnpm install --no-frozen-lockfile
 COPY . .
 RUN pnpm run build
 
