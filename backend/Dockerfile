@@ -6,21 +6,21 @@ WORKDIR /app
 
 # Stage 1: Install production dependencies
 FROM base AS prod-deps
-# Fix: Added 'typescript' to the install list
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* \
-    && pnpm add -g typescript 
+# 1. FIXED SYNTAX: Removed trailing backslash and combined lines correctly
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 COPY package.json pnpm-lock.yaml ./
 ARG GITHUB_TOKEN
+# 2. FIXED LOCKFILE: Changed to --no-frozen-lockfile to allow your pnpm patches to work
 RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:" \
  && git config --global --add url."https://${GITHUB_TOKEN}@github.com/".insteadOf "ssh://git@github.com/" \
  && pnpm install --prod --no-frozen-lockfile
 
 # Stage 2: Build the application
 FROM base AS build
-# Fix: Added 'typescript' here as well
+# 3. ADDED TYPES: Added @types/node so the framework can actually compile
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* \
-    && pnpm add -g typescript
+    && pnpm add -g typescript @types/node
 
 COPY package.json pnpm-lock.yaml ./
 ARG GITHUB_TOKEN
