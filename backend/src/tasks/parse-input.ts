@@ -1,4 +1,4 @@
-import { defineTask } from 'sediment';
+import { defineTask } from '@ndrwsmyth/sediment';
 
 export interface ParsedInput {
   content: string;

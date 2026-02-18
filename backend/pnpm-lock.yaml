@@ -4,8 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-packageExtensionsChecksum: sha256-cZTI7JM3zXMl+nEYVF0Ci8kFsKacqp9PLx51ouBCgEU=
-
 importers:
 
   .:
@@ -19,6 +17,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.13.0
         version: 1.19.9(hono@4.11.7)
+      '@ndrwsmyth/sediment':
+        specifier: git+https://github.com/ndrwsmyth/sediment.git#v0.1.1
+        version: git+https://git@github.com:ndrwsmyth/sediment.git#a1cb56242aa417b801300fbffae960260026e180(ws@8.19.0)(zod@3.25.76)
       '@supabase/supabase-js':
         specifier: ^2.49.0
         version: 2.93.1
@@ -31,9 +32,6 @@ importers:
       openai:
         specifier: ^4.77.0
         version: 4.104.0(ws@8.19.0)(zod@3.25.76)
-      sediment:
-        specifier: github:ndrwsmyth/sediment
-        version: git+https://git@github.com:ndrwsmyth/sediment.git#a3101e55ece9c89e63c646bf7d40e7a64e670241(ws@8.19.0)(zod@3.25.76)
       zod:
         specifier: ^3.24.0
         version: 3.25.76
@@ -391,6 +389,11 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
+
+  '@ndrwsmyth/sediment@git+https://git@github.com:ndrwsmyth/sediment.git#a1cb56242aa417b801300fbffae960260026e180':
+    resolution: {commit: a1cb56242aa417b801300fbffae960260026e180, repo: git@github.com:ndrwsmyth/sediment.git, type: git}
+    version: 0.1.1
+    engines: {node: '>=20'}
 
   '@rollup/rollup-android-arm-eabi@4.57.0':
     resolution: {integrity: sha512-tPgXB6cDTndIe1ah7u6amCI1T0SsnlOuKgg10Xh3uizJk4e5M1JGaUMk7J4ciuAUcFpbOiNhm2XIjP9ON0dUqA==}
@@ -821,8 +824,8 @@ packages:
       zod:
         optional: true
 
-  openai@6.17.0:
-    resolution: {integrity: sha512-NHRpPEUPzAvFOAFs9+9pC6+HCw/iWsYsKCMPXH5Kw7BpMxqd8g/A07/1o7Gx2TWtCnzevVRyKMRFqyiHyAlqcA==}
+  openai@6.22.0:
+    resolution: {integrity: sha512-7Yvy17F33Bi9RutWbsaYt5hJEEJ/krRPOrwan+f9aCPuMat1WVsb2VNSII5W1EksKT6fF69TG/xj4XzodK3JZw==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -858,11 +861,6 @@ packages:
     resolution: {integrity: sha512-e5lPJi/aui4TO1LpAXIRLySmwXSE8k3b9zoGfd42p67wzxog4WHjiZF3M2uheQih4DGyc25QEV4yRBbpueNiUA==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
-
-  sediment@git+https://git@github.com:ndrwsmyth/sediment.git#a3101e55ece9c89e63c646bf7d40e7a64e670241:
-    resolution: {commit: a3101e55ece9c89e63c646bf7d40e7a64e670241, repo: git@github.com:ndrwsmyth/sediment.git, type: git}
-    version: 0.1.0
-    engines: {node: '>=18'}
 
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
@@ -1226,6 +1224,14 @@ snapshots:
       hono: 4.11.7
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
+
+  '@ndrwsmyth/sediment@git+https://git@github.com:ndrwsmyth/sediment.git#a1cb56242aa417b801300fbffae960260026e180(ws@8.19.0)(zod@3.25.76)':
+    dependencies:
+      '@anthropic-ai/sdk': 0.72.1(zod@3.25.76)
+      openai: 6.22.0(ws@8.19.0)(zod@3.25.76)
+    transitivePeerDependencies:
+      - ws
+      - zod
 
   '@rollup/rollup-android-arm-eabi@4.57.0':
     optional: true
@@ -1648,7 +1654,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  openai@6.17.0(ws@8.19.0)(zod@3.25.76):
+  openai@6.22.0(ws@8.19.0)(zod@3.25.76):
     optionalDependencies:
       ws: 8.19.0
       zod: 3.25.76
@@ -1699,14 +1705,6 @@ snapshots:
       '@rollup/rollup-win32-x64-gnu': 4.57.0
       '@rollup/rollup-win32-x64-msvc': 4.57.0
       fsevents: 2.3.3
-
-  sediment@git+https://git@github.com:ndrwsmyth/sediment.git#a3101e55ece9c89e63c646bf7d40e7a64e670241(ws@8.19.0)(zod@3.25.76):
-    dependencies:
-      '@anthropic-ai/sdk': 0.72.1(zod@3.25.76)
-      openai: 6.17.0(ws@8.19.0)(zod@3.25.76)
-    transitivePeerDependencies:
-      - ws
-      - zod
 
   siginfo@2.0.0: {}
 

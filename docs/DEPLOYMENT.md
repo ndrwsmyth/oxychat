@@ -124,7 +124,7 @@ CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
 
 # Clerk routes
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/
 ```
 
 **Vercel** (set in Dashboard → Settings → Environment Variables):
@@ -195,7 +195,7 @@ OPENAI_API_KEY=sk-...
 3. Railway auto-detects the `backend/Dockerfile`
 4. Add **Docker build argument** for private GitHub dependency (`sediment`):
    - Go to service **Settings** → **Build** section
-   - Add build arg: `GITHUB_TOKEN` = a GitHub Personal Access Token with read access to `ndrwsmyth/sediment`
+   - Add build arg: `SEDIMENT_GIT_TOKEN` = a GitHub Personal Access Token with read access to `ndrwsmyth/sediment`
    - To create the token: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → give it **Contents: Read** on the `ndrwsmyth/sediment` repo
 5. Add environment variables (see section 3)
 

@@ -1,4 +1,4 @@
-import { defineTask } from 'sediment';
+import { defineTask } from '@ndrwsmyth/sediment';
 import { getSupabase } from '../lib/supabase.js';
 import type {
   NormalizedTranscript,

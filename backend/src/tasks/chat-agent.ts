@@ -1,4 +1,4 @@
-import { defineTask } from 'sediment';
+import { defineTask } from '@ndrwsmyth/sediment';
 import { getSystemPrompt, getContextLimit, CHARS_PER_TOKEN } from '../lib/constants.js';
 import { getModelId } from '../lib/runtime.js';
 import { getSupabase } from '../lib/supabase.js';

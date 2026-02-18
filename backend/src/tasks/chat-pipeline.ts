@@ -1,4 +1,4 @@
-import { defineTask, runTaskToCompletion } from 'sediment';
+import { defineTask, runTaskToCompletion } from '@ndrwsmyth/sediment';
 import { parseInputTask, type ParsedInput } from './parse-input.js';
 import { loadConversationTask, type ConversationData } from './load-conversation.js';
 import { saveMessageTask } from './save-message.js';
@@ -13,6 +13,7 @@ export interface ChatPipelineInput {
   mentionIds?: string[];
   model: string;
   userContext?: string;
+  requestId?: string;
 }
 
 export interface ChatPipelineEvent {
@@ -88,7 +89,7 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       role: 'assistant',
       content: fullContent,
       model: input.model,
-      requestId: deps._requestId,
+      requestId: input.requestId,
     }, deps);
 
     // 6. Update conversation timestamp

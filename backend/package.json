@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@ndrwsmyth/sediment": "git+https://github.com/ndrwsmyth/sediment.git#v0.1.1",
     "@clerk/backend": "^2.29.7",
     "@hono/node-server": "^1.13.0",
     "@supabase/supabase-js": "^2.49.0",
     "dotenv": "^16.4.7",
     "hono": "^4.7.0",
     "openai": "^4.77.0",
-    "sediment": "github:ndrwsmyth/sediment#build-release",
     "zod": "^3.24.0"
   },
   "devDependencies": {

@@ -75,6 +75,12 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
+      - name: Configure git auth for private dependencies
+        run: |
+          git config --global url."https://x-access-token:${SEDIMENT_GIT_TOKEN}@github.com/".insteadOf "https://github.com/"
+        env:
+          SEDIMENT_GIT_TOKEN: ${{ secrets.SEDIMENT_GIT_TOKEN }}
+
       - name: Install dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile

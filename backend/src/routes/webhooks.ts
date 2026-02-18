@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { Hono } from 'hono';
-import { runTaskToCompletion } from 'sediment';
+import { runTaskToCompletion } from '@ndrwsmyth/sediment';
 import { ingestTranscriptTask } from '../tasks/ingest-transcript.js';
 import {
   createCirclebackSource,

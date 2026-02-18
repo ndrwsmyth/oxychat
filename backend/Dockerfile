@@ -10,10 +10,10 @@ FROM base AS prod-deps
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 COPY package.json pnpm-lock.yaml ./
-ARG GITHUB_TOKEN
+ARG SEDIMENT_GIT_TOKEN
 # 2. FIXED LOCKFILE: Changed to --no-frozen-lockfile to allow your pnpm patches to work
-RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:" \
- && git config --global --add url."https://${GITHUB_TOKEN}@github.com/".insteadOf "ssh://git@github.com/" \
+RUN git config --global url."https://${SEDIMENT_GIT_TOKEN}@github.com/".insteadOf "git@github.com:" \
+ && git config --global --add url."https://${SEDIMENT_GIT_TOKEN}@github.com/".insteadOf "ssh://git@github.com/" \
  && pnpm install --prod --no-frozen-lockfile
 
 # Stage 2: Build the application
@@ -23,9 +23,9 @@ RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/* \
     && pnpm add -g typescript @types/node
 
 COPY package.json pnpm-lock.yaml ./
-ARG GITHUB_TOKEN
-RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:" \
- && git config --global --add url."https://${GITHUB_TOKEN}@github.com/".insteadOf "ssh://git@github.com/" \
+ARG SEDIMENT_GIT_TOKEN
+RUN git config --global url."https://${SEDIMENT_GIT_TOKEN}@github.com/".insteadOf "git@github.com:" \
+ && git config --global --add url."https://${SEDIMENT_GIT_TOKEN}@github.com/".insteadOf "ssh://git@github.com/" \
  && pnpm install --no-frozen-lockfile
 COPY . .
 RUN pnpm run build

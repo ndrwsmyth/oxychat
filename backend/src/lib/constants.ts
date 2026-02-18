@@ -135,7 +135,7 @@ export function getMaxMentions(model: string): number {
  * Keys use prefix matching for versioned models (e.g., 'claude-opus-4-5' matches 'claude-opus-4-5-20251101').
  * Costs are per 1M tokens.
  */
-import type { PricingTable } from 'sediment';
+import type { PricingTable } from '@ndrwsmyth/sediment';
 
 export const OXYCHAT_PRICING: PricingTable = {
   'claude-opus-4-5': { inputTokenCostPer1m: 15, outputTokenCostPer1m: 75 },

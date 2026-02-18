@@ -17,7 +17,7 @@
 │ ├──────────────────────┼───────────────────────────────────────────────────────────┤               │
 │ │ Backend architecture │ Standalone Node service (not Next.js API routes)          │               │
 │ ├──────────────────────┼───────────────────────────────────────────────────────────┤               │
-│ │ Sediment source      │ Private GitHub package (github:ndrwsmyth/sediment#v0.1.0) │               │
+│ │ Sediment source      │ Private GitHub package (github:ndrwsmyth/sediment#v0.1.1) │               │
 │ ├──────────────────────┼───────────────────────────────────────────────────────────┤               │
 │ │ Supabase             │ Nuke existing — wipe all tables, rebuild from scratch     │               │
 │ ├──────────────────────┼───────────────────────────────────────────────────────────┤               │

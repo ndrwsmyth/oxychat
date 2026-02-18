@@ -4,7 +4,7 @@ import type {
   ToolRecordInterface,
   CompletionRecord,
   ToolRecord,
-} from 'sediment';
+} from '@ndrwsmyth/sediment';
 import { getSupabase } from '../lib/supabase.js';
 
 /**

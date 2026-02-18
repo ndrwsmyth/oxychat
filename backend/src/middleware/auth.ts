@@ -41,8 +41,10 @@ export async function authMiddleware(c: Context, next: Next) {
       return c.json({ error: 'User not found' }, 401);
     }
 
-    // Belt and suspenders: validate domain
-    if (!user.email.endsWith('@oxy.so')) {
+    // Belt and suspenders: validate allowed domains
+    const allowedDomains = ['@oxy.so', '@oxy.co'];
+    const isAllowedDomain = allowedDomains.some((domain) => user.email.endsWith(domain));
+    if (!isAllowedDomain) {
       return c.json({ error: 'Unauthorized domain' }, 403);
     }
 

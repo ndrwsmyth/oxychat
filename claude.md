@@ -181,16 +181,16 @@ Private package installed from `github:ndrwsmyth/sediment`. Key APIs used in thi
 
 ```typescript
 // Core
-import { defineTask, runTask, runTaskToCompletion, completionTask, Runtime } from 'sediment';
+import { defineTask, runTask, runTaskToCompletion, completionTask, Runtime } from '@ndrwsmyth/sediment';
 
 // Adapters
-import { createAnthropicAdapter, createOpenAIAdapter } from 'sediment';
+import { createAnthropicAdapter, createOpenAIAdapter } from '@ndrwsmyth/sediment';
 
 // Logging
-import { ConsoleLogger, CompositeLogger } from 'sediment';
+import { ConsoleLogger, CompositeLogger } from '@ndrwsmyth/sediment';
 
 // Types
-import type { CompletionsAdapterInterface, Logger, CompletionRecordInterface, RuntimeDeps } from 'sediment';
+import type { CompletionsAdapterInterface, Logger, CompletionRecordInterface, RuntimeDeps } from '@ndrwsmyth/sediment';
 ```
 
 **Task pattern**: Every task is an async generator defined with `defineTask<Input, Output>`. Tasks receive `RuntimeDeps` (completions adapter, logger, etc.) and yield outputs. Higher-layer tasks call lower-layer tasks via `runTask`/`runTaskToCompletion`.

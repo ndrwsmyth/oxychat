@@ -37,6 +37,7 @@ chatRouter.post('/conversations/:id/messages', async (c) => {
         mentionIds: mentions,
         model: selectedModel,
         userContext: user.context ?? undefined,
+        requestId: runtime.getRequestId(),
       };
 
       // Stream directly from task execution instead of buffering

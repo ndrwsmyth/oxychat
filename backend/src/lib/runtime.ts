@@ -4,8 +4,8 @@ import {
   Runtime,
   CompositeLogger,
   ConsoleLogger,
-} from 'sediment';
-import type { CompletionsAdapterInterface } from 'sediment';
+} from '@ndrwsmyth/sediment';
+import type { CompletionsAdapterInterface } from '@ndrwsmyth/sediment';
 import { MODEL_CONFIG, OXYCHAT_PRICING, type ModelKey } from './constants.js';
 import { SupabaseLogStore } from '../adapters/supabase-log-store.js';
 
