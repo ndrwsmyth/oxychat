@@ -25,13 +25,24 @@ CREATE TABLE conversations (
   user_id    UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   title      TEXT,
   auto_titled BOOLEAN NOT NULL DEFAULT false,
-  model      TEXT NOT NULL DEFAULT 'gpt-5.2',
+  model      TEXT NOT NULL DEFAULT 'claude-sonnet-4-6',
   pinned     BOOLEAN NOT NULL DEFAULT false,
   pinned_at  TIMESTAMPTZ,
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Migration/backfill for existing databases:
+-- See docs/MODEL_CONSISTENCY_CLAUDE_46_MIGRATION.sql for a copy/paste-ready script.
+-- ALTER TABLE conversations ALTER COLUMN model SET DEFAULT 'claude-sonnet-4-6';
+-- UPDATE conversations SET model = 'claude-sonnet-4-6' WHERE model = 'claude-sonnet-4.5';
+-- UPDATE conversations SET model = 'claude-opus-4-6' WHERE model = 'claude-opus-4.5';
+-- UPDATE conversations
+-- SET model = 'claude-sonnet-4-6'
+-- WHERE model IS NULL
+--   OR model = ''
+--   OR model NOT IN ('claude-sonnet-4-6', 'claude-opus-4-6', 'gpt-5.2', 'grok-4');
 
 CREATE INDEX idx_conversations_user ON conversations(user_id, deleted_at, updated_at DESC);
 CREATE INDEX idx_conversations_pinned ON conversations(user_id, pinned, pinned_at DESC) WHERE pinned = true;

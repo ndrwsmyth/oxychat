@@ -22,6 +22,7 @@ interface OxyComposerProps {
   hasMessages?: boolean;
   transcripts: Transcript[];
   model: ModelOption;
+  modelOptions: { value: ModelOption; label: string; shortLabel?: string }[];
   onModelChange: (model: ModelOption) => void;
   draftToRestore?: DraftData | null;
   onDraftRestored?: () => void;
@@ -200,6 +201,7 @@ export function OxyComposer({
   hasMessages = false,
   transcripts,
   model,
+  modelOptions,
   onModelChange,
   draftToRestore,
   onDraftRestored,
@@ -575,6 +577,7 @@ export function OxyComposer({
             <div className="oxy-toolbar-left">
               <ModelPicker
                 model={model}
+                modelOptions={modelOptions}
                 onModelChange={onModelChange}
                 onNewConversation={onNewConversation}
                 hasMessages={hasMessages}

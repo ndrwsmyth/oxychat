@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { chatPipelineTask, type ChatPipelineEvent } from '../tasks/chat-pipeline.js';
 import { createChatRuntime } from '../lib/runtime.js';
+import { getSupabase } from '../lib/supabase.js';
+import { DEFAULT_MODEL, isSupportedModel } from '../lib/constants.js';
 import type { AppVariables } from '../types.js';
 
 export const chatRouter = new Hono<{ Variables: AppVariables }>();
@@ -19,14 +21,30 @@ chatRouter.post('/conversations/:id/messages', async (c) => {
   if (!content?.trim()) {
     return c.json({ error: 'Content is required' }, 400);
   }
-
-  const selectedModel = model ?? 'claude-sonnet-4.5';
   const user = c.get('user');
+  const supabase = getSupabase();
+
+  const { data: conversation, error: convError } = await supabase
+    .from('conversations')
+    .select('id, model')
+    .eq('id', conversationId)
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+    .single();
+
+  if (convError || !conversation) {
+    return c.json({ error: 'Conversation not found' }, 404);
+  }
+
+  const effectiveModel = model ?? conversation.model ?? DEFAULT_MODEL;
+  if (!isSupportedModel(effectiveModel)) {
+    return c.json({ error: `Invalid model: ${effectiveModel}` }, 400);
+  }
 
   return streamSSE(c, async (stream) => {
     try {
       const runtime = createChatRuntime({
-        model: selectedModel,
+        model: effectiveModel,
         conversationId,
       });
 
@@ -35,7 +53,7 @@ chatRouter.post('/conversations/:id/messages', async (c) => {
         conversationId,
         content,
         mentionIds: mentions,
-        model: selectedModel,
+        model: effectiveModel,
         userContext: user.context ?? undefined,
         requestId: runtime.getRequestId(),
       };

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { Message, ModelOption } from "@/types";
-import { fetchMessages, streamChat } from "@/lib/api";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import type { Message, ModelOption, ModelMetadata } from "@/types";
+import { fetchMessages, fetchModels, streamChat } from "@/lib/api";
 import { toast } from "sonner";
 
 interface UseConversationOptions {
@@ -12,14 +12,20 @@ interface UseConversationOptions {
 // Storage key for persisting model selection
 const MODEL_STORAGE_KEY = "oxy-chat-model";
 
-// Valid model options (must match ModelOption type)
-const VALID_MODELS: ModelOption[] = ["claude-sonnet-4.5", "claude-opus-4.5", "gpt-5.2", "grok-4"];
+const LEGACY_MODEL_MAP: Record<string, string> = {
+  "claude-sonnet-4.5": "claude-sonnet-4-6",
+  "claude-opus-4.5": "claude-opus-4-6",
+};
 
-// Get initial model from localStorage or default
-// NOTE: This must match server-side default to avoid hydration mismatch.
-// We sync with localStorage in a useEffect.
-function getInitialModel(): ModelOption {
-  return "claude-sonnet-4.5";
+function normalizeLegacyModel(model: string): string {
+  return LEGACY_MODEL_MAP[model] ?? model;
+}
+
+function getShortModelLabel(label: string): string {
+  if (label.startsWith("Claude ")) {
+    return label.replace("Claude ", "");
+  }
+  return label;
 }
 
 export function useConversation(
@@ -28,17 +34,10 @@ export function useConversation(
 ) {
   const { onTitleUpdate } = options;
   const [messages, setMessages] = useState<Message[]>([]);
-  const [model, setModel] = useState<ModelOption>(getInitialModel);
-
-  // Initialize model from localStorage on client mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-      if (stored && VALID_MODELS.includes(stored as ModelOption)) {
-        setModel(stored as ModelOption);
-      }
-    }
-  }, []);
+  const [model, setModel] = useState<ModelOption>("");
+  const [defaultModel, setDefaultModel] = useState<ModelOption>("");
+  const [models, setModels] = useState<ModelMetadata[]>([]);
+  const [isModelsReady, setIsModelsReady] = useState(false);
 
   // isFetching: loading messages for conversation switch
   // isStreaming: LLM is generating response
@@ -55,6 +54,65 @@ export function useConversation(
   // Keep messages in a ref to reduce sendMessage dependencies
   const messagesRef = useRef<Message[]>([]);
   messagesRef.current = messages;
+  const validModelsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadModels = async () => {
+      try {
+        const modelData = await fetchModels();
+        if (cancelled) return;
+
+        const validModels = new Set(modelData.models.map((m) => m.key));
+        validModelsRef.current = validModels;
+        setModels(modelData.models);
+
+        const fallbackModel =
+          (validModels.has(modelData.defaultModel) ? modelData.defaultModel : modelData.models[0]?.key) ?? "";
+        setDefaultModel(fallbackModel);
+
+        const storedRaw = typeof window !== "undefined" ? localStorage.getItem(MODEL_STORAGE_KEY) ?? "" : "";
+        const storedModel = normalizeLegacyModel(storedRaw);
+        const nextModel = validModels.has(storedModel) ? storedModel : fallbackModel;
+
+        setModel(nextModel);
+        if (typeof window !== "undefined" && nextModel) {
+          localStorage.setItem(MODEL_STORAGE_KEY, nextModel);
+        }
+      } catch (err) {
+        console.error("[useConversation] Failed to load models:", err);
+        const storedRaw = typeof window !== "undefined" ? localStorage.getItem(MODEL_STORAGE_KEY) ?? "" : "";
+        const storedModel = normalizeLegacyModel(storedRaw);
+        if (storedModel) {
+          setModel(storedModel);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(MODEL_STORAGE_KEY, storedModel);
+          }
+        }
+      } finally {
+        if (!cancelled) {
+          setIsModelsReady(true);
+        }
+      }
+    };
+
+    loadModels();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const modelOptions = useMemo(
+    () =>
+      models.map((option) => ({
+        value: option.key,
+        label: option.label,
+        shortLabel: getShortModelLabel(option.label),
+      })),
+    [models]
+  );
 
   const loadMessages = useCallback(async () => {
     if (!conversationId) return;
@@ -71,21 +129,25 @@ export function useConversation(
   }, [conversationId]);
 
   useEffect(() => {
-    // Clear messages immediately on conversation switch to prevent flash of old content
-    setMessages([]);
     setError(null);
 
     if (!conversationId) {
+      setMessages([]);
       return;
     }
+
     // Skip reset if we're transitioning to this conversation (just created it)
     if (isTransitioningRef.current === conversationId) {
       return; // Don't clear ref here - let onComplete handle it
     }
+
     // Skip loading if we're in the middle of a send operation to avoid race conditions
     if (isSendingRef.current) {
       return;
     }
+
+    // Clear messages on regular conversation switch to prevent flash of old content
+    setMessages([]);
     loadMessages();
   }, [conversationId, loadMessages]);
 
@@ -99,6 +161,12 @@ export function useConversation(
     // Check ref BEFORE state to prevent race conditions from fast double-clicks.
     // React state batching can cause isLoading to be stale, but refs are synchronous.
     if (isSendingRef.current || isLoading) {
+      return;
+    }
+    if (!model) {
+      toast.error("Model unavailable", {
+        description: "Please wait for model settings to load.",
+      });
       return;
     }
     isSendingRef.current = true;
@@ -205,6 +273,7 @@ export function useConversation(
         setIsThinking(false);
         abortControllerRef.current = null;
         isSendingRef.current = false;
+        isTransitioningRef.current = null;
         // Remove the empty assistant message on error
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       },
@@ -220,16 +289,27 @@ export function useConversation(
   }, []);
 
   const changeModel = useCallback((newModel: ModelOption) => {
-    setModel(newModel);
+    const normalized = normalizeLegacyModel(newModel);
+    const validModels = validModelsRef.current;
+    const resolvedModel =
+      validModels.size > 0
+        ? (validModels.has(normalized) ? normalized : defaultModel)
+        : normalized;
+
+    if (!resolvedModel) return;
+
+    setModel(resolvedModel);
     // Persist model selection to localStorage
     if (typeof window !== "undefined") {
-      localStorage.setItem(MODEL_STORAGE_KEY, newModel);
+      localStorage.setItem(MODEL_STORAGE_KEY, resolvedModel);
     }
-  }, []);
+  }, [defaultModel]);
 
   return {
     messages,
     model,
+    modelOptions,
+    isModelsReady,
     isLoading,
     isFetching,
     isStreaming,

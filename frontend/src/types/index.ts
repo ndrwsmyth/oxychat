@@ -44,11 +44,18 @@ export interface GroupedConversations {
   older: Conversation[];
 }
 
-export type ModelOption =
-  | "claude-sonnet-4.5"
-  | "claude-opus-4.5"
-  | "gpt-5.2"
-  | "grok-4";
+export type ModelOption = string;
+
+export interface ModelMetadata {
+  key: string;
+  label: string;
+  provider: string;
+}
+
+export interface ModelsResponse {
+  defaultModel: string;
+  models: ModelMetadata[];
+}
 
 // Truncation info for @mentioned documents
 export interface TruncationInfo {

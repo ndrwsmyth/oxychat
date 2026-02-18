@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { getSupabase } from '../lib/supabase.js';
+import { DEFAULT_MODEL, isSupportedModel } from '../lib/constants.js';
 import type { AppVariables } from '../types.js';
 
 export const conversationsRouter = new Hono<{ Variables: AppVariables }>();
@@ -9,13 +10,17 @@ conversationsRouter.post('/conversations', async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const { title, model } = body as { title?: string; model?: string };
 
+  if (model !== undefined && !isSupportedModel(model)) {
+    return c.json({ error: `Invalid model: ${model}` }, 400);
+  }
+
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('conversations')
     .insert({
       user_id: c.get('user').id,
       title: title ?? null,
-      model: model ?? 'claude-sonnet-4.5',
+      model: model ?? DEFAULT_MODEL,
     })
     .select()
     .single();
@@ -102,9 +107,15 @@ conversationsRouter.get('/conversations/:id', async (c) => {
 // Update conversation
 conversationsRouter.patch('/conversations/:id', async (c) => {
   const id = c.req.param('id');
-  const body = await c.req.json();
-  const supabase = getSupabase();
+  const body = await c.req.json().catch(() => ({}));
 
+  if ('model' in body) {
+    if (typeof body.model !== 'string' || !isSupportedModel(body.model)) {
+      return c.json({ error: `Invalid model: ${body.model}` }, 400);
+    }
+  }
+
+  const supabase = getSupabase();
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if ('title' in body) updates.title = body.title;
   if ('model' in body) updates.model = body.model;

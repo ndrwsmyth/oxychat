@@ -1,16 +1,15 @@
 import { Hono } from 'hono';
 import { getSupabase } from '../lib/supabase.js';
+import type { AppVariables } from '../types.js';
 
-// Hardcoded dev user ID - replace with Clerk auth when implemented
-const DEV_USER_ID = '00000000-0000-0000-0000-000000000000';
-
-export const feedbackRouter = new Hono();
+export const feedbackRouter = new Hono<{ Variables: AppVariables }>();
 
 // Submit or update feedback for a message
 feedbackRouter.post('/messages/:id/feedback', async (c) => {
   const messageId = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
   const { feedback } = body as { feedback: 'positive' | 'negative' | null };
+  const userId = c.get('user').id;
 
   const supabase = getSupabase();
 
@@ -30,7 +29,7 @@ feedbackRouter.post('/messages/:id/feedback', async (c) => {
     .from('conversations')
     .select('id')
     .eq('id', message.conversation_id)
-    .eq('user_id', DEV_USER_ID)
+    .eq('user_id', userId)
     .single();
 
   if (convErr || !conv) {
@@ -43,7 +42,7 @@ feedbackRouter.post('/messages/:id/feedback', async (c) => {
       .from('message_feedback')
       .delete()
       .eq('message_id', messageId)
-      .eq('user_id', DEV_USER_ID);
+      .eq('user_id', userId);
 
     return c.json({ feedback: null });
   }
@@ -54,7 +53,7 @@ feedbackRouter.post('/messages/:id/feedback', async (c) => {
     .upsert(
       {
         message_id: messageId,
-        user_id: DEV_USER_ID,
+        user_id: userId,
         feedback,
         updated_at: new Date().toISOString(),
       },
@@ -74,13 +73,14 @@ feedbackRouter.post('/messages/:id/feedback', async (c) => {
 // Get feedback for a message
 feedbackRouter.get('/messages/:id/feedback', async (c) => {
   const messageId = c.req.param('id');
+  const userId = c.get('user').id;
   const supabase = getSupabase();
 
   const { data, error } = await supabase
     .from('message_feedback')
     .select('feedback')
     .eq('message_id', messageId)
-    .eq('user_id', DEV_USER_ID)
+    .eq('user_id', userId)
     .maybeSingle();
 
   if (error) {

@@ -11,19 +11,38 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window !== "undefined") {
+  const [collapsed, setCollapsedState] = useState(true);
+
+  // Sync persisted preference after mount to keep server/client initial render identical.
+  useEffect(() => {
+    try {
       const stored = localStorage.getItem("sidebar_collapsed");
-      return stored !== null ? stored === "true" : true;
+      if (stored !== null) {
+        /* eslint-disable react-hooks/set-state-in-effect -- Synchronizing with external localStorage state after hydration */
+        setCollapsedState(stored === "true");
+        /* eslint-enable react-hooks/set-state-in-effect */
+      }
+    } catch {
+      // localStorage might be unavailable
     }
-    return true;
-  });
+  }, []);
+
+  const setCollapsed = useCallback((value: boolean) => {
+    setCollapsedState(value);
+    try {
+      localStorage.setItem("sidebar_collapsed", String(value));
+    } catch {
+      // localStorage might be unavailable
+    }
+  }, []);
 
   const toggle = useCallback(() => {
-    setCollapsed((prev) => {
+    setCollapsedState((prev) => {
       const newValue = !prev;
-      if (typeof window !== "undefined") {
+      try {
         localStorage.setItem("sidebar_collapsed", String(newValue));
+      } catch {
+        // localStorage might be unavailable
       }
       return newValue;
     });

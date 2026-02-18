@@ -67,8 +67,8 @@ export function useConversations() {
     loadConversations();
   }, [loadConversations]);
 
-  const createConversation = useCallback(async (title?: string): Promise<Conversation> => {
-    const newConv = await apiCreateConversation(title);
+  const createConversation = useCallback(async (title?: string, model?: string): Promise<Conversation> => {
+    const newConv = await apiCreateConversation(title, model);
     setConversations(prev => ({
       ...prev,
       today: [newConv, ...prev.today],

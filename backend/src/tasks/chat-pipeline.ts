@@ -95,6 +95,7 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
     // 6. Update conversation timestamp
     await runTaskToCompletion(updateConversationTask, {
       conversationId: input.conversationId,
+      model: input.model,
     }, deps);
 
     const msgId = savedAssistant && typeof savedAssistant === 'object' && 'id' in savedAssistant

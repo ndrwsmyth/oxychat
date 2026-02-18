@@ -42,7 +42,19 @@ function HomeContent() {
     updateConversationTitle(convId, title);
   }, [updateConversationTitle]);
 
-  const { messages, model, isLoading, isStreaming, isThinking, error, sendMessage, stopGenerating, changeModel } =
+  const {
+    messages,
+    model,
+    modelOptions,
+    isModelsReady,
+    isLoading,
+    isStreaming,
+    isThinking,
+    error,
+    sendMessage,
+    stopGenerating,
+    changeModel,
+  } =
     useConversation(conversationId, { onTitleUpdate: handleTitleUpdate });
 
   // Draft persistence state - initialized from localStorage based on current conversation
@@ -90,7 +102,9 @@ function HomeContent() {
 
     saveTimerRef.current = setTimeout(() => {
       if (text.trim() || newMentions.length > 0) {
-        saveDraft(conversationId, { text, mentions: newMentions, model });
+        if (model) {
+          saveDraft(conversationId, { text, mentions: newMentions, model });
+        }
       } else {
         clearDraft(conversationId);
       }
@@ -142,14 +156,14 @@ function HomeContent() {
 
   const send = useCallback(async (content: string, passedMentions: MentionChip[]) => {
     const currentDraft = content.trim();
-    if (!currentDraft || isStreaming) return;
+    if (!currentDraft || isStreaming || !isModelsReady || !model) return;
 
     let targetConversationId = conversationId;
 
     // Create conversation on first message if needed
     if (!targetConversationId) {
       try {
-        const newConv = await createConversation();
+        const newConv = await createConversation(undefined, model);
         targetConversationId = newConv.id;
         // Clear the "new" draft since we're creating a conversation
         clearDraft(null);
@@ -175,7 +189,7 @@ function HomeContent() {
     setMentions([]);
 
     await sendMessage(currentDraft, targetConversationId ?? undefined, mentionIds);
-  }, [isStreaming, sendMessage, conversationId, createConversation, router]);
+  }, [isStreaming, isModelsReady, model, sendMessage, conversationId, createConversation, router]);
 
   const handleOpenSearch = useCallback(() => {
     setSearchOpen(true);
@@ -270,11 +284,12 @@ function HomeContent() {
                 onSend={send}
                 onStop={stopGenerating}
                 onNewConversation={handleNewChat}
-                disabled={isStreaming}
+                disabled={isStreaming || !isModelsReady || !model}
                 isGenerating={isStreaming}
                 hasMessages={messages.length > 0}
                 transcripts={transcripts}
                 model={model}
+                modelOptions={modelOptions}
                 onModelChange={changeModel}
                 draftToRestore={draftToRestore}
                 onDraftRestored={handleDraftRestored}

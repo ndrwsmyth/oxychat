@@ -1,4 +1,12 @@
-import type { Conversation, GroupedConversations, Message, TruncationInfo, SourceInfo } from "@/types";
+import type {
+  Conversation,
+  GroupedConversations,
+  Message,
+  ModelOption,
+  ModelsResponse,
+  TruncationInfo,
+  SourceInfo,
+} from "@/types";
 import { toast } from "sonner";
 
 type RawConversation = Omit<Conversation, 'pinned_at' | 'created_at' | 'updated_at'> & {
@@ -152,7 +160,7 @@ export async function streamChat({
   conversationId,
   messages,
   mentions = [],
-  model = "claude-sonnet-4.5",
+  model,
   signal,
   onChunk,
   onThinkingStart,
@@ -180,7 +188,7 @@ export async function streamChat({
         body: JSON.stringify({
           content: messages[messages.length - 1]?.content,
           mentions,
-          model,
+          ...(model ? { model } : {}),
         }),
       });
 
@@ -339,14 +347,23 @@ export async function fetchConversations(search?: string): Promise<GroupedConver
   };
 }
 
-export async function createConversation(title?: string): Promise<Conversation> {
+export async function fetchModels(): Promise<ModelsResponse> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/models`);
+  if (!response.ok) throw new Error("Failed to fetch models");
+  return response.json();
+}
+
+export async function createConversation(title?: string, model?: ModelOption): Promise<Conversation> {
   const headers = await getAuthHeaders();
   const response = await fetchWithRetry(
     `${API_BASE_URL}/api/conversations`,
     {
       method: "POST",
       headers,
-      body: JSON.stringify({ title }),
+      body: JSON.stringify({
+        title,
+        ...(model ? { model } : {}),
+      }),
     }
   );
 

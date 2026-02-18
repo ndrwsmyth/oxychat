@@ -14,21 +14,16 @@ import {
 
 interface ModelPickerProps {
   model: ModelOption;
+  modelOptions: { value: ModelOption; label: string; shortLabel?: string }[];
   onModelChange: (model: ModelOption) => void;
   onNewConversation?: () => void;
   hasMessages?: boolean;
   disabled?: boolean;
 }
 
-const MODEL_OPTIONS: { value: ModelOption; label: string; shortLabel: string }[] = [
-  { value: "gpt-5.2", label: "GPT-5.2", shortLabel: "GPT-5.2" },
-  { value: "claude-sonnet-4.5", label: "Claude Sonnet 4.5", shortLabel: "Sonnet 4.5" },
-  { value: "claude-opus-4.5", label: "Claude Opus 4.5", shortLabel: "Opus 4.5" },
-  { value: "grok-4", label: "Grok 4", shortLabel: "Grok 4" },
-];
-
 export function ModelPicker({
   model,
+  modelOptions,
   onModelChange,
   onNewConversation,
   hasMessages = false,
@@ -38,9 +33,9 @@ export function ModelPicker({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingModel, setPendingModel] = useState<ModelOption | null>(null);
 
-  const currentModel = MODEL_OPTIONS.find((m) => m.value === model);
+  const currentModel = modelOptions.find((m) => m.value === model);
   const pendingModelOption = pendingModel
-    ? MODEL_OPTIONS.find((m) => m.value === pendingModel)
+    ? modelOptions.find((m) => m.value === pendingModel)
     : null;
   const pendingModelLabel = pendingModelOption?.label ?? "this model";
 
@@ -93,7 +88,7 @@ export function ModelPicker({
             title="Select model"
           >
             <span className="oxy-model-label">
-              {currentModel?.shortLabel || "Select model"}
+              {currentModel?.shortLabel || currentModel?.label || "Select model"}
             </span>
             <ChevronDown size={14} />
           </button>
@@ -107,7 +102,7 @@ export function ModelPicker({
             sideOffset={8}
           >
             <div className="oxy-model-picker-options">
-              {MODEL_OPTIONS.map((option) => (
+              {modelOptions.map((option) => (
                 <button
                   key={option.value}
                   className={`oxy-model-option ${

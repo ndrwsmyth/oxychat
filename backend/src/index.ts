@@ -8,6 +8,7 @@ import { chatRouter } from './routes/chat.js';
 import { transcriptsRouter } from './routes/transcripts.js';
 import { webhooksRouter } from './routes/webhooks.js';
 import { feedbackRouter } from './routes/feedback.js';
+import { modelsRouter } from './routes/models.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const app = new Hono();
@@ -40,12 +41,14 @@ app.use('/api/conversations/*', authMiddleware);
 app.use('/api/transcripts/*', authMiddleware);
 app.use('/api/messages/*', authMiddleware);
 app.use('/api/search/*', authMiddleware);
+app.use('/api/models/*', authMiddleware);
 
 // Routes
 app.route('/api', conversationsRouter);
 app.route('/api', chatRouter);
 app.route('/api', transcriptsRouter);
 app.route('/api', feedbackRouter);
+app.route('/api', modelsRouter);
 app.route('/api/webhooks', webhooksRouter);
 
 const port = Number(process.env.PORT) || 8000;
