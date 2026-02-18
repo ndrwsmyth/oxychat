@@ -41,9 +41,8 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
       const selectedItem = itemRefs.current[selectedIndex];
       if (selectedItem) {
         selectedItem.scrollIntoView({
-          behavior: 'instant',
-          block: 'nearest',
-          inline: 'nearest',
+          behavior: "auto",
+          block: "nearest",
         });
       }
     }, [selectedIndex, open, transcripts.length]);
