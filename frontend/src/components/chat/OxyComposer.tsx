@@ -211,19 +211,24 @@ export function OxyComposer({
   const [mentionFilter, setMentionFilter] = useState("");
   const [hasContent, setHasContent] = useState(false);
   const isComposingRef = useRef(false);
+  const previousExternalValueRef = useRef(value);
 
   // Sync external value changes to editor (only when value changes externally, like clear on send)
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
 
+    const previousValue = previousExternalValueRef.current;
+
     // If value is empty and editor has content, clear it (happens after send)
-    if (value === "" && !isEditorEmpty(editor)) {
+    if (value === "" && previousValue !== "" && !isEditorEmpty(editor)) {
       editor.innerHTML = "";
       onMentionsChange([]);
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing with DOM after external value change
       setHasContent(false);
     }
+
+    previousExternalValueRef.current = value;
   }, [value, onMentionsChange]);
 
   // Auto-resize based on content

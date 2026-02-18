@@ -50,6 +50,8 @@ function HomeContent() {
   const [mentions, setMentions] = useState<MentionChip[]>(initialDraft?.mentions ?? []);
   const [draftText, setDraftText] = useState(initialDraft?.text ?? "");
   const [draftToRestore, setDraftToRestore] = useState<DraftData | null>(initialDraft);
+  const draftTextRef = useRef(initialDraft?.text ?? "");
+  const mentionsRef = useRef<MentionChip[]>(initialDraft?.mentions ?? []);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
   const prevConversationIdRef = useRef<string | null>(conversationId);
 
@@ -69,6 +71,8 @@ function HomeContent() {
     setDraftToRestore(draft);
     setDraftText(draft?.text ?? "");
     setMentions(draft?.mentions ?? []);
+    draftTextRef.current = draft?.text ?? "";
+    mentionsRef.current = draft?.mentions ?? [];
     /* eslint-enable react-hooks/set-state-in-effect */
     if (draft?.model && draft.model !== model) {
       changeModel(draft.model);
@@ -77,6 +81,8 @@ function HomeContent() {
 
   // Debounced save of draft
   const handleDraftChange = useCallback((text: string, newMentions: MentionChip[]) => {
+    draftTextRef.current = text;
+    mentionsRef.current = newMentions;
     setDraftText(text);
     setMentions(newMentions);
 
@@ -105,6 +111,8 @@ function HomeContent() {
 
   const handleNewChat = useCallback(() => {
     clearDraft(null);
+    draftTextRef.current = "";
+    mentionsRef.current = [];
     setDraftText("");
     setMentions([]);
     setDraftToRestore(null);
@@ -161,6 +169,8 @@ function HomeContent() {
     const mentionIds = passedMentions.map(m => m.id);
 
     // Clear input immediately before streaming starts
+    draftTextRef.current = "";
+    mentionsRef.current = [];
     setDraftText("");
     setMentions([]);
 
@@ -254,9 +264,9 @@ function HomeContent() {
               {/* Composer */}
               <OxyComposer
                 value={draftText}
-                onChange={(text) => handleDraftChange(text, mentions)}
+                onChange={(text) => handleDraftChange(text, mentionsRef.current)}
                 mentions={mentions}
-                onMentionsChange={(newMentions) => handleDraftChange(draftText, newMentions)}
+                onMentionsChange={(newMentions) => handleDraftChange(draftTextRef.current, newMentions)}
                 onSend={send}
                 onStop={stopGenerating}
                 onNewConversation={handleNewChat}
