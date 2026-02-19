@@ -1,5 +1,25 @@
 # OxyChat V2 Shared Environments - Final Reconciled Sprint Plan
 
+## 0) Execution Status (Updated 2026-02-19)
+
+### Sprint 1 Status: COMPLETE
+
+1. Implementation shipped on branch `codex/v2` in commit `c9b42bb` (+ follow-up docs commit `037383b`).
+2. Validation evidence:
+   - `pnpm --dir backend gate:s1` passed end-to-end.
+   - `pnpm --dir backend migrate:status` shows `0001` through `0013` applied.
+   - `conversations.project_id` null check passed (`0` null rows).
+   - backend + frontend test/lint suites passed.
+3. Performance baseline result (S1-T22):
+   - workspace tree benchmark p95 measured above target in latest run (`557.41ms` vs `<250ms` target).
+   - recorded in `docs/prd_dev/perf/s1_workspace_tree_baseline.md`.
+   - treat as known follow-up optimization work while proceeding to Sprint 2 functional scope.
+
+### Active Sprint: Sprint 2
+
+1. Sprint 1 foundation dependencies are satisfied for Sprint 2 implementation.
+2. Proceed with Sprint 2 in listed ticket order, preserving no-leak and fail-closed guarantees.
+
 ## 1) Final Clarified Decisions
 
 1. Conversations are private per user in V2 (no shared conversation editing yet).
@@ -75,6 +95,9 @@ Use centralized TypeScript ACL module for all backend routes now (robust with cu
 ## 4) Sprint Plan (Atomic Tickets with Validation)
 
 ## Sprint 1 - Migration Infra, Foundations, Safe Project Backfill
+
+**Status**
+Completed on 2026-02-19 (functional scope complete; performance baseline recorded with WARN).
 
 **Goal**
 Make migrations executable and safe, establish workspace schema and auth foundations, and bootstrap deterministic local/demo setup.
