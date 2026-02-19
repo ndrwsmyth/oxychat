@@ -15,6 +15,16 @@ function getSupabase(): SupabaseClient {
   return supabaseClient;
 }
 
+function isAllowedEmailDomain(email: string): boolean {
+  const configuredDomains = (process.env.ALLOWED_EMAIL_DOMAINS ?? 'oxy.so,oxy.co')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean)
+    .map((value) => (value.startsWith('@') ? value : `@${value}`));
+
+  return configuredDomains.some((domain) => email.toLowerCase().endsWith(domain));
+}
+
 export async function POST(req: NextRequest) {
   try {
     // verifyWebhook handles signature verification using CLERK_WEBHOOK_SIGNING_SECRET
@@ -24,9 +34,9 @@ export async function POST(req: NextRequest) {
       const { id, email_addresses, first_name, last_name, image_url } = evt.data;
       const email = email_addresses[0]?.email_address;
 
-      // Belt and suspenders: reject non-@oxy.so
-      if (!email?.endsWith('@oxy.so')) {
-        console.warn('[webhook] Rejected non-oxy.so user:', email);
+      // Belt and suspenders: reject unauthorized domains
+      if (!email || !isAllowedEmailDomain(email)) {
+        console.warn('[webhook] Rejected unauthorized user domain:', email);
         return new Response('OK', { status: 200 });
       }
 

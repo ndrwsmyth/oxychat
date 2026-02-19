@@ -65,6 +65,13 @@ Use centralized TypeScript ACL module for all backend routes now (robust with cu
 12. `audit_events` (append-only)
 13. `conversations.project_id` + safe migration path
 
+### 3.3 Sediment Alignment (V2 Baseline)
+
+1. Keep current package source as `@ndrwsmyth/sediment` pinned to `git+https://github.com/ndrwsmyth/sediment.git#v0.1.1`.
+2. Keep core imports from `@ndrwsmyth/sediment` and eval-only imports from `@ndrwsmyth/sediment/eval`.
+3. Avoid introducing `@oxy/sediment` or bare `sediment` imports in this repo.
+4. Preserve Sediment runtime observability (`request_id`, completion logs, audit correlation) and redacted logging defaults.
+
 ## 4) Sprint Plan (Atomic Tickets with Validation)
 
 ## Sprint 1 - Migration Infra, Foundations, Safe Project Backfill
@@ -74,7 +81,7 @@ Make migrations executable and safe, establish workspace schema and auth foundat
 
 ### Ticket Order (explicit dependency chain)
 
-`S1-T00 -> S1-T00b -> S1-T01 -> S1-T02 -> S1-T03 -> (S1-T04,S1-T05,S1-T06,S1-T07,S1-T08,S1-T09,S1-T10) -> S1-T11 -> S1-T12 -> S1-T13 -> S1-T14 -> S1-T14b -> S1-T15 -> S1-T16 -> S1-T17 -> (S1-T18a,S1-T18b,S1-T19,S1-T20,S1-T21,S1-T22) -> S1-T23`
+`S1-T00 -> S1-T00b -> S1-T00c -> S1-T01 -> S1-T02 -> S1-T03 -> (S1-T04,S1-T05,S1-T06,S1-T07,S1-T08,S1-T09,S1-T10) -> S1-T11 -> S1-T12 -> S1-T13 -> S1-T14 -> S1-T14b -> S1-T15 -> S1-T16 -> S1-T17 -> (S1-T18a,S1-T18b,S1-T19,S1-T20,S1-T21,S1-T22) -> S1-T23`
 
 ### Tickets
 
@@ -82,6 +89,7 @@ Make migrations executable and safe, establish workspace schema and auth foundat
 |---|---|---|
 | S1-T00 | Set up versioned migration framework (ordered apply/rollback + state tracking) | migration smoke: up/down/rerun |
 | S1-T00b | Reconcile `user_profiles` schema with auth middleware (`clerk_id`, `context`) | auth middleware integration test |
+| S1-T00c | Sediment package/import guardrail check | verify `@ndrwsmyth/sediment#v0.1.1`, import paths, and CI auth/pnpm consistency |
 | S1-T01 | Add enums (`role`, workspace/doc scopes) | migration test |
 | S1-T02 | Create `clients` table | FK/uniqueness tests |
 | S1-T03 | Create `projects` table (`client_id` non-null, supports personal projects via synthetic client) | FK tests + personal client fixture test |

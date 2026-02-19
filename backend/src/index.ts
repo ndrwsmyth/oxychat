@@ -10,6 +10,11 @@ import { webhooksRouter } from './routes/webhooks.js';
 import { feedbackRouter } from './routes/feedback.js';
 import { modelsRouter } from './routes/models.js';
 import { authMiddleware } from './middleware/auth.js';
+import { adminAuthMiddleware } from './middleware/admin-auth.js';
+import { adminClientsRouter } from './routes/admin-clients.js';
+import { adminProjectsRouter } from './routes/admin-projects.js';
+import { adminRoutingRouter } from './routes/admin-routing.js';
+import { workspacesRouter } from './routes/workspaces.js';
 
 const app = new Hono();
 
@@ -42,6 +47,8 @@ app.use('/api/transcripts/*', authMiddleware);
 app.use('/api/messages/*', authMiddleware);
 app.use('/api/search/*', authMiddleware);
 app.use('/api/models/*', authMiddleware);
+app.use('/api/workspaces/*', authMiddleware);
+app.use('/api/admin/*', authMiddleware, adminAuthMiddleware);
 
 // Routes
 app.route('/api', conversationsRouter);
@@ -49,6 +56,10 @@ app.route('/api', chatRouter);
 app.route('/api', transcriptsRouter);
 app.route('/api', feedbackRouter);
 app.route('/api', modelsRouter);
+app.route('/api', workspacesRouter);
+app.route('/api', adminClientsRouter);
+app.route('/api', adminProjectsRouter);
+app.route('/api', adminRoutingRouter);
 app.route('/api/webhooks', webhooksRouter);
 
 const port = Number(process.env.PORT) || 8000;

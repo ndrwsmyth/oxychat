@@ -77,8 +77,29 @@ When ready for prod:
 ### Development Project
 
 1. Create project at [supabase.com](https://supabase.com) → name it `oxychat-dev`
-2. Run the schema from `backend/schema.sql`
-3. Run Clerk migration (below)
+2. Run the baseline schema from `backend/schema.sql`
+3. Apply versioned migrations:
+   - `pnpm --dir backend migrate:up`
+4. Run Clerk migration only if needed for older environments (below)
+
+### Full Reset + Bootstrap (Local/Dev)
+
+From repo root:
+
+```bash
+pnpm --dir backend db:reset
+```
+
+This command:
+1. Drops and recreates `public` schema
+2. Re-applies `backend/schema.sql`
+3. Applies all versioned migrations in `backend/migrations`
+
+If you also want Sprint 1 fixtures:
+
+```bash
+pnpm --dir backend db:reset:seed
+```
 
 ### Clerk Migration
 
@@ -99,7 +120,7 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_clerk_id ON user_profiles(clerk_id)
 
 ### Production Project
 
-When ready: create separate `oxychat-prod` project, run same migrations.
+When ready: create separate `oxychat-prod` project, run baseline schema + same versioned migrations.
 
 ---
 
@@ -149,9 +170,11 @@ NODE_ENV=development
 # Supabase DEV
 SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_SERVICE_KEY=eyJ...
+SUPABASE_DATABASE_URL=postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres
 
 # Clerk DEV
 CLERK_SECRET_KEY=sk_test_...
+ALLOWED_EMAIL_DOMAINS=oxy.so,oxy.co
 
 # LLM
 ANTHROPIC_API_KEY=sk-ant-...
@@ -166,7 +189,9 @@ OPENAI_API_KEY=sk-...
 | `NODE_ENV` | staging | production |
 | `SUPABASE_URL` | DEV | PROD |
 | `SUPABASE_SERVICE_KEY` | DEV | PROD |
+| `SUPABASE_DATABASE_URL` | DEV | PROD |
 | `CLERK_SECRET_KEY` | `sk_test_...` | `sk_live_...` |
+| `ALLOWED_EMAIL_DOMAINS` | `oxy.so,oxy.co` | `oxy.so,oxy.co` |
 | `ANTHROPIC_API_KEY` | (shared) | (shared) |
 | `OPENAI_API_KEY` | (shared) | (shared) |
 

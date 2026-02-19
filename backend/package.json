@@ -7,13 +7,25 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate:up": "tsx src/scripts/migrations/apply.ts",
+    "migrate:down": "tsx src/scripts/migrations/rollback.ts",
+    "migrate:status": "tsx src/scripts/migrations/status.ts",
+    "guard:sediment": "tsx src/scripts/check-sediment-guardrails.ts",
+    "db:reset": "tsx src/scripts/reset-and-bootstrap-db.ts",
+    "db:reset:seed": "tsx src/scripts/reset-and-bootstrap-db.ts --seed",
+    "seed:s1": "tsx src/scripts/seed-s1.ts",
+    "bench:workspaces-tree": "tsx src/scripts/bench-workspaces-tree.ts",
+    "gate:s1": "tsx src/scripts/s1-demo-gate.ts",
+    "backfill:conversation-project": "tsx src/scripts/backfill-conversation-project.ts",
+    "check:conversation-project-nulls": "tsx src/scripts/check-conversation-project-nulls.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@ndrwsmyth/sediment": "git+https://github.com/ndrwsmyth/sediment.git#v0.1.1",
     "@clerk/backend": "^2.29.7",
     "@hono/node-server": "^1.13.0",
+    "pg": "^8.13.3",
     "@supabase/supabase-js": "^2.49.0",
     "dotenv": "^16.4.7",
     "hono": "^4.7.0",
@@ -22,6 +34,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.11",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"

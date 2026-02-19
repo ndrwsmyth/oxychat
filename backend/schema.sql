@@ -1,5 +1,7 @@
 -- OxyChat Supabase Schema
 -- Run this in the Supabase SQL Editor after nuking existing tables.
+-- NOTE: Versioned migrations in backend/migrations are the source of truth for
+-- Sprint 1+ changes. This file is a baseline snapshot for bootstrapping only.
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA "extensions";
@@ -12,9 +14,11 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm" WITH SCHEMA "extensions";
 -- User profiles (extends Supabase auth.users)
 CREATE TABLE user_profiles (
   id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  clerk_id   TEXT UNIQUE,
   email      TEXT NOT NULL UNIQUE,
   full_name  TEXT,
   avatar_url TEXT,
+  context    TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

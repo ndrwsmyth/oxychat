@@ -1,0 +1,69 @@
+{
+  "users": [
+    {
+      "id": "00000000-0000-0000-0000-0000000000a1",
+      "email": "admin@oxy.so",
+      "clerk_id": "user_admin_fixture",
+      "full_name": "Admin Fixture",
+      "is_admin": true
+    },
+    {
+      "id": "00000000-0000-0000-0000-0000000000b1",
+      "email": "member@oxy.so",
+      "clerk_id": "user_member_fixture",
+      "full_name": "Member Fixture",
+      "is_admin": false
+    }
+  ],
+  "clients": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "name": "Acme",
+      "scope": "client"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000002",
+      "name": "Global Triage",
+      "scope": "global"
+    }
+  ],
+  "projects": [
+    {
+      "id": "20000000-0000-0000-0000-000000000001",
+      "client_id": "10000000-0000-0000-0000-000000000001",
+      "name": "Acme Core",
+      "scope": "client",
+      "is_inbox": true
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000002",
+      "client_id": "10000000-0000-0000-0000-000000000002",
+      "name": "Global Inbox",
+      "scope": "global",
+      "is_inbox": true
+    }
+  ],
+  "client_memberships": [
+    {
+      "user_id": "00000000-0000-0000-0000-0000000000b1",
+      "client_id": "10000000-0000-0000-0000-000000000001",
+      "role": "member"
+    }
+  ],
+  "project_memberships": [
+    {
+      "user_id": "00000000-0000-0000-0000-0000000000b1",
+      "project_id": "20000000-0000-0000-0000-000000000001",
+      "role": "member"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "30000000-0000-0000-0000-000000000001",
+      "user_id": "00000000-0000-0000-0000-0000000000b1",
+      "project_id": "20000000-0000-0000-0000-000000000001",
+      "title": "Fixture conversation",
+      "model": "claude-sonnet-4-6"
+    }
+  ]
+}

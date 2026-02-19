@@ -4,9 +4,23 @@ import { conversationsRouter } from '../conversations.js';
 import { DEFAULT_MODEL } from '../../lib/constants.js';
 import { getSupabase } from '../../lib/supabase.js';
 import type { AppVariables } from '../../types.js';
+import { ensurePersonalWorkspace } from '../../lib/workspace-bootstrap.js';
+import { assertProjectAccess } from '../../lib/acl.js';
 
 vi.mock('../../lib/supabase.js', () => ({
   getSupabase: vi.fn(),
+}));
+
+vi.mock('../../lib/workspace-bootstrap.js', () => ({
+  ensurePersonalWorkspace: vi.fn(async () => ({
+    clientId: 'client-1',
+    projectId: 'project-1',
+  })),
+}));
+
+vi.mock('../../lib/acl.js', () => ({
+  AccessDeniedError: class AccessDeniedError extends Error {},
+  assertProjectAccess: vi.fn(async () => undefined),
 }));
 
 const mockUser = {
@@ -79,6 +93,7 @@ describe('conversations model behavior', () => {
     expect(getInsertPayload()).toMatchObject({
       user_id: mockUser.id,
       model: 'gpt-5.2',
+      project_id: 'project-1',
     });
   });
 
@@ -96,7 +111,25 @@ describe('conversations model behavior', () => {
     expect(response.status).toBe(201);
     expect(getInsertPayload()).toMatchObject({
       model: DEFAULT_MODEL,
+      project_id: 'project-1',
     });
+  });
+
+  it('uses explicit project_id when provided', async () => {
+    const { supabase, getInsertPayload } = createConversationsInsertSupabaseMock(DEFAULT_MODEL);
+    vi.mocked(getSupabase).mockReturnValue(supabase as never);
+
+    const app = createAuthedApp();
+    const response = await app.request('/api/conversations', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ project_id: 'project-explicit' }),
+    });
+
+    expect(response.status).toBe(201);
+    expect(vi.mocked(assertProjectAccess)).toHaveBeenCalledWith(mockUser.id, 'project-explicit');
+    expect(vi.mocked(ensurePersonalWorkspace)).not.toHaveBeenCalled();
+    expect(getInsertPayload()).toMatchObject({ project_id: 'project-explicit' });
   });
 
   it('returns 400 for invalid model on create', async () => {

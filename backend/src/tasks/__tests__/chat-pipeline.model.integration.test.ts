@@ -9,6 +9,8 @@ vi.mock('../../lib/supabase.js', () => ({
 interface ConversationRow {
   id: string;
   model: string;
+  user_id: string;
+  project_id: string | null;
   updated_at: string;
 }
 
@@ -28,6 +30,8 @@ function createInMemorySupabase() {
   const conversation: ConversationRow = {
     id: 'conv-1',
     model: 'gpt-5.2',
+    user_id: 'user-1',
+    project_id: 'project-1',
     updated_at: new Date().toISOString(),
   };
 
@@ -53,7 +57,11 @@ function createInMemorySupabase() {
             const query = {
               eq: (_field: string, _value: string) => query,
               single: async () => ({
-                data: { id: conversation.id, model: conversation.model },
+                data: conversation,
+                error: null,
+              }),
+              maybeSingle: async () => ({
+                data: conversation,
                 error: null,
               }),
             };

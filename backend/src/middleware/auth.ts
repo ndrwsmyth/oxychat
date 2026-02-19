@@ -11,6 +11,16 @@ export interface AuthUser {
   context: string | null;
 }
 
+function isAllowedEmailDomain(email: string): boolean {
+  const configuredDomains = (process.env.ALLOWED_EMAIL_DOMAINS ?? 'oxy.so,oxy.co')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean)
+    .map((value) => (value.startsWith('@') ? value : `@${value}`));
+
+  return configuredDomains.some((domain) => email.toLowerCase().endsWith(domain));
+}
+
 export async function authMiddleware(c: Context, next: Next) {
   const authHeader = c.req.header('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -42,9 +52,7 @@ export async function authMiddleware(c: Context, next: Next) {
     }
 
     // Belt and suspenders: validate allowed domains
-    const allowedDomains = ['@oxy.so', '@oxy.co'];
-    const isAllowedDomain = allowedDomains.some((domain) => user.email.endsWith(domain));
-    if (!isAllowedDomain) {
+    if (!isAllowedEmailDomain(user.email)) {
       return c.json({ error: 'Unauthorized domain' }, 403);
     }
 
