@@ -67,7 +67,7 @@ export function ConversationSidebar({
   const router = useRouter();
   const { collapsed, toggle } = useSidebar();
 
-  // Click on background area expands when collapsed
+  // Click on empty rail background toggles sidebar open/closed
   const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (target.closest('button, a, [role="button"], .oxy-conversation-item')) return;
@@ -82,17 +82,19 @@ export function ConversationSidebar({
       {/* Top section: Logo + Actions */}
       <div className="oxy-rail-top">
         {/* Logo - goes home */}
-        <button
-          type="button"
-          onClick={() => router.push("/")}
-          className="oxy-rail-btn oxy-rail-logo"
-          aria-label="Home"
-          title="Home"
-        >
-          <span className="oxy-rail-icon">
-            <OxyLogo size={18} />
-          </span>
-        </button>
+        <div className="oxy-rail-logo-row">
+          <div className="oxy-rail-logo-slot">
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="oxy-rail-logo-btn"
+              aria-label="Home"
+              title="Home"
+            >
+              <OxyLogo size={18} />
+            </button>
+          </div>
+        </div>
 
         {/* New Chat */}
         <button

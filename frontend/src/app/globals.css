@@ -2943,16 +2943,49 @@ button.oxy-mark:focus-visible {
   cursor: not-allowed;
 }
 
-/* Logo button special styling */
-.oxy-rail-logo {
+/* Logo row keeps layout width; only the SVG button is clickable */
+.oxy-rail-logo-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--size-xl);
+  padding: 0 var(--spacing-xs) 0 0;
   margin-bottom: var(--spacing-xs);
+}
+
+.oxy-rail-logo-slot {
+  width: var(--rail-icon-size);
+  height: var(--rail-icon-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.oxy-rail-logo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
   background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  line-height: 0;
+  border-radius: 0;
 }
 
 @media (hover: hover) {
-  .oxy-rail-logo:hover {
+  .oxy-rail-logo-btn:hover {
     background: none;
   }
+}
+
+.oxy-rail-logo-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 /* Labels - no opacity transition, clipping reveals them */
