@@ -1,0 +1,2 @@
+DROP TRIGGER IF EXISTS trg_prevent_private_transcript_relink ON transcript_project_links;
+DROP FUNCTION IF EXISTS prevent_private_transcript_relink;

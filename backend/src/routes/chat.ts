@@ -51,6 +51,8 @@ chatRouter.post('/conversations/:id/messages', async (c) => {
         content,
         mentionIds: mentions,
         model: effectiveModel,
+        userId: user.id,
+        userEmail: user.email,
         userContext: user.context ?? undefined,
         requestId: runtime.getRequestId(),
       };

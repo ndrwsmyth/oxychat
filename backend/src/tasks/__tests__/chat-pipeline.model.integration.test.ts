@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { chatPipelineTask } from '../chat-pipeline.js';
 import { getSupabase } from '../../lib/supabase.js';
+import { filterVisibleTranscriptIdsForUser } from '../../lib/transcript-visibility.js';
 
 vi.mock('../../lib/supabase.js', () => ({
   getSupabase: vi.fn(),
+}));
+
+vi.mock('../../lib/transcript-visibility.js', () => ({
+  filterVisibleTranscriptIdsForUser: vi.fn(async (_userId: string, _userEmail: string, ids: string[]) => ids),
 }));
 
 interface ConversationRow {
@@ -170,5 +175,36 @@ describe('chatPipelineTask model persistence', () => {
     expect(updates).toContainEqual(expect.objectContaining({ model: 'grok-4' }));
     expect(conversation.model).toBe('grok-4');
     expect(events.some((event) => event.type === 'done')).toBe(true);
+  });
+
+  it('strips unauthorized mention IDs before persisting user message', async () => {
+    const { supabase, inserts } = createInMemorySupabase();
+    vi.mocked(getSupabase).mockReturnValue(supabase as never);
+    vi.mocked(filterVisibleTranscriptIdsForUser).mockResolvedValue([]);
+
+    const deps = {
+      completions: {
+        complete: async function* () {
+          yield { type: 'token' as const, content: 'Assistant reply' };
+        },
+      },
+    };
+
+    for await (const _event of chatPipelineTask.execute(
+      {
+        conversationId: 'conv-1',
+        content: 'Use this guessed mention',
+        mentionIds: ['private-id'],
+        model: 'grok-4',
+        userId: 'user-1',
+        userEmail: 'member@oxy.so',
+      },
+      deps as never
+    )) {
+      // consume
+    }
+
+    const userInsert = inserts.find((payload) => payload.role === 'user');
+    expect(userInsert?.mentions).toEqual([]);
   });
 });

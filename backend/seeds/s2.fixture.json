@@ -1,0 +1,144 @@
+{
+  "project_domains": [
+    {
+      "project_id": "20000000-0000-0000-0000-000000000001",
+      "domain": "acme.com"
+    }
+  ],
+  "project_aliases": [
+    {
+      "project_id": "20000000-0000-0000-0000-000000000001",
+      "alias": "Acme Kickoff"
+    }
+  ],
+  "transcripts": [
+    {
+      "id": "40000000-0000-0000-0000-000000000001",
+      "source_id": "fixture:private:1",
+      "title": "Internal Product Sync",
+      "content": "Internal sync transcript content",
+      "summary": "Internal-only meeting",
+      "date": "2026-02-19T08:00:00.000Z",
+      "raw_json": {
+        "id": 1,
+        "attendees": [
+          { "name": "Admin Fixture", "email": "admin@oxy.so" },
+          { "name": "Member Fixture", "email": "member@oxy.so" }
+        ]
+      },
+      "attendees": [
+        { "name": "Admin Fixture", "email": "admin@oxy.so" },
+        { "name": "Member Fixture", "email": "member@oxy.so" }
+      ],
+      "classification": {
+        "visibility": "private",
+        "classification_reason": "internal_attendees_only",
+        "is_weekly_exception": false
+      },
+      "link": null
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000002",
+      "source_id": "fixture:weekly:1",
+      "title": " Oxy <> Weekly Planning ",
+      "content": "Weekly planning transcript content",
+      "summary": "Weekly planning",
+      "date": "2026-02-19T09:00:00.000Z",
+      "raw_json": {
+        "id": 2,
+        "attendees": [
+          { "name": "Admin Fixture", "email": "admin@oxy.so" },
+          { "name": "Member Fixture", "email": "member@oxy.so" }
+        ]
+      },
+      "attendees": [
+        { "name": "Admin Fixture", "email": "admin@oxy.so" },
+        { "name": "Member Fixture", "email": "member@oxy.so" }
+      ],
+      "classification": {
+        "visibility": "non_private",
+        "classification_reason": "weekly_exception",
+        "is_weekly_exception": true
+      },
+      "link": {
+        "project_id": "20000000-0000-0000-0000-000000000001",
+        "link_source": "client_inbox_fallback"
+      }
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000003",
+      "source_id": "fixture:client:1",
+      "title": "Acme Kickoff",
+      "content": "Acme kickoff transcript content",
+      "summary": "Client kickoff",
+      "date": "2026-02-19T10:00:00.000Z",
+      "raw_json": {
+        "id": 3,
+        "attendees": [
+          { "name": "Member Fixture", "email": "member@oxy.so" },
+          { "name": "Client Contact", "email": "contact@acme.com" }
+        ]
+      },
+      "attendees": [
+        { "name": "Member Fixture", "email": "member@oxy.so" },
+        { "name": "Client Contact", "email": "contact@acme.com" }
+      ],
+      "classification": {
+        "visibility": "non_private",
+        "classification_reason": "external_attendee",
+        "is_weekly_exception": false
+      },
+      "link": {
+        "project_id": "20000000-0000-0000-0000-000000000001",
+        "link_source": "domain_match"
+      }
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000004",
+      "source_id": "fixture:unknown:1",
+      "title": "Unknown Client Discovery",
+      "content": "Unknown client transcript content",
+      "summary": "Unknown client discovery",
+      "date": "2026-02-19T11:00:00.000Z",
+      "raw_json": {
+        "id": 4,
+        "attendees": [
+          { "name": "Member Fixture", "email": "member@oxy.so" },
+          { "name": "Unknown Client", "email": "contact@unknownco.com" }
+        ]
+      },
+      "attendees": [
+        { "name": "Member Fixture", "email": "member@oxy.so" },
+        { "name": "Unknown Client", "email": "contact@unknownco.com" }
+      ],
+      "classification": {
+        "visibility": "non_private",
+        "classification_reason": "external_attendee",
+        "is_weekly_exception": false
+      },
+      "link": {
+        "project_id": "20000000-0000-0000-0000-000000000002",
+        "link_source": "global_triage_fallback"
+      }
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000005",
+      "source_id": "fixture:unclassified:1",
+      "title": "Pending Classification Transcript",
+      "content": "Pending transcript content",
+      "summary": "Should remain hidden until classified",
+      "date": "2026-02-19T12:00:00.000Z",
+      "raw_json": {
+        "id": 5,
+        "attendees": [
+          { "name": "Member Fixture", "email": "member@oxy.so" }
+        ]
+      },
+      "attendees": [
+        { "name": "Member Fixture", "email": "member@oxy.so" }
+      ],
+      "classification": null,
+      "link": null
+    }
+  ]
+}

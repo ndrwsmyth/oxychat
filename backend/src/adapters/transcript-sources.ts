@@ -9,6 +9,7 @@ export interface NormalizedTranscript {
   summary: string | null;
   date: Date;
   rawJson: unknown;
+  attendees: Array<{ email: string; name: string | null }>;
 }
 
 export interface TranscriptSource<T = unknown> {
@@ -58,6 +59,10 @@ ${body}`;
         summary: payload.notes ?? null,
         date: new Date(payload.createdAt),
         rawJson: payload,
+        attendees: payload.attendees.map((attendee) => ({
+          email: attendee.email,
+          name: attendee.name ?? null,
+        })),
       };
     },
   };

@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS idx_transcript_project_links_transcript_unique;
+DROP INDEX IF EXISTS idx_transcript_classification_transcript_unique;

@@ -1,6 +1,6 @@
 # OxyChat V2 Shared Environments - Final Reconciled Sprint Plan
 
-## 0) Execution Status (Updated 2026-02-19)
+## 0) Execution Status (Updated 2026-02-20)
 
 ### Sprint 1 Status: COMPLETE
 
@@ -11,14 +11,23 @@
    - `conversations.project_id` null check passed (`0` null rows).
    - backend + frontend test/lint suites passed.
 3. Performance baseline result (S1-T22):
-   - workspace tree benchmark p95 measured above target in latest run (`557.41ms` vs `<250ms` target).
+   - initial baseline run on 2026-02-19 measured above target (`557.41ms` vs `<250ms` target).
+   - latest gate run on 2026-02-20 is within target (`231.77ms` vs `<250ms` target).
    - recorded in `docs/prd_dev/perf/s1_workspace_tree_baseline.md`.
-   - treat as known follow-up optimization work while proceeding to Sprint 2 functional scope.
+   - continue treating optimization headroom as non-blocking follow-up work.
 
-### Active Sprint: Sprint 2
+### Sprint 2 Status: COMPLETE
 
-1. Sprint 1 foundation dependencies are satisfied for Sprint 2 implementation.
-2. Proceed with Sprint 2 in listed ticket order, preserving no-leak and fail-closed guarantees.
+1. Implementation completed on branch `codex/v2` with Sprint 2 migrations `0014` through `0018`.
+2. Validation evidence:
+   - `pnpm --dir backend gate:s2` passed end-to-end.
+   - no-leak and ACL enforcement suites passed (`transcripts.visibility`, `s2.private-flow.no-leak`, `chat-agent.acl`).
+   - classification benchmark passed target (`p95 254.48ms` vs `<300ms`) in `docs/prd_dev/perf/s2_classification_baseline.md`.
+
+### Active Sprint: Sprint 3
+
+1. Sprint 2 dependencies are satisfied and regression gates are green.
+2. Proceed with Sprint 3 in listed ticket order.
 
 ## 1) Final Clarified Decisions
 
@@ -97,7 +106,7 @@ Use centralized TypeScript ACL module for all backend routes now (robust with cu
 ## Sprint 1 - Migration Infra, Foundations, Safe Project Backfill
 
 **Status**
-Completed on 2026-02-19 (functional scope complete; performance baseline recorded with WARN).
+Completed on 2026-02-19 (functional scope complete; latest 2026-02-20 benchmark pass recorded).
 
 **Goal**
 Make migrations executable and safe, establish workspace schema and auth foundations, and bootstrap deterministic local/demo setup.
@@ -140,6 +149,9 @@ Make migrations executable and safe, establish workspace schema and auth foundat
 | S1-T23 | S1 demo validation gate | run S1 flow from clean seed |
 
 ## Sprint 2 - Classification, Ingestion Idempotency, No-Leak Enforcement
+
+**Status**
+Completed on 2026-02-20 (gate + benchmark + regression suites passing).
 
 **Goal**
 Implement deterministic transcript classification and enforce hidden-until-classified policy across all data surfaces.

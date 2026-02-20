@@ -37,7 +37,12 @@ webhooksRouter.post('/transcripts', async (c) => {
   }
 
   // 2. Parse payload
-  const payload = JSON.parse(rawBody) as CirclebackPayload;
+  let payload: CirclebackPayload;
+  try {
+    payload = JSON.parse(rawBody) as CirclebackPayload;
+  } catch {
+    return c.json({ error: 'Invalid JSON payload' }, 400);
+  }
 
   // 3. Validate payload has transcript
   if (!payload.transcript || payload.transcript.length === 0) {
@@ -49,11 +54,12 @@ webhooksRouter.post('/transcripts', async (c) => {
   const runtime = createIngestRuntime();
   const deps = runtime.getDeps();
   const source = createCirclebackSource();
+  const requestId = runtime.getRequestId();
 
   try {
     const result = await runTaskToCompletion(
       ingestTranscriptTask,
-      { source, payload },
+      { source, payload, requestId },
       deps
     );
 
@@ -65,9 +71,10 @@ webhooksRouter.post('/transcripts', async (c) => {
       success: true,
       transcript_id: result.transcriptId,
       is_new: result.isNew,
+      retryable: false,
     });
   } catch (err) {
     console.error('[webhook] Ingestion failed:', err);
-    return c.json({ error: 'Ingestion failed' }, 500);
+    return c.json({ error: 'Ingestion failed', retryable: true }, 500);
   }
 });

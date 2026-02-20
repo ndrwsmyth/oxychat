@@ -145,7 +145,6 @@ export async function fetchTranscripts(): Promise<TranscriptResponse[]> {
   return response.json();
 }
 
-// NOTE: Embeddings/RAG is a future feature - this endpoint is currently disabled on the backend
 export async function searchTranscripts(query: string): Promise<TranscriptResponse[]> {
   const response = await fetchWithAuth(`${API_BASE_URL}/api/transcripts/search`, {
     method: "POST",

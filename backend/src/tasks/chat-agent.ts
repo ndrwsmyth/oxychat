@@ -2,12 +2,15 @@ import { defineTask } from '@ndrwsmyth/sediment';
 import { getSystemPrompt, getContextLimit, CHARS_PER_TOKEN } from '../lib/constants.js';
 import { getModelId } from '../lib/runtime.js';
 import { getSupabase } from '../lib/supabase.js';
+import { filterVisibleTranscriptIdsForUser } from '../lib/transcript-visibility.js';
 
 export interface ChatAgentInput {
   model: string;
   conversationMessages: Array<{ role: string; content: string }>;
   userContent: string;
   mentionIds: string[];
+  userId?: string;
+  userEmail?: string;
   userContext?: string;
 }
 
@@ -20,7 +23,11 @@ export const chatAgentTask = defineTask<ChatAgentInput, string>(
   async function* (input, deps) {
     // Build context from @mentions
     let mentionContext = '';
-    const mentionIds = input.mentionIds ?? [];
+    let mentionIds = input.mentionIds ?? [];
+    if (input.userId && input.userEmail && mentionIds.length > 0) {
+      mentionIds = await filterVisibleTranscriptIdsForUser(input.userId, input.userEmail, mentionIds);
+    }
+
     if (mentionIds.length > 0) {
       const supabase = getSupabase();
       const { data: transcripts } = await supabase

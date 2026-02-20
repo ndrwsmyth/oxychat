@@ -44,6 +44,7 @@ app.get('/health', (c) => c.json({ status: 'ok' }));
 // Auth middleware for protected routes (excludes webhooks)
 app.use('/api/conversations/*', authMiddleware);
 app.use('/api/transcripts/*', authMiddleware);
+app.use('/api/documents/*', authMiddleware);
 app.use('/api/messages/*', authMiddleware);
 app.use('/api/search/*', authMiddleware);
 app.use('/api/models/*', authMiddleware);

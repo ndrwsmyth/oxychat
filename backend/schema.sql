@@ -23,6 +23,151 @@ CREATE TABLE user_profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Sprint 1 enums (kept here so baseline reset can bootstrap routing tables)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+    CREATE TYPE role AS ENUM ('admin', 'member');
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'workspace_scope') THEN
+    CREATE TYPE workspace_scope AS ENUM ('personal', 'client', 'global');
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'document_scope') THEN
+    CREATE TYPE document_scope AS ENUM ('project', 'client', 'global');
+  END IF;
+END
+$$;
+
+-- Sprint 1 routing + membership tables
+CREATE TABLE IF NOT EXISTS clients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  normalized_name TEXT GENERATED ALWAYS AS (lower(btrim(name))) STORED,
+  scope workspace_scope NOT NULL DEFAULT 'client',
+  owner_user_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT clients_name_not_empty CHECK (btrim(name) <> ''),
+  CONSTRAINT clients_personal_owner_check CHECK (
+    (scope = 'personal' AND owner_user_id IS NOT NULL)
+    OR scope <> 'personal'
+  )
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_scope_normalized_name_unique
+  ON clients(scope, normalized_name);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_personal_owner_unique
+  ON clients(owner_user_id, scope)
+  WHERE scope = 'personal';
+
+CREATE TABLE IF NOT EXISTS projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  normalized_name TEXT GENERATED ALWAYS AS (lower(btrim(name))) STORED,
+  scope workspace_scope NOT NULL DEFAULT 'client',
+  owner_user_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  is_inbox BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT projects_name_not_empty CHECK (btrim(name) <> ''),
+  CONSTRAINT projects_personal_owner_check CHECK (
+    (scope = 'personal' AND owner_user_id IS NOT NULL)
+    OR scope <> 'personal'
+  )
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_client_normalized_name_unique
+  ON projects(client_id, normalized_name);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_personal_owner_unique
+  ON projects(owner_user_id, scope)
+  WHERE scope = 'personal';
+
+CREATE INDEX IF NOT EXISTS idx_projects_client_id
+  ON projects(client_id);
+
+CREATE TABLE IF NOT EXISTS project_aliases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  alias TEXT NOT NULL,
+  normalized_alias TEXT GENERATED ALWAYS AS (lower(btrim(alias))) STORED,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT project_aliases_alias_not_empty CHECK (btrim(alias) <> '')
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_project_aliases_normalized_unique
+  ON project_aliases(normalized_alias);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_project_aliases_project_normalized_unique
+  ON project_aliases(project_id, normalized_alias);
+
+CREATE TABLE IF NOT EXISTS project_domains (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  domain TEXT NOT NULL,
+  normalized_domain TEXT GENERATED ALWAYS AS (lower(btrim(domain))) STORED,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT project_domains_domain_not_empty CHECK (btrim(domain) <> '')
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_project_domains_normalized_unique
+  ON project_domains(normalized_domain);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_project_domains_project_normalized_unique
+  ON project_domains(project_id, normalized_domain);
+
+CREATE TABLE IF NOT EXISTS user_roles (
+  user_id UUID PRIMARY KEY REFERENCES user_profiles(id) ON DELETE CASCADE,
+  role role NOT NULL DEFAULT 'member',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_roles_role
+  ON user_roles(role);
+
+CREATE TABLE IF NOT EXISTS client_memberships (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  role role NOT NULL DEFAULT 'member',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, client_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_client_memberships_client
+  ON client_memberships(client_id);
+
+CREATE INDEX IF NOT EXISTS idx_client_memberships_user
+  ON client_memberships(user_id);
+
+CREATE TABLE IF NOT EXISTS project_memberships (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  role role NOT NULL DEFAULT 'member',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, project_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_memberships_project
+  ON project_memberships(project_id);
+
+CREATE INDEX IF NOT EXISTS idx_project_memberships_user
+  ON project_memberships(user_id);
+
 -- Conversations
 CREATE TABLE conversations (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -97,6 +242,101 @@ CREATE TABLE transcripts (
 
 CREATE INDEX idx_transcripts_title_search ON transcripts USING GIN(title_search);
 CREATE INDEX idx_transcripts_source ON transcripts(source_id) WHERE source_id IS NOT NULL;
+
+-- Transcript attendees
+CREATE TABLE transcript_attendees (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  transcript_id UUID NOT NULL REFERENCES transcripts(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  normalized_email TEXT GENERATED ALWAYS AS (lower(btrim(email))) STORED,
+  name TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT transcript_attendees_email_not_empty CHECK (btrim(email) <> '')
+);
+
+CREATE UNIQUE INDEX idx_transcript_attendees_unique
+  ON transcript_attendees(transcript_id, normalized_email);
+
+CREATE INDEX idx_transcript_attendees_email
+  ON transcript_attendees(normalized_email);
+
+-- Transcript classification
+CREATE TABLE transcript_classification (
+  transcript_id UUID PRIMARY KEY REFERENCES transcripts(id) ON DELETE CASCADE,
+  visibility TEXT NOT NULL CHECK (visibility IN ('private', 'non_private')),
+  classification_reason TEXT NOT NULL CHECK (
+    classification_reason IN (
+      'weekly_exception',
+      'external_attendee',
+      'internal_attendees_only',
+      'no_attendees'
+    )
+  ),
+  is_weekly_exception BOOLEAN NOT NULL DEFAULT false,
+  normalized_title TEXT NOT NULL,
+  attendee_count INTEGER NOT NULL DEFAULT 0,
+  external_attendee_count INTEGER NOT NULL DEFAULT 0,
+  classified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_transcript_classification_visibility
+  ON transcript_classification(visibility);
+
+CREATE INDEX idx_transcript_classification_normalized_title
+  ON transcript_classification(normalized_title);
+
+-- Transcript project links
+CREATE TABLE transcript_project_links (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  transcript_id UUID NOT NULL REFERENCES transcripts(id) ON DELETE CASCADE,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE RESTRICT,
+  link_source TEXT NOT NULL CHECK (
+    link_source IN (
+      'domain_match',
+      'title_alias',
+      'client_inbox_fallback',
+      'global_triage_fallback'
+    )
+  ),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(transcript_id, project_id)
+);
+
+CREATE UNIQUE INDEX idx_transcript_project_links_transcript_unique
+  ON transcript_project_links(transcript_id);
+
+CREATE INDEX idx_transcript_project_links_project
+  ON transcript_project_links(project_id);
+
+CREATE OR REPLACE FUNCTION prevent_private_transcript_relink()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  transcript_visibility TEXT;
+BEGIN
+  SELECT visibility
+  INTO transcript_visibility
+  FROM transcript_classification
+  WHERE transcript_id = NEW.transcript_id;
+
+  IF transcript_visibility = 'private' THEN
+    RAISE EXCEPTION 'Cannot relink private transcript'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_private_transcript_relink ON transcript_project_links;
+CREATE TRIGGER trg_prevent_private_transcript_relink
+BEFORE INSERT OR UPDATE OF project_id ON transcript_project_links
+FOR EACH ROW
+EXECUTE FUNCTION prevent_private_transcript_relink();
 
 -- Transcript chunks (for future RAG)
 CREATE TABLE transcript_chunks (
@@ -192,9 +432,84 @@ CREATE POLICY "Users can view own messages" ON messages FOR SELECT
 CREATE POLICY "Users can create messages" ON messages FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM conversations c WHERE c.id = messages.conversation_id AND c.user_id = auth.uid()));
 
--- Transcripts: all authenticated users can read
-CREATE POLICY "Authenticated users can view transcripts" ON transcripts FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users can view chunks" ON transcript_chunks FOR SELECT USING (auth.role() = 'authenticated');
+CREATE OR REPLACE FUNCTION user_can_view_transcript(target_transcript_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  viewer_id UUID;
+  viewer_email TEXT;
+  classification_visibility TEXT;
+BEGIN
+  viewer_id := auth.uid();
+  IF viewer_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  SELECT tc.visibility
+  INTO classification_visibility
+  FROM transcript_classification tc
+  WHERE tc.transcript_id = target_transcript_id;
+
+  IF classification_visibility IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  IF classification_visibility = 'private' THEN
+    SELECT lower(btrim(up.email))
+    INTO viewer_email
+    FROM user_profiles up
+    WHERE up.id = viewer_id;
+
+    IF viewer_email IS NULL THEN
+      RETURN FALSE;
+    END IF;
+
+    RETURN EXISTS (
+      SELECT 1
+      FROM transcript_attendees ta
+      WHERE ta.transcript_id = target_transcript_id
+        AND ta.normalized_email = viewer_email
+    );
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1
+    FROM transcript_project_links tpl
+    INNER JOIN projects p ON p.id = tpl.project_id
+    WHERE tpl.transcript_id = target_transcript_id
+      AND (
+        EXISTS (
+          SELECT 1
+          FROM user_roles ur
+          WHERE ur.user_id = viewer_id
+            AND ur.role = 'admin'
+        )
+        OR p.owner_user_id = viewer_id
+        OR EXISTS (
+          SELECT 1
+          FROM project_memberships pm
+          WHERE pm.project_id = p.id
+            AND pm.user_id = viewer_id
+        )
+        OR EXISTS (
+          SELECT 1
+          FROM client_memberships cm
+          WHERE cm.client_id = p.client_id
+            AND cm.user_id = viewer_id
+        )
+      )
+  );
+END;
+$$;
+
+CREATE POLICY "Users can view visible transcripts" ON transcripts FOR SELECT
+  USING (user_can_view_transcript(id));
+
+CREATE POLICY "Users can view visible transcript chunks" ON transcript_chunks FOR SELECT
+  USING (user_can_view_transcript(transcript_id));
 
 -- Completion logs: service role only (no RLS policy for users — backend uses service key)
 -- Effects: service role only

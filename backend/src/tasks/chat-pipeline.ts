@@ -6,6 +6,7 @@ import { updateConversationTask } from './update-conversation.js';
 import { chatAgentTask } from './chat-agent.js';
 import { generateTitleTask } from './generate-title.js';
 import { createTitleRuntime } from '../lib/runtime.js';
+import { filterVisibleTranscriptIdsForUser } from '../lib/transcript-visibility.js';
 
 export interface ChatPipelineInput {
   conversationId: string;
@@ -13,6 +14,8 @@ export interface ChatPipelineInput {
   mentionIds?: string[];
   model: string;
   userContext?: string;
+  userId?: string;
+  userEmail?: string;
   requestId?: string;
 }
 
@@ -47,12 +50,21 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       conversationId: input.conversationId,
     }, deps) as ConversationData;
 
+    let visibleMentionIds = parsed.mentionIds;
+    if (input.userId && input.userEmail && parsed.mentionIds.length > 0) {
+      visibleMentionIds = await filterVisibleTranscriptIdsForUser(
+        input.userId,
+        input.userEmail,
+        parsed.mentionIds
+      );
+    }
+
     // 3. Save user message
     const savedUser = await runTaskToCompletion(saveMessageTask, {
       conversationId: input.conversationId,
       role: 'user',
       content: input.content,
-      mentions: parsed.mentionIds,
+      mentions: visibleMentionIds,
     }, deps);
 
     // Generate title for first message (uses fast nano model)
@@ -76,7 +88,9 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       model: input.model,
       conversationMessages: conversation.messages,
       userContent: input.content,
-      mentionIds: parsed.mentionIds,
+      mentionIds: visibleMentionIds,
+      userId: input.userId,
+      userEmail: input.userEmail,
       userContext: input.userContext,
     }, deps)) {
       fullContent += token;

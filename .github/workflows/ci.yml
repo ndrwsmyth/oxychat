@@ -53,6 +53,10 @@ jobs:
         working-directory: backend
         run: pnpm run test
 
+      - name: Sprint 2 regression suite
+        working-directory: backend
+        run: pnpm run test:s2
+
   frontend-build:
     name: Frontend build
     runs-on: ubuntu-latest

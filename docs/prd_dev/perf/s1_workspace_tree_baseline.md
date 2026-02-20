@@ -1,8 +1,8 @@
 # S1 Workspace Tree Baseline
 
-- Generated at: 2026-02-19T15:17:48.663Z
+- Generated at: 2026-02-20T00:27:03.221Z
 - Samples: 20
-- P50: 245.15ms
-- P95: 557.41ms
+- P50: 214.85ms
+- P95: 231.77ms
 - Target: < 250ms
-- Status: WARN
+- Status: PASS
