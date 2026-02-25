@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { Message, ModelOption, ModelMetadata } from "@/types";
-import { fetchMessages, fetchModels, streamChat } from "@/lib/api";
+import { fetchConversationWithMessages, fetchModels, streamChat } from "@/lib/api";
 import { toast } from "sonner";
 
 interface UseConversationOptions {
@@ -34,6 +34,7 @@ export function useConversation(
 ) {
   const { onTitleUpdate } = options;
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationProjectId, setConversationProjectId] = useState<string | null>(null);
   const [model, setModel] = useState<ModelOption>("");
   const [defaultModel, setDefaultModel] = useState<ModelOption>("");
   const [models, setModels] = useState<ModelMetadata[]>([]);
@@ -119,8 +120,9 @@ export function useConversation(
 
     try {
       setIsFetching(true);
-      const msgs = await fetchMessages(conversationId);
-      setMessages(msgs);
+      const data = await fetchConversationWithMessages(conversationId);
+      setMessages(data.messages);
+      setConversationProjectId(data.projectId);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load messages");
     } finally {
@@ -133,6 +135,7 @@ export function useConversation(
 
     if (!conversationId) {
       setMessages([]);
+      setConversationProjectId(null);
       return;
     }
 
@@ -148,6 +151,7 @@ export function useConversation(
 
     // Clear messages on regular conversation switch to prevent flash of old content
     setMessages([]);
+    setConversationProjectId(null);
     loadMessages();
   }, [conversationId, loadMessages]);
 
@@ -307,6 +311,7 @@ export function useConversation(
 
   return {
     messages,
+    conversationProjectId,
     model,
     modelOptions,
     isModelsReady,

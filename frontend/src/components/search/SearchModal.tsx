@@ -11,6 +11,7 @@ import { Search, Plus } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Conversation } from '@/types'
+import { buildHomeUrl } from '@/lib/navigation'
 
 interface SearchModalProps {
   isOpen: boolean
@@ -80,7 +81,13 @@ export function SearchModal({
   }, [selectedIndex, shouldReduceMotion])
 
   const handleSelectConversation = (conversationId: string) => {
-    router.push(`/?c=${conversationId}`)
+    const conversation = localResults.find((item) => item.id === conversationId)
+    router.push(
+      buildHomeUrl({
+        conversationId,
+        projectId: conversation?.project_id ?? null,
+      })
+    )
     onClose()
   }
 

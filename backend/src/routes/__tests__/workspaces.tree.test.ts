@@ -8,6 +8,13 @@ vi.mock('../../lib/workspaces.js', () => ({
   buildWorkspaceTree: vi.fn(),
 }));
 
+vi.mock('../../lib/workspace-bootstrap.js', () => ({
+  ensurePersonalWorkspace: vi.fn(async () => ({
+    clientId: 'client-personal',
+    projectId: 'project-personal',
+  })),
+}));
+
 const mockUser = {
   id: 'user-1',
   clerkId: 'clerk-1',

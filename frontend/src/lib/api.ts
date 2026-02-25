@@ -6,6 +6,8 @@ import type {
   ModelsResponse,
   TruncationInfo,
   SourceInfo,
+  TranscriptTag,
+  WorkspaceTreeClient,
 } from "@/types";
 import { toast } from "sonner";
 
@@ -21,6 +23,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // Token getter that will be set by useAuthSetup
 let getTokenFn: (() => Promise<string | null>) | null = null;
+const AUTH_GETTER_WAIT_TIMEOUT_MS = 1500;
+const AUTH_TOKEN_RETRY_DELAY_MS = 120;
 
 /**
  * Set the auth token getter function.
@@ -28,6 +32,23 @@ let getTokenFn: (() => Promise<string | null>) | null = null;
  */
 export function setAuthTokenGetter(fn: () => Promise<string | null>) {
   getTokenFn = fn;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForAuthTokenGetter(
+  timeoutMs = AUTH_GETTER_WAIT_TIMEOUT_MS
+): Promise<(() => Promise<string | null>) | null> {
+  if (getTokenFn) return getTokenFn;
+
+  const startedAt = Date.now();
+  while (!getTokenFn && Date.now() - startedAt < timeoutMs) {
+    await sleep(25);
+  }
+
+  return getTokenFn;
 }
 
 /**
@@ -90,8 +111,14 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     "Content-Type": "application/json",
   };
 
-  if (getTokenFn) {
-    const token = await getTokenFn();
+  const tokenGetter = await waitForAuthTokenGetter();
+  if (tokenGetter) {
+    let token = await tokenGetter();
+    // Clerk can briefly return null during startup hydration.
+    if (!token) {
+      await sleep(AUTH_TOKEN_RETRY_DELAY_MS);
+      token = await tokenGetter();
+    }
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -120,6 +147,17 @@ export interface TranscriptResponse {
   title: string;
   date: string;
   summary?: string;
+  project_tag?: TranscriptTag | null;
+  client_tag?: TranscriptTag | null;
+}
+
+export interface WorkspacesTreeResponse {
+  clients: WorkspaceTreeClient[];
+}
+
+export interface ConversationWithMessagesResponse {
+  messages: Message[];
+  projectId: string | null;
 }
 
 export interface ChatStreamOptions {
@@ -138,6 +176,16 @@ export interface ChatStreamOptions {
   onError: (error: Error) => void;
 }
 
+const FALLBACK_MODELS_RESPONSE: ModelsResponse = {
+  defaultModel: "claude-sonnet-4-6",
+  models: [
+    { key: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", provider: "anthropic" },
+    { key: "claude-opus-4-6", label: "Claude Opus 4.6", provider: "anthropic" },
+    { key: "gpt-5.2", label: "GPT-5.2", provider: "openai" },
+    { key: "grok-4", label: "Grok 4", provider: "openai" },
+  ],
+};
+
 export async function fetchTranscripts(): Promise<TranscriptResponse[]> {
   const response = await fetchWithAuth(`${API_BASE_URL}/api/transcripts`);
   if (!response.ok) throw new Error("Failed to fetch transcripts");
@@ -152,6 +200,12 @@ export async function searchTranscripts(query: string): Promise<TranscriptRespon
   });
   if (!response.ok) throw new Error("Failed to search transcripts");
 
+  return response.json();
+}
+
+export async function fetchWorkspaces(): Promise<WorkspacesTreeResponse> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/workspaces/tree`);
+  if (!response.ok) throw new Error("Failed to fetch workspaces");
   return response.json();
 }
 
@@ -314,10 +368,13 @@ export function parseMentions(message: string): string[] {
 }
 
 // Conversation API functions
-export async function fetchConversations(search?: string): Promise<GroupedConversations> {
+export async function fetchConversations(search?: string, projectId?: string): Promise<GroupedConversations> {
   const url = new URL(`${API_BASE_URL}/api/conversations`);
   if (search) {
     url.searchParams.set("search", search);
+  }
+  if (projectId) {
+    url.searchParams.set("project", projectId);
   }
 
   const response = await fetchWithAuth(url.toString());
@@ -347,12 +404,24 @@ export async function fetchConversations(search?: string): Promise<GroupedConver
 }
 
 export async function fetchModels(): Promise<ModelsResponse> {
-  const response = await fetchWithAuth(`${API_BASE_URL}/api/models`);
-  if (!response.ok) throw new Error("Failed to fetch models");
-  return response.json();
+  try {
+    const response = await fetchWithAuth(`${API_BASE_URL}/api/models`);
+    if (!response.ok) {
+      console.warn(`[api] /api/models returned ${response.status}, using fallback model metadata`);
+      return FALLBACK_MODELS_RESPONSE;
+    }
+    return response.json();
+  } catch (error) {
+    console.warn("[api] Failed to fetch /api/models, using fallback model metadata", error);
+    return FALLBACK_MODELS_RESPONSE;
+  }
 }
 
-export async function createConversation(title?: string, model?: ModelOption): Promise<Conversation> {
+export async function createConversation(
+  title?: string,
+  model?: ModelOption,
+  projectId?: string
+): Promise<Conversation> {
   const headers = await getAuthHeaders();
   const response = await fetchWithRetry(
     `${API_BASE_URL}/api/conversations`,
@@ -362,6 +431,7 @@ export async function createConversation(title?: string, model?: ModelOption): P
       body: JSON.stringify({
         title,
         ...(model ? { model } : {}),
+        ...(projectId ? { project_id: projectId } : {}),
       }),
     }
   );
@@ -416,17 +486,27 @@ export async function togglePinConversation(id: string): Promise<Conversation> {
   };
 }
 
-export async function fetchMessages(conversationId: string): Promise<Message[]> {
+export async function fetchConversationWithMessages(
+  conversationId: string
+): Promise<ConversationWithMessagesResponse> {
   const response = await fetchWithAuth(
     `${API_BASE_URL}/api/conversations/${conversationId}`
   );
-  if (!response.ok) throw new Error("Failed to fetch messages");
+  if (!response.ok) throw new Error("Failed to fetch conversation");
 
   const data = await response.json();
-  return (data.messages || []).map((msg: RawMessage) => ({
-    ...msg,
-    timestamp: new Date(msg.created_at),
-  }));
+  return {
+    projectId: typeof data.project_id === "string" ? data.project_id : null,
+    messages: (data.messages || []).map((msg: RawMessage) => ({
+      ...msg,
+      timestamp: new Date(msg.created_at),
+    })),
+  };
+}
+
+export async function fetchMessages(conversationId: string): Promise<Message[]> {
+  const { messages } = await fetchConversationWithMessages(conversationId);
+  return messages;
 }
 
 // Feedback API

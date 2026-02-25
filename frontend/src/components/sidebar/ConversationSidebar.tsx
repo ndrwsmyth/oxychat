@@ -2,11 +2,12 @@
 import { useRouter } from "next/navigation";
 import { useSidebar } from "@/hooks/useSidebar";
 import { ConversationGroup } from "./ConversationGroup";
+import { WorkspaceTree } from "./WorkspaceTree";
 import { IOSThemeToggle } from "./IOSThemeToggle";
 import { UserAvatar } from "./UserAvatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, ChevronsLeft } from "lucide-react";
-import type { Conversation, GroupedConversations } from "@/types";
+import { Plus, Search, PanelLeftClose } from "lucide-react";
+import type { Conversation, GroupedConversations, WorkspaceTreeClient } from "@/types";
 
 // Conversation group configuration for rendering
 const CONVERSATION_GROUPS: Array<{
@@ -45,8 +46,13 @@ function OxyLogo({ size = 20 }: { size?: number }) {
 
 interface ConversationSidebarProps {
   activeConversationId: string | null;
+  selectedProjectId: string | null;
+  debugLayout?: boolean;
   onOpenSearch?: () => void;
   conversations: GroupedConversations;
+  workspaceClients: WorkspaceTreeClient[];
+  workspacesLoading: boolean;
+  onSelectProject: (projectId: string | null) => void;
   isLoading: boolean;
   onNewChat: () => void;
   onUpdateConversation: (id: string, updates: Partial<Conversation>) => Promise<void>;
@@ -56,8 +62,13 @@ interface ConversationSidebarProps {
 
 export function ConversationSidebar({
   activeConversationId,
+  selectedProjectId,
+  debugLayout = false,
   onOpenSearch,
   conversations,
+  workspaceClients,
+  workspacesLoading,
+  onSelectProject,
   isLoading,
   onNewChat,
   onUpdateConversation,
@@ -66,17 +77,19 @@ export function ConversationSidebar({
 }: ConversationSidebarProps) {
   const router = useRouter();
   const { collapsed, toggle } = useSidebar();
+  const handleToggleSidebar = () => {
+    toggle();
+  };
 
-  // Click on empty rail background toggles sidebar open/closed
   const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (target.closest('button, a, [role="button"], .oxy-conversation-item')) return;
-    toggle();
+    handleToggleSidebar();
   };
 
   return (
     <div
-      className={`oxy-sidebar-rail ${collapsed ? 'collapsed' : 'expanded'}`}
+      className={`oxy-sidebar-rail ${collapsed ? 'collapsed' : 'expanded'} ${debugLayout ? 'debug-layout' : ''}`}
       onClick={handleBackgroundClick}
     >
       {/* Top section: Logo + Actions */}
@@ -91,7 +104,7 @@ export function ConversationSidebar({
               aria-label="Home"
               title="Home"
             >
-              <OxyLogo size={18} />
+              <OxyLogo />
             </button>
           </div>
         </div>
@@ -127,50 +140,59 @@ export function ConversationSidebar({
         </button>
       </div>
 
-      {/* Conversation list */}
-      <ScrollArea className="oxy-rail-list" aria-hidden={collapsed}>
-        {isLoading ? (
-          <div className="oxy-conversation-group">
-            <div className="oxy-conversation-group-title">Loading</div>
-            <div className="oxy-conversation-group-list">
-              {[85, 70, 90, 75, 80].map((width, i) => (
-                <div key={i} className="oxy-skeleton-item">
-                  <div className="oxy-skeleton oxy-skeleton-text" style={{ width: `${width}%` }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          CONVERSATION_GROUPS.map(({ key, title, isPinned }) => (
-            <ConversationGroup
-              key={key}
-              title={title}
-              conversations={conversations[key]}
-              activeConversationId={activeConversationId}
-              isPinned={isPinned}
-              onUpdate={onUpdateConversation}
-              onDelete={onDeleteConversation}
-              onTogglePin={onTogglePin}
-            />
-          ))
-        )}
-      </ScrollArea>
+      <div className="oxy-rail-expanded-region">
+        <ScrollArea className="oxy-rail-list">
+          <WorkspaceTree
+            clients={workspaceClients}
+            selectedProjectId={selectedProjectId}
+            onSelectProject={onSelectProject}
+            isLoading={workspacesLoading}
+          />
 
-      {/* Footer - user avatar, collapse button, theme toggle */}
-      <div className="oxy-rail-footer" aria-hidden={collapsed}>
+          {isLoading ? (
+            <div className="oxy-conversation-group">
+              <div className="oxy-conversation-group-title">Loading</div>
+              <div className="oxy-conversation-group-list">
+                {[85, 70, 90, 75, 80].map((width, i) => (
+                  <div key={i} className="oxy-skeleton-item">
+                    <div className="oxy-skeleton oxy-skeleton-text" style={{ width: `${width}%` }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            CONVERSATION_GROUPS.map(({ key, title, isPinned }) => (
+              <ConversationGroup
+                key={key}
+                title={title}
+                conversations={conversations[key]}
+                activeConversationId={activeConversationId}
+                isPinned={isPinned}
+                onUpdate={onUpdateConversation}
+                onDelete={onDeleteConversation}
+                onTogglePin={onTogglePin}
+              />
+            ))
+          )}
+        </ScrollArea>
+      </div>
+
+      <div className="oxy-rail-footer">
         <div className="oxy-rail-footer-avatar">
           <UserAvatar collapsed={collapsed} />
         </div>
+        <div className="oxy-rail-footer-theme">
+          <IOSThemeToggle />
+        </div>
         <button
           type="button"
-          onClick={toggle}
+          onClick={handleToggleSidebar}
           className="oxy-rail-collapse"
           aria-label="Collapse sidebar (⌘B)"
           title="Collapse sidebar (⌘B)"
         >
-          <ChevronsLeft size={16} />
+          <PanelLeftClose size={16} />
         </button>
-        <IOSThemeToggle />
       </div>
 
     </div>

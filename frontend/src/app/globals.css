@@ -266,6 +266,13 @@ body {
   color: var(--text-primary);
 }
 
+.oxy-bar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
 button.oxy-mark {
   background: none;
   border: none;
@@ -288,6 +295,77 @@ button.oxy-mark:focus-visible {
   font-size: var(--font-lg);
   font-weight: 500;
   letter-spacing: -0.01em;
+}
+
+.oxy-bar-sidebar-toggle {
+  display: none;
+  width: var(--size-base);
+  height: var(--size-base);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    border-color var(--duration-fast) ease-out,
+    color var(--duration-fast) ease-out,
+    transform var(--duration-fast) ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .oxy-bar-sidebar-toggle:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+}
+
+.oxy-bar-sidebar-toggle:active {
+  transform: scale(0.95);
+}
+
+.oxy-bar-sidebar-toggle:focus-visible {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.oxy-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  margin-left: auto;
+  margin-right: var(--spacing-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oxy-breadcrumb-separator {
+  color: var(--text-faint);
+}
+
+@media (max-width: 900px) {
+  .oxy-breadcrumb {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .oxy-bar-sidebar-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (pointer: coarse) {
+  .oxy-bar-sidebar-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .oxy-bar-btn {
@@ -1275,6 +1353,7 @@ button.oxy-mark:focus-visible {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   padding-top: env(safe-area-inset-top);
 }
 
@@ -1388,16 +1467,9 @@ button.oxy-mark:focus-visible {
 
 /* Legacy sidebar styles removed - using oxy-sidebar-rail instead */
 
-/* Sidebar list */
-.oxy-sidebar-list {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
 /* Conversation groups */
 .oxy-conversation-group {
-  padding: var(--spacing-sm) var(--spacing-xs); /* 12px 8px - tighter */
+  padding: var(--spacing-sm) 0;
 }
 
 .oxy-conversation-group.pinned {
@@ -1410,7 +1482,7 @@ button.oxy-mark:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-tertiary);
-  padding: 0 var(--spacing-xs) 4px;
+  padding: 0 var(--spacing-sm) 4px calc(var(--rail-padding) + var(--rail-content-left));
 }
 
 .oxy-conversation-group-list {
@@ -1425,7 +1497,7 @@ button.oxy-mark:focus-visible {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px var(--spacing-sm) 6px var(--spacing-xs); /* Extra right padding for menu trigger */
+  padding: 6px var(--spacing-sm) 6px calc(var(--rail-padding) + var(--rail-content-left));
   height: 36px; /* Fixed height for consistency */
   background: none;
   border-radius: var(--radius-sm);
@@ -1625,69 +1697,6 @@ button.oxy-mark:focus-visible {
   color: #f87171;
 }
 
-/* ========================================
-   FLOATING TOGGLE BUTTON & MOBILE BACKDROP
-   ======================================== */
-
-.oxy-sidebar-floating-toggle {
-  position: fixed;
-  top: var(--spacing-md);
-  left: var(--spacing-base);
-  z-index: 50;
-  width: var(--size-lg);
-  height: var(--size-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-base);
-  color: var(--text-primary);
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  transition: background-color var(--duration-base) ease-out, transform var(--duration-fast) ease-out;
-  animation: fadeInSlide var(--duration-slow) ease-out var(--duration-slow) backwards;
-}
-
-@media (hover: hover) {
-  .oxy-sidebar-floating-toggle:hover {
-    background: var(--surface-overlay);
-    transform: scale(1.05);
-    box-shadow: var(--shadow-lg);
-  }
-}
-
-.oxy-sidebar-floating-toggle:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--focus-ring), 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-@keyframes fadeInSlide {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.oxy-sidebar-backdrop {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .oxy-sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, var(--opacity-heavy));
-    z-index: 99;
-    animation: fadeIn var(--duration-slow) ease-out;
-  }
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1695,45 +1704,6 @@ button.oxy-mark:focus-visible {
   to {
     opacity: 1;
   }
-}
-
-/* ========================================
-   SIDEBAR FOOTER & IOS THEME TOGGLE
-   ======================================== */
-
-.oxy-sidebar-footer {
-  padding: var(--spacing-sm) var(--spacing-base);
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.oxy-sidebar-collapse-btn {
-  width: var(--size-sm);
-  height: var(--size-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  border-radius: var(--radius-base);
-  color: var(--text-tertiary);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
-}
-
-@media (hover: hover) {
-  .oxy-sidebar-collapse-btn:hover {
-    background: var(--surface-overlay);
-    color: var(--text-primary);
-  }
-}
-
-.oxy-sidebar-collapse-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--focus);
 }
 
 /* iOS-style theme toggle */
@@ -2549,6 +2519,27 @@ button.oxy-mark:focus-visible {
   line-height: 1.4;
 }
 
+.oxy-transcripts-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.oxy-transcripts-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-overlay);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .oxy-transcripts-item-date {
   font-size: var(--font-sm);
   color: var(--text-tertiary);
@@ -2851,6 +2842,18 @@ button.oxy-mark:focus-visible {
     transition: none !important;
   }
 
+  .oxy-rail-btn,
+  .oxy-rail-logo-btn,
+  .oxy-rail-label,
+  .oxy-rail-kbd,
+  .oxy-rail-expanded-region,
+  .oxy-rail-footer-theme,
+  .oxy-workspace-project-btn,
+  .oxy-rail-collapse {
+    transition: none !important;
+    animation: none !important;
+  }
+
   .oxy-search-deeper {
     animation: none !important;
     background: none !important;
@@ -2865,12 +2868,26 @@ button.oxy-mark:focus-visible {
 .oxy-sidebar-rail {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
   height: 100%;
   width: 100%; /* Always 100% of parent - parent width transitions via grid */
   overflow: hidden; /* Clip content - this creates the physical reveal effect */
   /* Equal padding from viewport edge to gutter line */
   padding: var(--spacing-xs) var(--rail-padding);
-  cursor: ew-resize; /* Resize cursor for background click to toggle */
+  cursor: default;
+}
+
+.oxy-sidebar-rail:hover {
+  cursor: col-resize;
+}
+
+.oxy-sidebar-rail.expanded {
+  background: color-mix(in srgb, var(--surface-overlay) 36%, var(--surface));
+}
+
+.oxy-sidebar-rail.collapsed {
+  background: var(--surface);
 }
 
 /* Buttons and interactive elements override to pointer */
@@ -2886,6 +2903,7 @@ button.oxy-mark:focus-visible {
   flex-direction: column;
   gap: var(--rail-item-gap);
   flex-shrink: 0;
+  padding-top: 4px;
   padding-bottom: var(--spacing-xs);
 }
 
@@ -2894,7 +2912,7 @@ button.oxy-mark:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  padding: 0 var(--spacing-xs) 0 0;
+  padding: 0 10px 0 0;
   background: none;
   border: none;
   border-radius: var(--radius-sm);
@@ -2923,7 +2941,7 @@ button.oxy-mark:focus-visible {
   height: 18px;
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .oxy-rail-btn:hover {
     background: var(--surface-overlay);
   }
@@ -2948,8 +2966,8 @@ button.oxy-mark:focus-visible {
   display: flex;
   align-items: center;
   width: 100%;
-  height: var(--size-xl);
-  padding: 0 var(--spacing-xs) 0 0;
+  height: 52px;
+  padding: 0 10px 0 0;
   margin-bottom: var(--spacing-xs);
 }
 
@@ -2966,20 +2984,25 @@ button.oxy-mark:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   background: none;
   border: none;
   color: var(--text-primary);
   cursor: pointer;
   line-height: 0;
-  border-radius: 0;
+  border-radius: 999px;
 }
 
-@media (hover: hover) {
+.oxy-rail-logo-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (hover: hover) and (pointer: fine) {
   .oxy-rail-logo-btn:hover {
-    background: none;
+    background: var(--surface-overlay);
   }
 }
 
@@ -2990,23 +3013,25 @@ button.oxy-mark:focus-visible {
 
 /* Labels - no opacity transition, clipping reveals them */
 .oxy-rail-label {
-  font-size: var(--font-base);
-  font-weight: 450;
+  font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
   line-height: 18px; /* Match icon height to prevent Y-shift */
+  transition: opacity var(--duration-slow) var(--ease-in-out-quart);
 }
 
 /* Keyboard shortcut badge - no opacity transition */
 .oxy-rail-kbd {
   margin-left: auto;
   font-family: inherit;
-  font-size: var(--font-xs);
-  line-height: 14px; /* 14px + 4px padding = 18px total, matching icon height */
-  color: var(--text-faint);
-  background: var(--surface-overlay);
-  padding: 2px 6px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface-overlay) 70%, transparent);
+  padding: 2px 7px;
   border-radius: 4px;
   flex-shrink: 0; /* Don't shrink - let it clip instead */
+  transition: opacity var(--duration-slow) var(--ease-in-out-quart);
 }
 
 /* Text elements in sidebar - NO opacity transitions
@@ -3014,7 +3039,12 @@ button.oxy-mark:focus-visible {
 .oxy-sidebar-rail .oxy-rail-label,
 .oxy-sidebar-rail .oxy-rail-kbd,
 .oxy-sidebar-rail .oxy-conversation-title,
-.oxy-sidebar-rail .oxy-conversation-group-title {
+.oxy-sidebar-rail .oxy-conversation-group-title,
+.oxy-sidebar-rail .oxy-workspace-tree-title,
+.oxy-sidebar-rail .oxy-workspace-client-name,
+.oxy-sidebar-rail .oxy-workspace-project-name,
+.oxy-sidebar-rail .oxy-workspace-project-count,
+.oxy-sidebar-rail .oxy-workspace-empty {
   opacity: 1; /* Always visible - clipping handles visibility */
   white-space: nowrap; /* Prevent text wrapping during transition */
 }
@@ -3023,32 +3053,309 @@ button.oxy-mark:focus-visible {
 .oxy-sidebar-rail.collapsed .oxy-rail-label,
 .oxy-sidebar-rail.collapsed .oxy-rail-kbd,
 .oxy-sidebar-rail.collapsed .oxy-conversation-title,
-.oxy-sidebar-rail.collapsed .oxy-conversation-group-title {
+.oxy-sidebar-rail.collapsed .oxy-conversation-group-title,
+.oxy-sidebar-rail.collapsed .oxy-workspace-tree-title,
+.oxy-sidebar-rail.collapsed .oxy-workspace-client-name,
+.oxy-sidebar-rail.collapsed .oxy-workspace-project-name,
+.oxy-sidebar-rail.collapsed .oxy-workspace-project-count,
+.oxy-sidebar-rail.collapsed .oxy-workspace-empty {
   pointer-events: none;
 }
 
+.oxy-sidebar-rail.collapsed .oxy-rail-label,
+.oxy-sidebar-rail.collapsed .oxy-rail-kbd {
+  opacity: 0;
+}
+
+.oxy-sidebar-rail.collapsed .oxy-rail-btn {
+  justify-content: flex-start;
+  padding-right: 0;
+}
+
+/* Collapsed workspace rows are icon-only to prevent height jumps while rail width animates */
 /* Conversation list */
 .oxy-rail-list {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  margin: 0 calc(-1 * var(--spacing-xs));
+  margin: 0;
   padding-top: 0;
-  padding-right: var(--spacing-sm); /* Extra space for menu trigger */
+  padding-right: 0;
   padding-bottom: 0;
-  padding-left: calc(var(--rail-content-left) - var(--spacing-xs));
+  padding-left: 0;
+}
+
+.oxy-rail-expanded-region {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  transition: opacity var(--duration-slow) var(--ease-in-out-quart);
+  will-change: opacity;
+}
+
+.oxy-sidebar-rail.expanded .oxy-rail-expanded-region {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.oxy-sidebar-rail.collapsed .oxy-rail-expanded-region {
+  opacity: 0;
+  transform: none;
+  pointer-events: none;
+}
+
+.oxy-workspace-tree {
+  padding: 12px 0 10px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.oxy-workspace-tree-title {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.oxy-workspace-project-btn {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  display: grid;
+  grid-template-columns: var(--rail-icon-size) minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--spacing-sm);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  min-height: 34px;
+  padding: 0 10px 0 0;
+  text-align: left;
+  overflow: hidden;
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.oxy-workspace-project-btn.active {
+  background: color-mix(in srgb, var(--surface-overlay) 88%, transparent);
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--border-strong) 75%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border-strong) 60%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .oxy-workspace-project-btn:hover {
+    background: color-mix(in srgb, var(--surface-overlay) 68%, transparent);
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--border-strong) 45%, transparent);
+  }
+}
+
+.oxy-workspace-project-btn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
+}
+
+.oxy-workspace-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oxy-workspace-client {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.oxy-workspace-row-icon {
+  width: var(--rail-icon-size);
+  height: var(--rail-icon-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.oxy-workspace-row-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Folder glyph is optically right-heavy (tab shape), nudge left for rail alignment */
+.oxy-workspace-project-glyph {
+  stroke-width: 2.1;
+}
+
+.oxy-workspace-client-row {
+  display: grid;
+  grid-template-columns: var(--rail-icon-size) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--spacing-sm);
+  min-height: 28px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 520;
+  padding: 0 10px 0 0;
+}
+
+.oxy-workspace-client-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oxy-workspace-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.oxy-workspace-project-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-primary);
+}
+
+.oxy-workspace-project-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.oxy-workspace-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 10px 4px calc(var(--rail-padding) + var(--rail-content-left));
+}
+
+.oxy-workspace-empty {
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 8px 10px 4px calc(var(--rail-padding) + var(--rail-content-left));
 }
 
 /* Footer with collapse button (icon position) and theme toggle (clips when collapsed) */
 .oxy-rail-footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--rail-icon-size) minmax(0, 1fr) var(--rail-icon-size);
   align-items: center;
-  gap: var(--spacing-sm);
+  column-gap: var(--spacing-xs);
   padding-top: var(--spacing-xs);
   border-top: 1px solid var(--border);
-  margin-top: var(--spacing-xs);
+  margin-top: auto;
+  padding-bottom: 2px;
+  padding-right: 10px;
   flex-shrink: 0;
-  overflow: hidden; /* Clip theme toggle when collapsed */
+  overflow: hidden;
+}
+
+.oxy-rail-footer-theme {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  max-width: 96px;
+  opacity: 1;
+  pointer-events: auto;
+  transition:
+    max-width var(--duration-slow) var(--ease-in-out-quart),
+    opacity var(--duration-slow) var(--ease-in-out-quart);
+}
+
+.oxy-sidebar-rail.collapsed .oxy-rail-footer-theme {
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ========================================
+   SIDEBAR DEBUG LAYOUT
+   Enable with ?debugSidebar=1
+   ======================================== */
+
+.oxy-sidebar-rail.debug-layout {
+  position: relative;
+  outline: 2px solid rgba(220, 38, 38, 0.45);
+  background: rgba(220, 38, 38, 0.03);
+}
+
+.oxy-sidebar-rail.debug-layout::before,
+.oxy-sidebar-rail.debug-layout::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Icon column guide */
+.oxy-sidebar-rail.debug-layout::before {
+  left: var(--rail-padding);
+  background: rgba(16, 185, 129, 0.85);
+}
+
+/* Text start guide */
+.oxy-sidebar-rail.debug-layout::after {
+  left: calc(var(--rail-padding) + var(--rail-content-left));
+  background: rgba(59, 130, 246, 0.85);
+}
+
+.oxy-sidebar-rail.debug-layout .oxy-rail-top {
+  outline: 1px solid rgba(16, 185, 129, 0.9);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.oxy-sidebar-rail.debug-layout .oxy-rail-list {
+  outline: 1px solid rgba(59, 130, 246, 0.9);
+  background: rgba(59, 130, 246, 0.07);
+}
+
+.oxy-sidebar-rail.debug-layout .oxy-workspace-tree {
+  outline: 1px solid rgba(245, 158, 11, 0.9);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.oxy-sidebar-rail.debug-layout .oxy-workspace-client-row,
+.oxy-sidebar-rail.debug-layout .oxy-workspace-project-btn {
+  outline: 1px dashed rgba(236, 72, 153, 0.85);
+  background: rgba(236, 72, 153, 0.08);
+}
+
+.oxy-sidebar-rail.debug-layout .oxy-conversation-group {
+  outline: 1px solid rgba(168, 85, 247, 0.9);
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.oxy-sidebar-rail.debug-layout .oxy-conversation-item {
+  outline: 1px dashed rgba(99, 102, 241, 0.9);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.oxy-sidebar-rail.debug-layout .oxy-rail-footer {
+  outline: 1px solid rgba(20, 184, 166, 0.9);
+  background: rgba(20, 184, 166, 0.08);
 }
 
 /* Avatar wrapper - matches rail-icon-size to center 32px avatar with 40px icon column */
@@ -3058,7 +3365,19 @@ button.oxy-mark:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+  justify-self: center;
   flex-shrink: 0;
+}
+
+.oxy-rail-footer-avatar .oxy-user-avatar {
+  transform: none;
+  transition: box-shadow var(--duration-fast) ease-out;
+}
+
+@media (hover: hover) {
+  .oxy-rail-footer-avatar .oxy-user-avatar:hover {
+    transform: none;
+  }
 }
 
 .oxy-rail-collapse {
@@ -3074,9 +3393,16 @@ button.oxy-mark:focus-visible {
   color: var(--text-tertiary);
   cursor: pointer;
   transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+  justify-self: end;
+  opacity: 1;
 }
 
-@media (hover: hover) {
+.oxy-sidebar-rail.collapsed .oxy-rail-collapse {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
   .oxy-rail-collapse:hover {
     background: var(--surface-overlay);
     color: var(--text-primary);
@@ -3088,12 +3414,17 @@ button.oxy-mark:focus-visible {
   box-shadow: 0 0 0 2px var(--focus);
 }
 
-/* Bottom section when collapsed (theme toggle) */
-.oxy-rail-bottom {
-  margin-top: auto;
-  display: flex;
-  justify-content: center;
-  padding-top: var(--spacing-xs);
+@media (pointer: coarse) {
+  .oxy-rail-btn,
+  .oxy-workspace-project-btn {
+    min-height: 44px;
+  }
+
+  .oxy-rail-logo-btn,
+  .oxy-rail-collapse {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* ========================================

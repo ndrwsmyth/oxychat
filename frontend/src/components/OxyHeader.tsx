@@ -1,15 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { PanelLeftOpen } from "lucide-react";
 import { useTranscriptsPanel } from "@/hooks/useTranscriptsPanel";
+import { useSidebar } from "@/hooks/useSidebar";
 
 interface OxyHeaderProps {
   showHomeButton?: boolean;
+  breadcrumb?: {
+    clientName: string;
+    projectName: string;
+  } | null;
 }
 
-export function OxyHeader({ showHomeButton = false }: OxyHeaderProps) {
+export function OxyHeader({ showHomeButton = false, breadcrumb = null }: OxyHeaderProps) {
   const router = useRouter();
   const { open: panelOpen, toggle: toggleTranscripts } = useTranscriptsPanel();
+  const { collapsed, toggle: toggleSidebar } = useSidebar();
 
   const handleLogoClick = () => {
     if (showHomeButton) {
@@ -19,28 +26,48 @@ export function OxyHeader({ showHomeButton = false }: OxyHeaderProps) {
 
   return (
     <header className="oxy-bar">
-      {showHomeButton ? (
-        <button
-          className="oxy-mark clickable"
-          onClick={handleLogoClick}
-          aria-label="Go to home"
-          type="button"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="2" fill="currentColor" />
-            <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.15" />
-          </svg>
-          <span>Oxy</span>
-        </button>
-      ) : (
-        <div className="oxy-mark">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="2" fill="currentColor" />
-            <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.15" />
-          </svg>
-          <span>Oxy</span>
+      <div className="oxy-bar-left">
+        {collapsed && (
+          <button
+            type="button"
+            className="oxy-bar-sidebar-toggle"
+            onClick={toggleSidebar}
+            aria-label="Open sidebar"
+            title="Open sidebar (Cmd+B)"
+          >
+            <PanelLeftOpen size={18} />
+          </button>
+        )}
+        {showHomeButton ? (
+          <button
+            className="oxy-mark clickable"
+            onClick={handleLogoClick}
+            aria-label="Go to home"
+            type="button"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="2" fill="currentColor" />
+              <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.15" />
+            </svg>
+            <span>Oxy</span>
+          </button>
+        ) : (
+          <div className="oxy-mark">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="2" fill="currentColor" />
+              <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1" opacity="0.15" />
+            </svg>
+            <span>Oxy</span>
+          </div>
+        )}
+      </div>
+      {breadcrumb && (
+        <div className="oxy-breadcrumb" aria-label="Current workspace">
+          <span>{breadcrumb.clientName}</span>
+          <span className="oxy-breadcrumb-separator">/</span>
+          <span>{breadcrumb.projectName}</span>
         </div>
       )}
       <div className="oxy-bar-actions">

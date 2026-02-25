@@ -10,6 +10,8 @@ function toTranscript(response: TranscriptResponse): Transcript {
     title: response.title,
     date: new Date(response.date),
     summary: response.summary,
+    project_tag: response.project_tag ?? null,
+    client_tag: response.client_tag ?? null,
   };
 }
 

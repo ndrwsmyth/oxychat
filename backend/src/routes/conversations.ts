@@ -57,14 +57,38 @@ conversationsRouter.post('/conversations', async (c) => {
 
 // List conversations (grouped by date)
 conversationsRouter.get('/conversations', async (c) => {
+  const requestedProjectRaw = c.req.query('project');
+  const requestedProjectId = requestedProjectRaw?.trim();
   const supabase = getSupabase();
+  const userId = c.get('user').id;
 
-  const { data, error } = await supabase
+  if (requestedProjectRaw !== undefined && !requestedProjectId) {
+    return c.json({ error: 'project query parameter must be a non-empty string' }, 400);
+  }
+
+  if (requestedProjectId) {
+    try {
+      await assertProjectAccess(userId, requestedProjectId);
+    } catch (error) {
+      if (error instanceof AccessDeniedError) {
+        return c.json({ error: error.message }, 403);
+      }
+      return c.json({ error: error instanceof Error ? error.message : 'Failed to validate project access' }, 500);
+    }
+  }
+
+  let query = supabase
     .from('conversations')
-    .select('id, title, auto_titled, model, pinned, pinned_at, created_at, updated_at')
-    .eq('user_id', c.get('user').id)
+    .select('id, title, auto_titled, model, project_id, pinned, pinned_at, created_at, updated_at')
+    .eq('user_id', userId)
     .is('deleted_at', null)
     .order('updated_at', { ascending: false });
+
+  if (requestedProjectId) {
+    query = query.eq('project_id', requestedProjectId);
+  }
+
+  const { data, error } = await query;
 
   if (error) return c.json({ error: error.message }, 500);
 

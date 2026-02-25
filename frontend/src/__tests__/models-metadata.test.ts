@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, createElement, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useConversation } from '../hooks/useConversation';
-import { fetchMessages, fetchModels, streamChat } from '../lib/api';
+import { fetchConversationWithMessages, fetchModels, streamChat } from '../lib/api';
 
 vi.mock('../lib/api', () => ({
-  fetchMessages: vi.fn(),
+  fetchConversationWithMessages: vi.fn(),
   fetchModels: vi.fn(),
   streamChat: vi.fn(),
 }));
@@ -47,7 +47,10 @@ describe('useConversation model metadata behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    vi.mocked(fetchMessages).mockResolvedValue([]);
+    vi.mocked(fetchConversationWithMessages).mockResolvedValue({
+      messages: [],
+      projectId: null,
+    });
     vi.mocked(streamChat).mockResolvedValue();
     vi.mocked(fetchModels).mockResolvedValue(createModelsResponse());
   });

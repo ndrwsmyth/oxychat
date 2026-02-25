@@ -9,9 +9,10 @@ import { setAuthTokenGetter } from "@/lib/api";
  * Call this once at the top of your authenticated page/layout.
  */
 export function useAuthSetup() {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded } = useAuth();
 
   useEffect(() => {
+    if (!isLoaded) return;
     setAuthTokenGetter(getToken);
-  }, [getToken]);
+  }, [getToken, isLoaded]);
 }

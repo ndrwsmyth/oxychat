@@ -6,7 +6,7 @@ describe('migration lib', () => {
     const migrations = await loadMigrationFiles();
     expect(migrations.length).toBeGreaterThan(0);
     expect(migrations[0].id).toBe('0001_s1_t00b_user_profiles_clerk_context');
-    expect(migrations[migrations.length - 1].id).toBe('0018_s2_t15_transcript_rls_defense');
+    expect(migrations[migrations.length - 1].id).toBe('0019_s3_t15_workspace_tree_rpc');
   });
 
   it('parses --step with default fallback', () => {

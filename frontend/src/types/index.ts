@@ -14,6 +14,8 @@ export interface Transcript {
   title: string;
   date: Date;
   summary?: string;
+  project_tag?: TranscriptTag | null;
+  client_tag?: TranscriptTag | null;
 }
 
 export interface ChatState {
@@ -22,12 +24,19 @@ export interface ChatState {
   error: string | null;
 }
 
+export interface TranscriptTag {
+  id: string;
+  name: string;
+  scope: "personal" | "client" | "global";
+}
+
 // Conversation types
 export interface Conversation {
   id: string;
   title: string | null; // Null until auto-titled on first message
   auto_titled: boolean;
   model: string;
+  project_id: string;
   pinned: boolean;
   pinned_at: Date | null;
   created_at: Date;
@@ -55,6 +64,21 @@ export interface ModelMetadata {
 export interface ModelsResponse {
   defaultModel: string;
   models: ModelMetadata[];
+}
+
+export interface WorkspaceTreeProject {
+  id: string;
+  name: string;
+  scope: "personal" | "client" | "global";
+  client_id: string;
+  conversation_count: number;
+}
+
+export interface WorkspaceTreeClient {
+  id: string;
+  name: string;
+  scope: "personal" | "client" | "global";
+  projects: WorkspaceTreeProject[];
 }
 
 // Truncation info for @mentioned documents

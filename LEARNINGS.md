@@ -23,3 +23,24 @@
 - When giving user runbooks, provide one command per line without bracket wrappers (`[]`) to avoid zsh parse errors during copy/paste.
 - For user troubleshooting, ask for exact command output and branch once from the first root cause; avoid sending broad rerun sequences before the primary blocker is fixed.
 - Update sprint status docs only after gate evidence is green (for S2: `gate:s2` PASS, benchmark PASS, and S1 regression PASS).
+
+## Sprint Learnings - 2026-02-25 (Frontend Sidebar Stabilization)
+
+- Use one source of truth for sidebar state (`collapsed`) and drive visibility from CSS; timer-backed phase state introduces race windows and glitch frames.
+- Keep expanded content mounted during open/close transitions; animate visibility, not presence, to avoid blank/pop states on rapid toggles.
+- Lock icon-rail x-position for all core icons (logo, new chat, search, workspace, avatar); only labels should fade, icons should not translate laterally.
+- Treat the user avatar as a persistent anchor in both states; reserve its slot so it never disappears, jumps, or snaps during transitions.
+- Use a fixed three-zone footer layout in expanded mode: left avatar, center theme toggle, right collapse control with right-edge alignment.
+- Do not remove established interaction affordances (for example rail click toggle) during stabilization without explicit product sign-off.
+- Ensure interactive elements always expose pointer/hover affordance so users can discover click targets.
+- Use one shared motion contract (duration + easing) for rail width and content fade/shift to prevent desync between parent and child animation tracks.
+- Keep debug alignment overlays for development diagnostics, but gate runtime activation to development only.
+- Make rapid-toggle QA a blocking check on desktop and mobile (button, keyboard shortcut, and mobile open/close paths), not only single-path happy flows.
+
+## Sprint Learnings - 2026-02-25 (Sprint 3 Closeout + Perf Validation)
+
+- Keep status docs synchronized with the latest generated benchmark artifacts after every gate rerun; stale numeric claims quickly become contradictory.
+- Distinguish benchmark policy from benchmark measurement: if a benchmark is warn-only in gate enforcement, call that out explicitly in closeout docs.
+- For high-cardinality sidebar tree loads, move ACL + aggregation into a DB-side function and back it with a partial index to keep p95 query latency within sprint targets.
+- Keep RPC-to-legacy fallback behavior for phased migration rollouts so local/staging environments do not break when function availability lags.
+- Treat `gate:s3` completion as the source of truth for Sprint 3 closeout (including nested regression gates), not individual command spot checks.

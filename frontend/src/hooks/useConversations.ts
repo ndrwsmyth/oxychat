@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { GroupedConversations, Conversation } from "@/types";
 import {
   fetchConversations,
@@ -36,7 +36,12 @@ function removeFromGroup(
   return result;
 }
 
-export function useConversations() {
+interface UseConversationsOptions {
+  projectId?: string | null;
+}
+
+export function useConversations(options: UseConversationsOptions = {}) {
+  const { projectId } = options;
   const [conversations, setConversations] = useState<GroupedConversations>({
     pinned: [],
     today: [],
@@ -48,27 +53,48 @@ export function useConversations() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestSequenceRef = useRef(0);
+  const activeProjectRef = useRef<string | null>(projectId ?? null);
 
-  const loadConversations = useCallback(async (search?: string) => {
+  const loadConversations = useCallback(async (search?: string, scopedProjectId?: string | null) => {
+    const requestId = ++requestSequenceRef.current;
     try {
       setIsLoading(true);
       setError(null);
-      const data = await fetchConversations(search);
+      const data = await fetchConversations(search, scopedProjectId ?? undefined);
+      if (requestId !== requestSequenceRef.current) {
+        return;
+      }
       setConversations(data);
     } catch (err) {
+      if (requestId !== requestSequenceRef.current) {
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to load conversations");
     } finally {
-      setIsLoading(false);
+      if (requestId === requestSequenceRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
-  // Load conversations on mount
+  // Load conversations on mount and project scope changes
   useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
+    const nextProjectId = projectId ?? null;
+    activeProjectRef.current = nextProjectId;
+    loadConversations(undefined, nextProjectId);
+  }, [loadConversations, projectId]);
 
-  const createConversation = useCallback(async (title?: string, model?: string): Promise<Conversation> => {
-    const newConv = await apiCreateConversation(title, model);
+  const createConversation = useCallback(async (
+    title?: string,
+    model?: string,
+    scopedProjectId?: string | null
+  ): Promise<Conversation> => {
+    const effectiveProjectId = scopedProjectId ?? activeProjectRef.current ?? undefined;
+    const newConv = await apiCreateConversation(title, model, effectiveProjectId ?? undefined);
+    if (effectiveProjectId && newConv.project_id !== effectiveProjectId) {
+      return newConv;
+    }
     setConversations(prev => ({
       ...prev,
       today: [newConv, ...prev.today],
@@ -84,7 +110,7 @@ export function useConversations() {
     const location = findConversationGroup(conversations, id);
     if (!location) {
       await apiUpdateConversation(id, updates);
-      await loadConversations();
+      await loadConversations(undefined, activeProjectRef.current);
       return;
     }
 
@@ -176,12 +202,14 @@ export function useConversations() {
       // Trust optimistic update on success - no refetch needed
     } catch (err) {
       // Rollback on error - refetch full state
-      await loadConversations();
+      await loadConversations(undefined, activeProjectRef.current);
       throw err;
     }
   }, [conversations, loadConversations]);
 
-  const searchConversations = loadConversations;
+  const searchConversations = useCallback((search?: string) => {
+    return loadConversations(search, activeProjectRef.current);
+  }, [loadConversations]);
 
   /**
    * Optimistically update a conversation's title in the sidebar.
@@ -209,6 +237,6 @@ export function useConversations() {
     deleteConversation,
     togglePin,
     searchConversations,
-    refresh: loadConversations,
+    refresh: () => loadConversations(undefined, activeProjectRef.current),
   };
 }

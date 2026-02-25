@@ -8,6 +8,7 @@ function createConversationResponse(model: string, id = 'conv-1') {
       title: null,
       auto_titled: false,
       model,
+      project_id: 'project-1',
       pinned: false,
       pinned_at: null,
       created_at: new Date().toISOString(),
@@ -46,6 +47,16 @@ describe('model consistency API integration', () => {
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(String(init?.body));
     expect(body.model).toBe('claude-sonnet-4-6');
+  });
+
+  it('new conversation includes selected project scope in create payload', async () => {
+    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue(createConversationResponse('gpt-5.2'));
+
+    await createConversation(undefined, 'gpt-5.2', 'project-2');
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.project_id).toBe('project-2');
   });
 
   it('include-history switch sends selected model on existing conversation', async () => {

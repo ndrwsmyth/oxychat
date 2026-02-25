@@ -87,6 +87,14 @@ export function TranscriptsPanel({
                 // }}
               >
                 <span className="oxy-transcripts-item-title">{t.title}</span>
+                <span className="oxy-transcripts-tags">
+                  {t.client_tag && (
+                    <span className="oxy-transcripts-tag">{t.client_tag.name}</span>
+                  )}
+                  {t.project_tag && (
+                    <span className="oxy-transcripts-tag">{t.project_tag.name}</span>
+                  )}
+                </span>
                 <span className="oxy-transcripts-item-date">
                   {formatRelativeDate(t.date)}
                 </span>

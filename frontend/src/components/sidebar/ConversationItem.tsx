@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import type { Conversation } from "@/types";
 import { Pin, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useTypewriter } from "@/hooks/useTypewriter";
+import { buildHomeUrl } from "@/lib/navigation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -93,7 +94,12 @@ export function ConversationItem({
 
   const handleClick = () => {
     if (!isEditing && !menuOpen) {
-      router.push(`/?c=${conversation.id}`);
+      router.push(
+        buildHomeUrl({
+          conversationId: conversation.id,
+          projectId: conversation.project_id,
+        })
+      );
     }
   };
 
