@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { OxyMentionPopover, type MentionPopoverHandle } from "@/components/mentions/OxyMentionPopover";
 import { ModelPicker } from "./ModelPicker";
 import type { Transcript, ModelOption } from "@/types";
 import type { DraftData, MentionChip } from "@/hooks/useDrafts";
+import { useMentionSearch } from "@/hooks/useMentionSearch";
 import { Paperclip, Square } from "lucide-react";
 
 export type { MentionChip };
@@ -20,7 +21,8 @@ interface OxyComposerProps {
   disabled: boolean;
   isGenerating?: boolean;
   hasMessages?: boolean;
-  transcripts: Transcript[];
+  projectId?: string | null;
+  conversationId?: string | null;
   model: ModelOption;
   modelOptions: { value: ModelOption; label: string; shortLabel?: string }[];
   onModelChange: (model: ModelOption) => void;
@@ -199,7 +201,8 @@ export function OxyComposer({
   disabled,
   isGenerating = false,
   hasMessages = false,
-  transcripts,
+  projectId,
+  conversationId,
   model,
   modelOptions,
   onModelChange,
@@ -214,6 +217,12 @@ export function OxyComposer({
   const [hasContent, setHasContent] = useState(false);
   const isComposingRef = useRef(false);
   const previousExternalValueRef = useRef(value);
+  const mentionQuery = showMentions ? mentionFilter : "";
+  const { transcripts: mentionResults, isLoading: mentionLoading } = useMentionSearch(
+    mentionQuery,
+    projectId ?? undefined,
+    conversationId ?? undefined
+  );
 
   // Sync external value changes to editor (only when value changes externally, like clear on send)
   useEffect(() => {
@@ -333,10 +342,10 @@ export function OxyComposer({
     if (atIndex !== -1) {
       const query = text.slice(atIndex + 1);
       // Make sure this isn't an already-inserted pill by checking if query is short
-      // (pills have full titles, typing queries are usually short)
+        // (pills have full titles, typing queries are usually short)
       if (!query.includes(" ") && !query.includes("\n") && query.length < 50) {
         setShowMentions(true);
-        setMentionFilter(query.toLowerCase());
+        setMentionFilter(query);
       } else {
         setShowMentions(false);
       }
@@ -527,11 +536,6 @@ export function OxyComposer({
     syncToParent();
   }, [syncToParent]);
 
-  const filteredTranscripts = useMemo(
-    () => transcripts.filter((t) => t.title.toLowerCase().includes(mentionFilter)),
-    [transcripts, mentionFilter]
-  );
-
   const handleCompositionStart = () => {
     isComposingRef.current = true;
   };
@@ -547,7 +551,8 @@ export function OxyComposer({
         ref={popoverRef}
         open={showMentions}
         onOpenChange={setShowMentions}
-        transcripts={filteredTranscripts}
+        transcripts={mentionResults}
+        isLoading={mentionLoading}
         onSelect={insertMentionPill}
       >
         <div className={`oxy-composer-unified ${focusedInput ? "focused" : ""}`}>

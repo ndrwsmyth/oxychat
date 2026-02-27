@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { chatPipelineTask } from '../chat-pipeline.js';
 import { getSupabase } from '../../lib/supabase.js';
 import { filterVisibleTranscriptIdsForUser } from '../../lib/transcript-visibility.js';
+import { assertProjectAccess, AccessDeniedError } from '../../lib/acl.js';
 
 vi.mock('../../lib/supabase.js', () => ({
   getSupabase: vi.fn(),
@@ -9,6 +10,11 @@ vi.mock('../../lib/supabase.js', () => ({
 
 vi.mock('../../lib/transcript-visibility.js', () => ({
   filterVisibleTranscriptIdsForUser: vi.fn(async (_userId: string, _userEmail: string, ids: string[]) => ids),
+}));
+
+vi.mock('../../lib/acl.js', () => ({
+  AccessDeniedError: class AccessDeniedError extends Error {},
+  assertProjectAccess: vi.fn(async () => undefined),
 }));
 
 interface ConversationRow {
@@ -53,6 +59,7 @@ function createInMemorySupabase() {
 
   const inserts: Array<Record<string, unknown>> = [];
   const updates: Array<Record<string, unknown>> = [];
+  const projectLookups: string[] = [];
 
   const supabase = {
     from: (table: string) => {
@@ -132,16 +139,36 @@ function createInMemorySupabase() {
         };
       }
 
+      if (table === 'projects') {
+        return {
+          select: (_columns: string) => ({
+            eq: (_field: string, value: string) => {
+              projectLookups.push(value);
+              return {
+                maybeSingle: async () => ({
+                  data: {
+                    id: value,
+                    overview_markdown: value ? `# Overview for ${value}` : null,
+                  },
+                  error: null,
+                }),
+              };
+            },
+          }),
+        };
+      }
+
       throw new Error(`Unexpected table: ${table}`);
     },
   };
 
-  return { supabase, inserts, updates, conversation };
+  return { supabase, inserts, updates, conversation, projectLookups };
 }
 
 describe('chatPipelineTask model persistence', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(assertProjectAccess).mockResolvedValue(undefined);
   });
 
   it('saves assistant model and syncs conversation model to effective model', async () => {
@@ -206,5 +233,67 @@ describe('chatPipelineTask model persistence', () => {
 
     const userInsert = inserts.find((payload) => payload.role === 'user');
     expect(userInsert?.mentions).toEqual([]);
+  });
+
+  it('loads project overview using pipeline input projectId', async () => {
+    const { supabase, projectLookups } = createInMemorySupabase();
+    vi.mocked(getSupabase).mockReturnValue(supabase as never);
+
+    const deps = {
+      completions: {
+        complete: async function* () {
+          yield { type: 'token' as const, content: 'Assistant reply' };
+        },
+      },
+    };
+
+    const events: Array<Record<string, unknown>> = [];
+    for await (const event of chatPipelineTask.execute(
+      {
+        conversationId: 'conv-1',
+        projectId: 'project-1',
+        content: 'Use project context',
+        mentionIds: [],
+        model: 'grok-4',
+      },
+      deps as never
+    )) {
+      events.push(event as unknown as Record<string, unknown>);
+    }
+
+    expect(projectLookups).toEqual(['project-1']);
+    const sourcesEvent = events.find((event) => event.type === 'sources');
+    expect(sourcesEvent).toBeDefined();
+    expect((sourcesEvent?.sources as Array<{ type: string }>).map((source) => source.type)).toContain('overview');
+  });
+
+  it('skips overview lookup when project ACL denies access', async () => {
+    const { supabase, projectLookups } = createInMemorySupabase();
+    vi.mocked(getSupabase).mockReturnValue(supabase as never);
+    vi.mocked(assertProjectAccess).mockRejectedValue(new AccessDeniedError('Forbidden project'));
+
+    const deps = {
+      completions: {
+        complete: async function* () {
+          yield { type: 'token' as const, content: 'Assistant reply' };
+        },
+      },
+    };
+
+    for await (const _event of chatPipelineTask.execute(
+      {
+        conversationId: 'conv-1',
+        projectId: 'project-1',
+        content: 'Use project context',
+        mentionIds: [],
+        model: 'grok-4',
+        userId: 'user-1',
+      },
+      deps as never
+    )) {
+      // consume
+    }
+
+    expect(projectLookups).toEqual([]);
   });
 });

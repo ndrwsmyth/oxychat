@@ -1,7 +1,7 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HomeContent } from "@/app/page";
+import { HomeContent } from "@/app/HomeContent";
 
 const routerPushMock = vi.fn();
 const routerReplaceMock = vi.fn();

@@ -48,6 +48,7 @@ chatRouter.post('/conversations/:id/messages', async (c) => {
       const deps = runtime.getDeps();
       const input = {
         conversationId,
+        projectId: conversation.project_id ?? undefined,
         content,
         mentionIds: mentions,
         model: effectiveModel,

@@ -5,8 +5,8 @@
  * (after installing vitest: pnpm add -D vitest)
  */
 
-import { describe, it, expect } from 'vitest';
-import { parseMentions } from '../lib/api';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { parseMentions, queryMentionTranscripts, setAuthTokenGetter } from '../lib/api';
 
 describe('parseMentions', () => {
   it('extracts mentions in @[Title] format', () => {
@@ -59,5 +59,31 @@ describe('parseMentions', () => {
       'Based on @[Oxy Brand Strategy Session] and @[Q4 Planning Meeting], what were the key decisions?'
     );
     expect(result).toEqual(['Oxy Brand Strategy Session', 'Q4 Planning Meeting']);
+  });
+});
+
+describe('queryMentionTranscripts', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    setAuthTokenGetter(async () => null);
+  });
+
+  it('flattens project/global buckets with scope_bucket ordering', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        project: [{ id: 'p1', title: 'Project Doc', date: '2026-02-25T00:00:00.000Z' }],
+        global: [{ id: 'g1', title: 'Global Doc', date: '2026-02-24T00:00:00.000Z' }],
+        mode: 'project_global',
+        took_ms: 12.3,
+      }),
+    } as Response);
+
+    const result = await queryMentionTranscripts('plan', { projectId: 'project-1' });
+
+    expect(result.mode).toBe('project_global');
+    expect(result.tookMs).toBe(12.3);
+    expect(result.transcripts.map((item) => item.id)).toEqual(['p1', 'g1']);
+    expect(result.transcripts.map((item) => item.scope_bucket)).toEqual(['project', 'global']);
   });
 });

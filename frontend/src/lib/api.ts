@@ -147,8 +147,29 @@ export interface TranscriptResponse {
   title: string;
   date: string;
   summary?: string;
+  scope_bucket?: "project" | "global";
   project_tag?: TranscriptTag | null;
   client_tag?: TranscriptTag | null;
+}
+
+interface MentionQueryBucketsResponse {
+  project: TranscriptResponse[];
+  global: TranscriptResponse[];
+  mode: string;
+  took_ms: number;
+}
+
+export interface MentionQueryOptions {
+  projectId?: string;
+  conversationId?: string;
+  limit?: number;
+  signal?: AbortSignal;
+}
+
+export interface MentionQueryResult {
+  transcripts: TranscriptResponse[];
+  mode: string;
+  tookMs: number;
 }
 
 export interface WorkspacesTreeResponse {
@@ -186,21 +207,64 @@ const FALLBACK_MODELS_RESPONSE: ModelsResponse = {
   ],
 };
 
-export async function fetchTranscripts(): Promise<TranscriptResponse[]> {
-  const response = await fetchWithAuth(`${API_BASE_URL}/api/transcripts`);
+export async function fetchTranscripts(projectId?: string): Promise<TranscriptResponse[]> {
+  const url = new URL(`${API_BASE_URL}/api/transcripts`);
+  if (projectId) {
+    url.searchParams.set("project", projectId);
+  }
+  const response = await fetchWithAuth(url.toString());
   if (!response.ok) throw new Error("Failed to fetch transcripts");
 
   return response.json();
 }
 
-export async function searchTranscripts(query: string): Promise<TranscriptResponse[]> {
+export async function searchTranscripts(query: string, projectId?: string): Promise<TranscriptResponse[]> {
   const response = await fetchWithAuth(`${API_BASE_URL}/api/transcripts/search`, {
     method: "POST",
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({
+      query,
+      ...(projectId ? { project_id: projectId } : {}),
+    }),
   });
   if (!response.ok) throw new Error("Failed to search transcripts");
 
   return response.json();
+}
+
+export async function queryMentionTranscripts(
+  query: string,
+  options: MentionQueryOptions = {}
+): Promise<MentionQueryResult> {
+  const body: Record<string, unknown> = { query };
+  if (options.projectId) {
+    body.project_id = options.projectId;
+  }
+  if (options.conversationId) {
+    body.conversation_id = options.conversationId;
+  }
+  if (typeof options.limit === "number") {
+    body.limit = options.limit;
+  }
+
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/transcripts/mentions/query`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to query mention transcripts");
+  }
+
+  const data = await response.json() as MentionQueryBucketsResponse;
+  const project = (data.project ?? []).map((item) => ({ ...item, scope_bucket: "project" as const }));
+  const global = (data.global ?? []).map((item) => ({ ...item, scope_bucket: "global" as const }));
+
+  return {
+    transcripts: [...project, ...global],
+    mode: data.mode,
+    tookMs: data.took_ms,
+  };
 }
 
 export async function fetchWorkspaces(): Promise<WorkspacesTreeResponse> {

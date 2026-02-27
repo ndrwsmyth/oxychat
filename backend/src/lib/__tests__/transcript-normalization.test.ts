@@ -25,6 +25,7 @@ describe('transcript normalization helpers', () => {
 
   it('reads configured internal domains with fallback', () => {
     expect(getInternalDomains('oxy.so, oxy.co')).toEqual(['oxy.so', 'oxy.co']);
+    expect(getInternalDomains('oxy.co')).toEqual(['oxy.so', 'oxy.co']);
     expect(getInternalDomains('')).toEqual(['oxy.so', 'oxy.co']);
     expect(isInternalDomain('OXY.SO', ['oxy.so'])).toBe(true);
   });

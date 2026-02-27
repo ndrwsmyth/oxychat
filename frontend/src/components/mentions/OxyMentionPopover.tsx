@@ -9,6 +9,7 @@ interface OxyMentionPopoverProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transcripts: Transcript[];
+  isLoading?: boolean;
   onSelect: (transcript: Transcript) => void;
   children: React.ReactNode;
 }
@@ -19,7 +20,7 @@ export interface MentionPopoverHandle {
 
 export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopoverProps>(
   function OxyMentionPopover(
-    { open, onOpenChange, transcripts, onSelect, children },
+    { open, onOpenChange, transcripts, isLoading = false, onSelect, children },
     ref
   ) {
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -110,7 +111,9 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
             avoidCollisions={true}
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
-            {transcripts.length === 0 ? (
+            {isLoading && transcripts.length === 0 ? (
+              <div className="oxy-mention-empty">Searching transcripts…</div>
+            ) : transcripts.length === 0 ? (
               <div className="oxy-mention-empty">No matching transcripts</div>
             ) : (
               transcripts.map((t, index) => (
@@ -123,8 +126,15 @@ export const OxyMentionPopover = forwardRef<MentionPopoverHandle, OxyMentionPopo
                   onClick={() => handleSelect(t)}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
-                  <span>{t.title}</span>
-                  <span className="oxy-mention-when">{formatRelativeDate(t.date)}</span>
+                  <span className="oxy-mention-title">{t.title}</span>
+                  <span className="oxy-mention-meta">
+                    {t.scope_bucket ? (
+                      <span className={`oxy-mention-badge oxy-mention-badge-${t.scope_bucket}`}>
+                        {t.scope_bucket === "project" ? "Project" : "Global"}
+                      </span>
+                    ) : null}
+                    <span className="oxy-mention-when">{formatRelativeDate(t.date)}</span>
+                  </span>
                 </button>
               ))
             )}

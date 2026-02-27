@@ -1,0 +1,97 @@
+{
+  "project_overviews": [
+    {
+      "project_id": "20000000-0000-0000-0000-000000000001",
+      "overview_markdown": "## Acme Core Overview\n- Priority: improve mention recall quality.\n- Focus: sprint execution and decision tracking.\n- Constraint: private transcript boundaries must remain fail-closed."
+    },
+    {
+      "project_id": "20000000-0000-0000-0000-000000000002",
+      "overview_markdown": "## Global Inbox Overview\n- Used for cross-project triage transcripts.\n- Keep this context short and routing-focused."
+    },
+    {
+      "project_id": "20000000-0000-0000-0000-000000000003",
+      "overview_markdown": "## Beacon Product Overview\n- Product line: Beacon.\n- Current phase: planning and architecture alignment."
+    }
+  ],
+  "transcripts": [
+    {
+      "id": "40000000-0000-0000-0000-000000000006",
+      "source_id": "fixture:s4:project:1",
+      "title": "Acme Scope Mention Test",
+      "content": "Project-scoped transcript used to validate Sprint 4 mention bucket ordering.",
+      "summary": "Project scoped mention transcript",
+      "date": "2026-02-25T08:00:00.000Z",
+      "raw_json": {
+        "id": 6,
+        "attendees": [
+          { "name": "Member Fixture", "email": "member@oxy.so" },
+          { "name": "Acme Contact", "email": "contact@acme.com" }
+        ]
+      },
+      "attendees": [
+        { "name": "Member Fixture", "email": "member@oxy.so" },
+        { "name": "Acme Contact", "email": "contact@acme.com" }
+      ],
+      "classification": {
+        "visibility": "non_private",
+        "classification_reason": "external_attendee",
+        "is_weekly_exception": false
+      },
+      "link": {
+        "project_id": "20000000-0000-0000-0000-000000000001",
+        "link_source": "domain_match"
+      }
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000007",
+      "source_id": "fixture:s4:global:1",
+      "title": "Global Scope Mention Test",
+      "content": "Global transcript used to validate global fallback mention behavior in Sprint 4.",
+      "summary": "Global mention transcript",
+      "date": "2026-02-25T09:00:00.000Z",
+      "raw_json": {
+        "id": 7,
+        "attendees": [
+          { "name": "Member Fixture", "email": "member@oxy.so" },
+          { "name": "External Contact", "email": "contact@unknownco.com" }
+        ]
+      },
+      "attendees": [
+        { "name": "Member Fixture", "email": "member@oxy.so" },
+        { "name": "External Contact", "email": "contact@unknownco.com" }
+      ],
+      "classification": {
+        "visibility": "non_private",
+        "classification_reason": "external_attendee",
+        "is_weekly_exception": false
+      },
+      "link": {
+        "project_id": "20000000-0000-0000-0000-000000000002",
+        "link_source": "global_triage_fallback"
+      }
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000008",
+      "source_id": "fixture:s4:private:1",
+      "title": "Private Scope Mention Guard",
+      "content": "Private transcript fixture to validate no-leak guarantees in mention and chat-context surfaces.",
+      "summary": "Private mention guard transcript",
+      "date": "2026-02-25T10:00:00.000Z",
+      "raw_json": {
+        "id": 8,
+        "attendees": [
+          { "name": "Admin Fixture", "email": "admin@oxy.so" }
+        ]
+      },
+      "attendees": [
+        { "name": "Admin Fixture", "email": "admin@oxy.so" }
+      ],
+      "classification": {
+        "visibility": "private",
+        "classification_reason": "internal_attendees_only",
+        "is_weekly_exception": false
+      },
+      "link": null
+    }
+  ]
+}

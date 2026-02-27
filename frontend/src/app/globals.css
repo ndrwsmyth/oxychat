@@ -94,6 +94,7 @@ button, [role="button"], a {
   --size-base: 36px;
   --size-lg: 40px;
   --size-xl: 48px;
+  --size-touch-target: 44px;
 
   /* Design Tokens - Animation */
   --duration-fast: 150ms;
@@ -840,8 +841,9 @@ button.oxy-mark:focus-visible {
   max-width: 100%;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 10px 2px 8px; /* Left/right padding without overflow hacks */
+  gap: var(--spacing-xs);
+  min-height: var(--size-touch-target);
+  padding: 6px 10px 6px 8px;
   background: none;
   border: none;
   border-radius: 0; /* No border radius so selected state goes edge-to-edge */
@@ -849,16 +851,51 @@ button.oxy-mark:focus-visible {
   font-size: var(--font-base);
   color: var(--text-primary);
   cursor: pointer;
-  transition: background-color var(--duration-fast) ease-out;
+  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
 }
 
-.oxy-mention > span:first-child {
+.oxy-mention-title {
   flex: 1;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: left;
+}
+
+.oxy-mention-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.oxy-mention-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-overlay);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  transition: background-color var(--duration-fast) ease-out, color var(--duration-fast) ease-out, border-color var(--duration-fast) ease-out;
+}
+
+.oxy-mention-badge-project {
+  background: var(--blue-50);
+  border-color: var(--blue-200);
+  color: var(--blue-700);
+}
+
+.oxy-mention-badge-global {
+  background: var(--surface-overlay);
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
 }
 
 @media (hover: hover) {
@@ -880,7 +917,6 @@ button.oxy-mark:focus-visible {
 
 .oxy-mention-when {
   flex-shrink: 0;
-  margin-left: auto;
   font-size: var(--font-xs);
   color: var(--text-faint);
 }
@@ -890,6 +926,13 @@ button.oxy-mark:focus-visible {
   text-align: center;
   font-size: var(--font-sm);
   color: var(--text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oxy-mention,
+  .oxy-mention-badge {
+    transition: none;
+  }
 }
 
 /* ========================================
@@ -4068,4 +4111,60 @@ button.oxy-mark:focus-visible {
   font-size: var(--font-sm);
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.oxy-global-error {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--spacing-xl);
+  background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.08), transparent 45%), var(--surface);
+}
+
+.oxy-global-error__card {
+  width: min(460px, 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-base);
+}
+
+.oxy-global-error__title {
+  font-size: 24px;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.oxy-global-error__message {
+  font-size: var(--font-md);
+  color: var(--text-secondary);
+}
+
+.oxy-global-error__retry {
+  min-height: var(--size-touch-target);
+  border-radius: var(--radius-base);
+  border: 1px solid transparent;
+  background: var(--gray-900);
+  color: var(--white);
+  font-size: var(--font-md);
+  font-weight: 500;
+  padding: 0 var(--spacing-md);
+  align-self: flex-start;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-smooth);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .oxy-global-error__retry:hover {
+    background: var(--gray-800);
+  }
+}
+
+.oxy-global-error__retry:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }

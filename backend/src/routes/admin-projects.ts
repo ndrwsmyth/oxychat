@@ -11,7 +11,7 @@ adminProjectsRouter.get('/admin/projects', async (c) => {
 
   let query = supabase
     .from('projects')
-    .select('id, client_id, name, scope, owner_user_id, is_inbox, created_at, updated_at')
+    .select('id, client_id, name, scope, owner_user_id, is_inbox, overview_markdown, created_at, updated_at')
     .order('name', { ascending: true });
 
   if (clientId) {
@@ -35,6 +35,10 @@ adminProjectsRouter.post('/admin/projects', async (c) => {
   const scope = body.scope === 'personal' || body.scope === 'global' ? body.scope : 'client';
   const ownerUserId = typeof body.owner_user_id === 'string' ? body.owner_user_id : null;
   const isInbox = typeof body.is_inbox === 'boolean' ? body.is_inbox : false;
+  const overviewMarkdown =
+    typeof body.overview_markdown === 'string' && body.overview_markdown.trim()
+      ? body.overview_markdown
+      : null;
 
   if (!clientId || !name) {
     return c.json({ error: 'client_id and name are required' }, 400);
@@ -49,8 +53,9 @@ adminProjectsRouter.post('/admin/projects', async (c) => {
       scope,
       owner_user_id: ownerUserId,
       is_inbox: isInbox,
+      overview_markdown: overviewMarkdown,
     })
-    .select('id, client_id, name, scope, owner_user_id, is_inbox, created_at, updated_at')
+    .select('id, client_id, name, scope, owner_user_id, is_inbox, overview_markdown, created_at, updated_at')
     .single();
 
   if (error || !data) {
@@ -100,12 +105,19 @@ adminProjectsRouter.patch('/admin/projects/:id', async (c) => {
     updates.is_inbox = body.is_inbox;
   }
 
+  if ('overview_markdown' in body) {
+    updates.overview_markdown =
+      typeof body.overview_markdown === 'string' && body.overview_markdown.trim()
+        ? body.overview_markdown
+        : null;
+  }
+
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('projects')
     .update(updates)
     .eq('id', id)
-    .select('id, client_id, name, scope, owner_user_id, is_inbox, created_at, updated_at')
+    .select('id, client_id, name, scope, owner_user_id, is_inbox, overview_markdown, created_at, updated_at')
     .single();
 
   if (error || !data) {

@@ -27,24 +27,31 @@ async function dropAndRecreatePublicSchema(): Promise<void> {
 
 async function restoreSupabaseRoleGrants(): Promise<void> {
   await withDbClient(async (client) => {
-    await client.query('GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role');
+    const expectedRoles = ['anon', 'authenticated', 'service_role', 'supabase_admin'];
+    const { rows } = await client.query<{ rolname: string }>(
+      'SELECT rolname FROM pg_roles WHERE rolname = ANY($1::text[])',
+      [expectedRoles]
+    );
+
+    const presentRoles = rows.map((row) => row.rolname);
+    if (presentRoles.length === 0) {
+      console.warn('[db:reset] No Supabase auth roles found to grant schema privileges');
+      return;
+    }
+
+    const roleList = presentRoles.map((role) => `"${role}"`).join(', ');
+    await client.query(`GRANT USAGE ON SCHEMA public TO ${roleList}`);
+    await client.query(`GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${roleList}`);
+    await client.query(`GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${roleList}`);
+    await client.query(`GRANT ALL PRIVILEGES ON ALL ROUTINES IN SCHEMA public TO ${roleList}`);
     await client.query(
-      'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role'
+      `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO ${roleList}`
     );
     await client.query(
-      'GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role'
+      `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO ${roleList}`
     );
     await client.query(
-      'GRANT ALL PRIVILEGES ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role'
-    );
-    await client.query(
-      'ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role'
-    );
-    await client.query(
-      'ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role'
-    );
-    await client.query(
-      'ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role'
+      `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON ROUTINES TO ${roleList}`
     );
   });
 }

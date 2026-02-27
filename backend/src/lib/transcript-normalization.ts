@@ -50,7 +50,12 @@ export function getInternalDomains(configValue = process.env.ALLOWED_EMAIL_DOMAI
     .map((value) => normalizeDomain(value))
     .filter(Boolean);
 
-  return configured.length > 0 ? configured : INTERNAL_DOMAINS_FALLBACK;
+  if (configured.length === 0) {
+    return INTERNAL_DOMAINS_FALLBACK;
+  }
+
+  // Keep Oxy defaults even when env config is partial to avoid accidental privacy regressions.
+  return [...new Set([...INTERNAL_DOMAINS_FALLBACK, ...configured])];
 }
 
 export function isInternalDomain(domain: string, allowedDomains = getInternalDomains()): boolean {

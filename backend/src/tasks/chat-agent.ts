@@ -1,32 +1,45 @@
 import { defineTask } from '@ndrwsmyth/sediment';
-import { getSystemPrompt, getContextLimit, CHARS_PER_TOKEN } from '../lib/constants.js';
+import { getSystemPrompt } from '../lib/constants.js';
 import { getModelId } from '../lib/runtime.js';
 import { getSupabase } from '../lib/supabase.js';
-import { filterVisibleTranscriptIdsForUser } from '../lib/transcript-visibility.js';
+import {
+  buildPromptContext,
+  type PromptMentionDocument,
+  type PromptSourceInfo,
+  type PromptTruncationInfo,
+} from '../lib/prompt-context.js';
 
 export interface ChatAgentInput {
   model: string;
   conversationMessages: Array<{ role: string; content: string }>;
   userContent: string;
   mentionIds: string[];
+  projectOverviewMarkdown?: string;
   userId?: string;
   userEmail?: string;
   userContext?: string;
 }
 
+export type ChatAgentEvent =
+  | {
+      type: 'sources';
+      sources: PromptSourceInfo[];
+      truncation_info: PromptTruncationInfo[];
+    }
+  | {
+      type: 'token';
+      content: string;
+    };
+
 /**
  * Layer 2: Builds the prompt with context and streams tokens from the LLM.
  * Yields string chunks (tokens) as they arrive.
  */
-export const chatAgentTask = defineTask<ChatAgentInput, string>(
+export const chatAgentTask = defineTask<ChatAgentInput, ChatAgentEvent>(
   'chat_agent',
   async function* (input, deps) {
-    // Build context from @mentions
-    let mentionContext = '';
-    let mentionIds = input.mentionIds ?? [];
-    if (input.userId && input.userEmail && mentionIds.length > 0) {
-      mentionIds = await filterVisibleTranscriptIdsForUser(input.userId, input.userEmail, mentionIds);
-    }
+    let mentionDocuments: PromptMentionDocument[] = [];
+    const mentionIds = input.mentionIds ?? [];
 
     if (mentionIds.length > 0) {
       const supabase = getSupabase();
@@ -36,26 +49,32 @@ export const chatAgentTask = defineTask<ChatAgentInput, string>(
         .in('id', mentionIds);
 
       if (transcripts?.length) {
-        const contextLimit = getContextLimit(input.model);
-        const maxChars = contextLimit * CHARS_PER_TOKEN;
-        let totalChars = 0;
-
-        const docs = transcripts
-          .map((t) => {
-            const remaining = maxChars - totalChars;
-            if (remaining <= 0) return null;
-            const content = t.content.slice(0, remaining);
-            totalChars += content.length;
-            return `<document id="${t.id}" title="${t.title}">\n${content}\n</document>`;
-          })
-          .filter(Boolean);
-
-        mentionContext = `\n\n<referenced_documents>\n${docs.join('\n\n')}\n</referenced_documents>`;
+        const transcriptById = new Map(
+          transcripts.map((transcript) => [transcript.id, transcript] as const)
+        );
+        mentionDocuments = mentionIds
+          .map((mentionId) => transcriptById.get(mentionId))
+          .filter((transcript): transcript is { id: string; title: string; content: string } => Boolean(transcript))
+          .map((transcript) => ({
+            id: transcript.id,
+            title: transcript.title,
+            content: transcript.content,
+          }));
       }
     }
 
-    // Build system prompt with optional user context
-    const systemPrompt = getSystemPrompt(input.userContext) + mentionContext;
+    const promptContext = buildPromptContext({
+      model: input.model,
+      systemBase: getSystemPrompt(),
+      projectOverviewMarkdown: input.projectOverviewMarkdown,
+      userContext: input.userContext,
+      mentionDocuments,
+    });
+    yield {
+      type: 'sources',
+      sources: promptContext.sources,
+      truncation_info: promptContext.truncationInfo,
+    };
 
     // Build messages
     const messages = [
@@ -71,11 +90,11 @@ export const chatAgentTask = defineTask<ChatAgentInput, string>(
 
     for await (const chunk of deps.completions.complete({
       model: modelId,
-      messages: [{ role: 'system', content: systemPrompt }, ...messages],
+      messages: [{ role: 'system', content: promptContext.prompt }, ...messages],
       maxTokens: 8192,
     })) {
       if (chunk.type === 'token') {
-        yield chunk.content;
+        yield { type: 'token', content: chunk.content };
       }
     }
   }

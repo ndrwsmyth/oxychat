@@ -44,3 +44,11 @@
 - For high-cardinality sidebar tree loads, move ACL + aggregation into a DB-side function and back it with a partial index to keep p95 query latency within sprint targets.
 - Keep RPC-to-legacy fallback behavior for phased migration rollouts so local/staging environments do not break when function availability lags.
 - Treat `gate:s3` completion as the source of truth for Sprint 3 closeout (including nested regression gates), not individual command spot checks.
+
+## Sprint Learnings - 2026-02-26 (Sprint 4 Frontend Toolchain Stabilization)
+
+- In mixed-root repos, Tailwind v4 PostCSS resolution can drift to repo root under Turbopack; pin `@tailwindcss/postcss` `base` to frontend project root in `postcss.config.mjs`.
+- `next.config` webpack module-resolution tweaks do not guarantee Turbopack CSS/PostCSS resolution behavior; treat webpack and Turbopack as separate execution paths.
+- Normalize `dev/build/start` script environments (`NODE_ENV`, clear `NODE_PATH`) to reduce shell-level resolver pollution and non-reproducible local failures.
+- Keep Next PostCSS config in supported shape (plugin object map). Invalid plugin shape can mask real resolver issues with generic “Malformed PostCSS Configuration.”
+- For “Can’t resolve 'tailwindcss'” traces, use the `using description file:` path as the primary signal; if it points at repo root instead of frontend root, debug root selection first.

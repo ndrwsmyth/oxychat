@@ -7,6 +7,11 @@ import {
   canUserViewTranscript,
   filterVisibleTranscriptIdsForUser,
 } from '../../lib/transcript-visibility.js';
+import {
+  AccessDeniedError,
+  assertConversationOwnership,
+  assertProjectAccess,
+} from '../../lib/acl.js';
 
 vi.mock('../../lib/supabase.js', () => ({
   getSupabase: vi.fn(),
@@ -15,6 +20,16 @@ vi.mock('../../lib/supabase.js', () => ({
 vi.mock('../../lib/transcript-visibility.js', () => ({
   canUserViewTranscript: vi.fn(),
   filterVisibleTranscriptIdsForUser: vi.fn(),
+}));
+
+vi.mock('../../lib/acl.js', () => ({
+  AccessDeniedError: class AccessDeniedError extends Error {},
+  assertProjectAccess: vi.fn(async () => undefined),
+  assertConversationOwnership: vi.fn(async () => ({
+    id: 'conv-1',
+    model: 'gpt-5.2',
+    project_id: 'project-1',
+  })),
 }));
 
 const mockUser = {
@@ -81,11 +96,22 @@ function createTranscriptSupabaseMock(
       }
 
       if (table === 'transcript_project_links') {
+        let scopedProjectId: string | null = null;
         const query = {
-          in: vi.fn(async (_field: string, transcriptIds: string[]) => ({
-            data: tags.links.filter((row) => transcriptIds.includes(row.transcript_id)),
-            error: null,
-          })),
+          eq: vi.fn((_field: string, projectId: string) => {
+            scopedProjectId = projectId;
+            return query;
+          }),
+          in: vi.fn(async (_field: string, transcriptIds: string[]) => {
+            let scoped = tags.links;
+            if (scopedProjectId) {
+              scoped = scoped.filter((row) => row.project_id === scopedProjectId);
+            }
+            return {
+              data: scoped.filter((row) => transcriptIds.includes(row.transcript_id)),
+              error: null,
+            };
+          }),
         };
         return {
           select: vi.fn(() => query),
@@ -97,6 +123,12 @@ function createTranscriptSupabaseMock(
           in: vi.fn(async (_field: string, projectIds: string[]) => ({
             data: tags.projects.filter((row) => projectIds.includes(row.id)),
             error: null,
+          })),
+          eq: vi.fn((_field: string, projectId: string) => ({
+            maybeSingle: async () => ({
+              data: tags.projects.find((row) => row.id === projectId) ?? null,
+              error: null,
+            }),
           })),
         };
         return {
@@ -124,6 +156,12 @@ function createTranscriptSupabaseMock(
 describe('transcript visibility routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(assertProjectAccess).mockResolvedValue(undefined);
+    vi.mocked(assertConversationOwnership).mockResolvedValue({
+      id: 'conv-1',
+      model: 'gpt-5.2',
+      project_id: 'project-1',
+    });
   });
 
   it('filters transcript list by centralized visibility function and returns client/project tags', async () => {
@@ -150,6 +188,38 @@ describe('transcript visibility routes', () => {
     const body = (await response.json()) as Array<{ id: string; project_tag: { id: string } | null }>;
     expect(body.map((row) => row.id)).toEqual(['t2']);
     expect(body[0].project_tag?.id).toBe('project-2');
+  });
+
+  it('applies project filter for transcript panel scope', async () => {
+    vi.mocked(filterVisibleTranscriptIdsForUser).mockResolvedValue(['t1', 't2']);
+    vi.mocked(getSupabase).mockReturnValue(
+      createTranscriptSupabaseMock(
+        [
+          { id: 't1', title: 'Project match', date: '2026-02-20T10:00:00Z', summary: null },
+          { id: 't2', title: 'Other project', date: '2026-02-19T10:00:00Z', summary: null },
+        ],
+        null,
+        {
+          links: [
+            { transcript_id: 't1', project_id: 'project-1' },
+            { transcript_id: 't2', project_id: 'project-2' },
+          ],
+          projects: [
+            { id: 'project-1', name: 'Scope A', scope: 'client', client_id: 'client-1' },
+            { id: 'project-2', name: 'Scope B', scope: 'client', client_id: 'client-1' },
+          ],
+          clients: [{ id: 'client-1', name: 'Acme', scope: 'client' }],
+        }
+      ) as never
+    );
+
+    const app = createAuthedApp();
+    const response = await app.request('/api/transcripts?project=project-1');
+
+    expect(response.status).toBe(200);
+    const body = await response.json() as Array<{ id: string }>;
+    expect(body.map((row) => row.id)).toEqual(['t1']);
+    expect(vi.mocked(assertProjectAccess)).toHaveBeenCalledWith('user-1', 'project-1');
   });
 
   it('supports canonical POST /api/transcripts/search with visibility filtering', async () => {
@@ -217,5 +287,96 @@ describe('transcript visibility routes', () => {
     const body = (await response.json()) as { id: string; project_tag: { id: string } | null };
     expect(body.id).toBe('t1');
     expect(body.project_tag?.id).toBe('project-1');
+  });
+
+  it('returns scoped mention query buckets with project first ordering', async () => {
+    vi.mocked(filterVisibleTranscriptIdsForUser).mockResolvedValue(['t3', 't2', 't1']);
+    vi.mocked(getSupabase).mockReturnValue(
+      createTranscriptSupabaseMock(
+        [
+          { id: 't3', title: 'Newest Project', date: '2026-02-21T10:00:00Z', summary: null },
+          { id: 't2', title: 'Newest Global', date: '2026-02-20T10:00:00Z', summary: null },
+          { id: 't1', title: 'Older Project', date: '2026-02-19T10:00:00Z', summary: null },
+        ],
+        null,
+        {
+          links: [
+            { transcript_id: 't3', project_id: 'project-1' },
+            { transcript_id: 't2', project_id: 'project-2' },
+            { transcript_id: 't1', project_id: 'project-1' },
+          ],
+          projects: [
+            { id: 'project-1', name: 'Project One', scope: 'client', client_id: 'client-1' },
+            { id: 'project-2', name: 'Project Two', scope: 'client', client_id: 'client-2' },
+          ],
+          clients: [
+            { id: 'client-1', name: 'Acme', scope: 'client' },
+            { id: 'client-2', name: 'Bravo', scope: 'client' },
+          ],
+        }
+      ) as never
+    );
+
+    const app = createAuthedApp();
+    const response = await app.request('/api/transcripts/mentions/query', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query: 'new', project_id: 'project-1', limit: 20 }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json() as {
+      project: Array<{ id: string }>;
+      global: Array<{ id: string }>;
+      mode: string;
+      took_ms: number;
+    };
+
+    expect(body.mode).toBe('project_global');
+    expect(body.project.map((item) => item.id)).toEqual(['t3', 't1']);
+    expect(body.global.map((item) => item.id)).toEqual(['t2']);
+    expect(typeof body.took_ms).toBe('number');
+  });
+
+  it('falls back to global bucket for personal project scope', async () => {
+    vi.mocked(filterVisibleTranscriptIdsForUser).mockResolvedValue(['t1']);
+    vi.mocked(getSupabase).mockReturnValue(
+      createTranscriptSupabaseMock(
+        [{ id: 't1', title: 'Personal note', date: '2026-02-21T10:00:00Z', summary: null }],
+        null,
+        {
+          links: [{ transcript_id: 't1', project_id: 'project-1' }],
+          projects: [{ id: 'project-1', name: 'Personal', scope: 'personal', client_id: 'client-1' }],
+          clients: [{ id: 'client-1', name: 'Me', scope: 'personal' }],
+        }
+      ) as never
+    );
+
+    const app = createAuthedApp();
+    const response = await app.request('/api/transcripts/mentions/query', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query: 'personal', project_id: 'project-1' }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json() as { project: Array<{ id: string }>; global: Array<{ id: string }>; mode: string };
+    expect(body.mode).toBe('personal_global_fallback');
+    expect(body.project).toEqual([]);
+    expect(body.global.map((item) => item.id)).toEqual(['t1']);
+  });
+
+  it('returns 403 on denied mention project scope', async () => {
+    vi.mocked(assertProjectAccess).mockRejectedValue(new AccessDeniedError('Forbidden project'));
+    vi.mocked(getSupabase).mockReturnValue(createTranscriptSupabaseMock([]) as never);
+
+    const app = createAuthedApp();
+    const response = await app.request('/api/transcripts/mentions/query', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ query: 'match', project_id: 'project-secret' }),
+    });
+
+    expect(response.status).toBe(403);
   });
 });

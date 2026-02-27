@@ -1,6 +1,6 @@
 # OxyChat V2 Shared Environments - Final Reconciled Sprint Plan
 
-## 0) Execution Status (Updated 2026-02-25)
+## 0) Execution Status (Updated 2026-02-27)
 
 ### Sprint 1 Status: COMPLETE
 
@@ -34,10 +34,19 @@
    - backend + frontend lint/tests/build suites passed inside gate.
 3. Sprint 2 regression gate remained green as part of `gate:s3`.
 
-### Active Sprint: Sprint 4
+### Sprint 4 Status: COMPLETE
 
-1. Sprint 3 dependencies are satisfied and regression gates are green.
-2. Proceed with Sprint 4 in listed ticket order.
+1. Implementation completed on branch `codex/v2` with Sprint 4 migration `0020`.
+2. Validation evidence:
+   - `pnpm --dir backend run bench:s4-mentions` passed target on 2026-02-27 (`p95 293.78ms`, target `<350ms`).
+   - `pnpm --dir backend run gate:s4` passed end-to-end on 2026-02-27, including nested `gate:s3`, `gate:s2`, and `gate:s1`.
+   - Mention benchmark baseline recorded as `PASS` in `docs/prd_dev/perf/s4_mention_baseline.md`.
+   - Chat latency benchmark recorded as `WARN` in `docs/prd_dev/perf/s4_chat_latency_baseline.md` (`first token p95 3309.32ms`, policy `warn-with-owner`), non-blocking for Sprint 4 closure.
+
+### Active Sprint: Sprint 5
+
+1. Sprint 4 dependencies are satisfied and regression gates are green.
+2. Proceed with Sprint 5 in listed ticket order.
 
 ## 1) Final Clarified Decisions
 

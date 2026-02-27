@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS projects (
   scope workspace_scope NOT NULL DEFAULT 'client',
   owner_user_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
   is_inbox BOOLEAN NOT NULL DEFAULT false,
+  overview_markdown TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT projects_name_not_empty CHECK (btrim(name) <> ''),

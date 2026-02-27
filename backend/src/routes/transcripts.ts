@@ -5,6 +5,7 @@ import {
   filterVisibleTranscriptIdsForUser,
 } from '../lib/transcript-visibility.js';
 import { getSupabase } from '../lib/supabase.js';
+import { AccessDeniedError, assertConversationOwnership, assertProjectAccess } from '../lib/acl.js';
 
 export const transcriptsRouter = new Hono<{ Variables: AppVariables }>();
 
@@ -43,6 +44,18 @@ interface ClientTagRow {
   name: string;
   scope: 'personal' | 'client' | 'global';
 }
+
+interface MentionQueryProjectLinkRow {
+  transcript_id: string;
+}
+
+interface MentionProjectScopeRow {
+  scope: 'personal' | 'client' | 'global';
+}
+
+type MentionQueryMode = 'project_global' | 'global_only' | 'personal_global_fallback';
+const DEFAULT_MENTION_BUCKET_LIMIT = 20;
+const MAX_MENTION_SEARCH_CANDIDATES = 120;
 
 async function getTranscriptTagMap(
   transcriptIds: string[]
@@ -165,11 +178,102 @@ async function searchTranscriptRows(query: string, limit: number): Promise<Trans
   return (data ?? []) as TranscriptRow[];
 }
 
+async function filterRowsForProject(rows: TranscriptRow[], projectId: string): Promise<TranscriptRow[]> {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const supabase = getSupabase();
+  const transcriptIds = rows.map((row) => row.id);
+
+  const { data, error } = await supabase
+    .from('transcript_project_links')
+    .select('transcript_id')
+    .eq('project_id', projectId)
+    .in('transcript_id', transcriptIds);
+
+  if (error) {
+    throw new Error(`Failed to scope transcripts to project: ${error.message}`);
+  }
+
+  const scopedIds = new Set(
+    ((data ?? []) as MentionQueryProjectLinkRow[])
+      .map((row) => row.transcript_id)
+      .filter(Boolean)
+  );
+
+  return rows.filter((row) => scopedIds.has(row.id));
+}
+
+async function resolveMentionScope(
+  userId: string,
+  requestedProjectId?: string,
+  conversationId?: string
+): Promise<{ projectId: string | null; mode: MentionQueryMode }> {
+  let resolvedProjectId: string | null = null;
+
+  if (requestedProjectId) {
+    await assertProjectAccess(userId, requestedProjectId);
+    resolvedProjectId = requestedProjectId;
+  } else if (conversationId) {
+    const conversation = await assertConversationOwnership(userId, conversationId);
+    resolvedProjectId = conversation.project_id;
+  }
+
+  if (!resolvedProjectId) {
+    return { projectId: null, mode: 'global_only' };
+  }
+
+  const supabase = getSupabase();
+  const { data: project, error } = await supabase
+    .from('projects')
+    .select('scope')
+    .eq('id', resolvedProjectId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load project scope: ${error.message}`);
+  }
+  if (!project) {
+    return { projectId: null, mode: 'global_only' };
+  }
+
+  const scope = (project as MentionProjectScopeRow).scope;
+  if (scope === 'personal') {
+    return { projectId: resolvedProjectId, mode: 'personal_global_fallback' };
+  }
+
+  return { projectId: resolvedProjectId, mode: 'project_global' };
+}
+
+function parseMentionBucketLimit(limitRaw: unknown): number {
+  if (typeof limitRaw !== 'number') return DEFAULT_MENTION_BUCKET_LIMIT;
+  if (!Number.isFinite(limitRaw)) return DEFAULT_MENTION_BUCKET_LIMIT;
+  return Math.min(30, Math.max(10, Math.floor(limitRaw)));
+}
+
 // List transcripts (for @mention autocomplete)
 transcriptsRouter.get('/transcripts', async (c) => {
   const query = c.req.query('q');
+  const requestedProjectRaw = c.req.query('project');
+  const requestedProjectId = requestedProjectRaw?.trim();
   const user = c.get('user');
   const supabase = getSupabase();
+
+  if (requestedProjectRaw !== undefined && !requestedProjectId) {
+    return c.json({ error: 'project query parameter must be a non-empty string' }, 400);
+  }
+
+  if (requestedProjectId) {
+    try {
+      await assertProjectAccess(user.id, requestedProjectId);
+    } catch (error) {
+      if (error instanceof AccessDeniedError) {
+        return c.json({ error: error.message }, 403);
+      }
+      return c.json({ error: error instanceof Error ? error.message : 'Failed to validate project access' }, 500);
+    }
+  }
 
   let request = supabase
     .from('transcripts')
@@ -185,7 +289,10 @@ transcriptsRouter.get('/transcripts', async (c) => {
   if (error) return c.json({ error: error.message }, 500);
 
   try {
-    const visibleRows = await filterVisibleRows(user.id, user.email, (data ?? []) as TranscriptRow[]);
+    const scopedRows = requestedProjectId
+      ? await filterRowsForProject((data ?? []) as TranscriptRow[], requestedProjectId)
+      : (data ?? []) as TranscriptRow[];
+    const visibleRows = await filterVisibleRows(user.id, user.email, scopedRows);
     return c.json(await withTranscriptTags(visibleRows));
   } catch (visibilityError) {
     return c.json(
@@ -200,17 +307,88 @@ transcriptsRouter.post('/transcripts/search', async (c) => {
   const user = c.get('user');
   const body = await c.req.json().catch(() => ({}));
   const query = typeof body.query === 'string' ? body.query.trim() : '';
+  const requestedProjectId = typeof body.project_id === 'string' ? body.project_id.trim() : '';
+
+  if (!query) {
+    return c.json({ error: 'query is required' }, 400);
+  }
+
+  if (body.project_id !== undefined && !requestedProjectId) {
+    return c.json({ error: 'project_id must be a non-empty string' }, 400);
+  }
+
+  if (requestedProjectId) {
+    try {
+      await assertProjectAccess(user.id, requestedProjectId);
+    } catch (error) {
+      if (error instanceof AccessDeniedError) {
+        return c.json({ error: error.message }, 403);
+      }
+      return c.json({ error: error instanceof Error ? error.message : 'Failed to validate project access' }, 500);
+    }
+  }
+
+  try {
+    const rows = await searchTranscriptRows(query, 20);
+    const scopedRows = requestedProjectId ? await filterRowsForProject(rows, requestedProjectId) : rows;
+    const visibleRows = await filterVisibleRows(user.id, user.email, scopedRows);
+    return c.json(await withTranscriptTags(visibleRows));
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Search failed' }, 500);
+  }
+});
+
+transcriptsRouter.post('/transcripts/mentions/query', async (c) => {
+  const user = c.get('user');
+  const startedAt = performance.now();
+  const body = await c.req.json().catch(() => ({}));
+  const query = typeof body.query === 'string' ? body.query.trim() : '';
+  const requestedProjectId = typeof body.project_id === 'string' ? body.project_id.trim() : '';
+  const conversationId = typeof body.conversation_id === 'string' ? body.conversation_id.trim() : '';
+  const bucketLimit = parseMentionBucketLimit(body.limit);
 
   if (!query) {
     return c.json({ error: 'query is required' }, 400);
   }
 
   try {
-    const rows = await searchTranscriptRows(query, 20);
-    const visibleRows = await filterVisibleRows(user.id, user.email, rows);
-    return c.json(await withTranscriptTags(visibleRows));
+    const scope = await resolveMentionScope(
+      user.id,
+      requestedProjectId || undefined,
+      conversationId || undefined
+    );
+
+    const candidates = await searchTranscriptRows(query, MAX_MENTION_SEARCH_CANDIDATES);
+    const visibleRows = await filterVisibleRows(user.id, user.email, candidates);
+
+    let projectRows: TranscriptRow[] = [];
+    let globalRows: TranscriptRow[] = [];
+
+    if (scope.mode === 'project_global' && scope.projectId) {
+      projectRows = (await filterRowsForProject(visibleRows, scope.projectId)).slice(0, bucketLimit);
+      const projectIdSet = new Set(projectRows.map((row) => row.id));
+      globalRows = visibleRows.filter((row) => !projectIdSet.has(row.id)).slice(0, bucketLimit);
+    } else {
+      projectRows = [];
+      globalRows = visibleRows.slice(0, bucketLimit);
+    }
+
+    const [project, global] = await Promise.all([
+      withTranscriptTags(projectRows),
+      withTranscriptTags(globalRows),
+    ]);
+
+    return c.json({
+      project,
+      global,
+      mode: scope.mode,
+      took_ms: Number((performance.now() - startedAt).toFixed(2)),
+    });
   } catch (error) {
-    return c.json({ error: error instanceof Error ? error.message : 'Search failed' }, 500);
+    if (error instanceof AccessDeniedError) {
+      return c.json({ error: error.message }, 403);
+    }
+    return c.json({ error: error instanceof Error ? error.message : 'Mention query failed' }, 500);
   }
 });
 

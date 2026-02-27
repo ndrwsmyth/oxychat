@@ -7,9 +7,13 @@ import { chatAgentTask } from './chat-agent.js';
 import { generateTitleTask } from './generate-title.js';
 import { createTitleRuntime } from '../lib/runtime.js';
 import { filterVisibleTranscriptIdsForUser } from '../lib/transcript-visibility.js';
+import { getProjectOverviewTask, type ProjectOverviewData } from './get-project-overview.js';
+import { AccessDeniedError, assertProjectAccess } from '../lib/acl.js';
+import type { PromptSourceInfo, PromptTruncationInfo } from '../lib/prompt-context.js';
 
 export interface ChatPipelineInput {
   conversationId: string;
+  projectId?: string;
   content: string;
   mentionIds?: string[];
   model: string;
@@ -20,8 +24,10 @@ export interface ChatPipelineInput {
 }
 
 export interface ChatPipelineEvent {
-  type: 'token' | 'done' | 'title_update' | 'error';
+  type: 'token' | 'sources' | 'done' | 'title_update' | 'error';
   content?: string;
+  sources?: PromptSourceInfo[];
+  truncation_info?: PromptTruncationInfo[];
   messageId?: string;
   title?: string;
   error?: string;
@@ -49,6 +55,30 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
     const conversation = await runTaskToCompletion(loadConversationTask, {
       conversationId: input.conversationId,
     }, deps) as ConversationData;
+
+    let projectOverview: ProjectOverviewData | undefined;
+    if (input.projectId) {
+      let canLoadOverview = true;
+      if (input.userId) {
+        try {
+          await assertProjectAccess(input.userId, input.projectId);
+        } catch (error) {
+          if (error instanceof AccessDeniedError) {
+            canLoadOverview = false;
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      if (canLoadOverview) {
+        projectOverview = await runTaskToCompletion(
+          getProjectOverviewTask,
+          { projectId: input.projectId },
+          deps
+        ) as ProjectOverviewData;
+      }
+    }
 
     let visibleMentionIds = parsed.mentionIds;
     if (input.userId && input.userEmail && parsed.mentionIds.length > 0) {
@@ -84,7 +114,7 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
 
     // 4. Stream LLM response
     let fullContent = '';
-    for await (const token of chatAgentTask.execute({
+    for await (const chunk of chatAgentTask.execute({
       model: input.model,
       conversationMessages: conversation.messages,
       userContent: input.content,
@@ -92,9 +122,19 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       userId: input.userId,
       userEmail: input.userEmail,
       userContext: input.userContext,
+      projectOverviewMarkdown: projectOverview?.overviewMarkdown,
     }, deps)) {
-      fullContent += token;
-      yield { type: 'token' as const, content: token };
+      if (chunk.type === 'sources') {
+        yield {
+          type: 'sources' as const,
+          sources: chunk.sources,
+          truncation_info: chunk.truncation_info,
+        };
+        continue;
+      }
+
+      fullContent += chunk.content;
+      yield { type: 'token' as const, content: chunk.content };
     }
 
     // 5. Save assistant message (link to completion logs via requestId)

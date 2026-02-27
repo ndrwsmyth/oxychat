@@ -73,23 +73,16 @@ Oxy differentiates through a pragmatic, outcomes-focused approach to design. The
 </limitations>
 </advisory_approach>`;
 
-export function getSystemPrompt(userContext?: string): string {
+export function getSystemPrompt(): string {
   const date = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
-  let prompt = SYSTEM_PROMPT.replace(
+  return SYSTEM_PROMPT.replace(
     /<current_date>.*<\/current_date>/,
     `<current_date>${date}</current_date>`
   );
-
-  // Append user-specific context if provided
-  if (userContext?.trim()) {
-    prompt += `\n\n<current_user_context>\n${userContext.trim()}\n</current_user_context>`;
-  }
-
-  return prompt;
 }
 
 export const MODEL_CONFIG = {

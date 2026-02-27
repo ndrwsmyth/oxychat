@@ -14,6 +14,7 @@ export interface Transcript {
   title: string;
   date: Date;
   summary?: string;
+  scope_bucket?: "project" | "global";
   project_tag?: TranscriptTag | null;
   client_tag?: TranscriptTag | null;
 }
@@ -93,5 +94,5 @@ export interface TruncationInfo {
 export interface SourceInfo {
   doc_id: string;
   title: string;
-  type: "mention" | "rag";
+  type: "mention" | "rag" | "overview";
 }
