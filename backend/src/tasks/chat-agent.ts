@@ -14,6 +14,7 @@ export interface ChatAgentInput {
   conversationMessages: Array<{ role: string; content: string }>;
   userContent: string;
   mentionIds: string[];
+  documentMentionIds?: string[];
   projectOverviewMarkdown?: string;
   userId?: string;
   userEmail?: string;
@@ -59,7 +60,34 @@ export const chatAgentTask = defineTask<ChatAgentInput, ChatAgentEvent>(
             id: transcript.id,
             title: transcript.title,
             content: transcript.content,
+            sourceType: 'transcript' as const,
           }));
+      }
+    }
+
+    // Load document mentions
+    const documentMentionIds = input.documentMentionIds ?? [];
+    if (documentMentionIds.length > 0) {
+      const docSupabase = getSupabase();
+      const { data: documents } = await docSupabase
+        .from('documents')
+        .select('id, title, content')
+        .in('id', documentMentionIds);
+
+      if (documents?.length) {
+        const docById = new Map(
+          documents.map((doc) => [doc.id, doc] as const)
+        );
+        const docMentions = documentMentionIds
+          .map((id) => docById.get(id))
+          .filter((doc): doc is { id: string; title: string; content: string } => Boolean(doc))
+          .map((doc) => ({
+            id: doc.id,
+            title: doc.title,
+            content: doc.content,
+            sourceType: 'document' as const,
+          }));
+        mentionDocuments.push(...docMentions);
       }
     }
 

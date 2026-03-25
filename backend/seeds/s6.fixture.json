@@ -1,0 +1,36 @@
+{
+  "documents": [
+    {
+      "id": "d0000000-0000-0000-0000-000000000001",
+      "project_id": "00000000-0000-0000-0000-000000000103",
+      "title": "Acme Brand Guidelines",
+      "content": "# Acme Brand Guidelines\n\n## Colors\n- Primary: #FF6B35\n- Secondary: #004E89\n\n## Typography\n- Headlines: Inter Bold\n- Body: Inter Regular\n\n## Voice & Tone\n- Professional but approachable\n- Clear and concise\n- Solution-oriented",
+      "visibility_scope": "project",
+      "size_bytes": 260
+    },
+    {
+      "id": "d0000000-0000-0000-0000-000000000002",
+      "project_id": "00000000-0000-0000-0000-000000000103",
+      "title": "Acme Q1 Strategy",
+      "content": "# Acme Q1 2026 Strategy\n\n## Goals\n1. Launch redesigned homepage\n2. Improve mobile conversion by 15%\n3. Reduce page load time to under 2s\n\n## Key Deliverables\n- Homepage redesign (March)\n- Performance audit (February)\n- A/B testing framework (January)",
+      "visibility_scope": "client",
+      "size_bytes": 310
+    },
+    {
+      "id": "d0000000-0000-0000-0000-000000000003",
+      "project_id": "00000000-0000-0000-0000-000000000201",
+      "title": "Design System Principles",
+      "content": "# Oxy Design System Principles\n\n## Accessibility First\nAll components must meet WCAG 2.1 AA.\n\n## Composable\nBuild small, reusable primitives.\n\n## Performance\nNo component should add > 5KB to bundle.\n\n## Documentation\nEvery component needs usage examples and prop docs.",
+      "visibility_scope": "global",
+      "size_bytes": 290
+    },
+    {
+      "id": "d0000000-0000-0000-0000-000000000004",
+      "project_id": "00000000-0000-0000-0000-000000000201",
+      "title": "Sprint Review Template",
+      "content": "# Sprint Review Template\n\n## What we shipped\n- [ ] Feature 1\n- [ ] Feature 2\n\n## What we learned\n- Insight 1\n- Insight 2\n\n## Next sprint focus\n- Priority 1\n- Priority 2",
+      "visibility_scope": "project",
+      "size_bytes": 210
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { OxyMentionPopover, type MentionPopoverHandle } from "@/components/mentions/OxyMentionPopover";
 import { ModelPicker } from "./ModelPicker";
-import type { Transcript, ModelOption } from "@/types";
+import type { Transcript, ModelOption, MentionableItem } from "@/types";
 import type { DraftData, MentionChip } from "@/hooks/useDrafts";
 import { useMentionSearch } from "@/hooks/useMentionSearch";
 import { Paperclip, Square } from "lucide-react";
@@ -218,7 +218,7 @@ export function OxyComposer({
   const isComposingRef = useRef(false);
   const previousExternalValueRef = useRef(value);
   const mentionQuery = showMentions ? mentionFilter : "";
-  const { transcripts: mentionResults, isLoading: mentionLoading } = useMentionSearch(
+  const { transcripts: mentionResults, items: mentionItems, isLoading: mentionLoading } = useMentionSearch(
     mentionQuery,
     projectId ?? undefined,
     conversationId ?? undefined
@@ -412,6 +412,20 @@ export function OxyComposer({
     syncToParent();
   }, [syncToParent]);
 
+  const insertMentionItem = useCallback((item: MentionableItem) => {
+    if (item.kind === "transcript") {
+      insertMentionPill(item.item);
+    } else {
+      // For documents, create a fake Transcript-shaped object with doc: prefix ID
+      // This reuses the same pill insertion DOM logic
+      insertMentionPill({
+        id: `doc:${item.item.id}`,
+        title: item.item.title,
+        date: new Date(),
+      } as Transcript);
+    }
+  }, [insertMentionPill]);
+
   const handleSend = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -552,8 +566,10 @@ export function OxyComposer({
         open={showMentions}
         onOpenChange={setShowMentions}
         transcripts={mentionResults}
+        items={mentionItems}
         isLoading={mentionLoading}
         onSelect={insertMentionPill}
+        onSelectItem={insertMentionItem}
       >
         <div className={`oxy-composer-unified ${focusedInput ? "focused" : ""}`}>
           {/* Upper Section: Contenteditable with inline pills */}

@@ -94,5 +94,18 @@ export interface TruncationInfo {
 export interface SourceInfo {
   doc_id: string;
   title: string;
-  type: "mention" | "rag" | "overview";
+  type: "mention" | "rag" | "overview" | "document";
 }
+
+export interface MentionableDocument {
+  id: string;
+  title: string;
+  visibility_scope: string;
+  project_id: string;
+  size_bytes: number;
+  created_at: string;
+}
+
+export type MentionableItem =
+  | { kind: "transcript"; item: Transcript }
+  | { kind: "document"; item: MentionableDocument };

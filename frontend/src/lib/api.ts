@@ -796,6 +796,91 @@ export interface SearchResult {
   total_results: number
 }
 
+// --- Admin Document APIs ---
+
+export interface AdminDocument {
+  id: string;
+  project_id: string;
+  title: string;
+  content_hash: string;
+  visibility_scope: "project" | "client" | "global";
+  size_bytes: number;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function fetchAdminDocuments(projectId?: string): Promise<AdminDocument[]> {
+  const url = new URL(`${API_BASE_URL}/api/admin/documents`);
+  if (projectId) {
+    url.searchParams.set("project_id", projectId);
+  }
+  const response = await fetchWithAuth(url.toString());
+  return parseAdminResponse<AdminDocument[]>(response);
+}
+
+export async function uploadAdminDocument(input: {
+  project_id: string;
+  title: string;
+  content: string;
+  visibility_scope?: "project" | "client" | "global";
+}): Promise<AdminDocument> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/documents`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseAdminResponse<AdminDocument>(response);
+}
+
+export async function deleteAdminDocument(documentId: string): Promise<void> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/documents/${documentId}`, {
+    method: "DELETE",
+  });
+  await parseAdminResponse<{ ok: true }>(response);
+}
+
+// --- Document Mention Search ---
+
+export interface DocumentMentionResult {
+  id: string;
+  title: string;
+  visibility_scope: string;
+  project_id: string;
+  size_bytes: number;
+  created_at: string;
+}
+
+interface DocumentMentionBucketsResponse {
+  project: DocumentMentionResult[];
+  global: DocumentMentionResult[];
+  mode: string;
+  took_ms: number;
+}
+
+export async function queryMentionDocuments(
+  query: string,
+  options: { projectId?: string; conversationId?: string; signal?: AbortSignal } = {}
+): Promise<{ documents: DocumentMentionResult[]; mode: string; tookMs: number }> {
+  const body: Record<string, unknown> = { query };
+  if (options.projectId) body.project_id = options.projectId;
+  if (options.conversationId) body.conversation_id = options.conversationId;
+
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/documents/mentions/query`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    signal: options.signal,
+  });
+
+  if (!response.ok) return { documents: [], mode: "global_only", tookMs: 0 };
+
+  const data = (await response.json()) as DocumentMentionBucketsResponse;
+  return {
+    documents: [...(data.project ?? []), ...(data.global ?? [])],
+    mode: data.mode,
+    tookMs: data.took_ms,
+  };
+}
+
 export async function searchConversations(query: string, limit = 20): Promise<SearchResult> {
   const url = new URL(`${API_BASE_URL}/api/search`);
   url.searchParams.set("q", query);

@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { queryMentionTranscripts, type TranscriptResponse } from "@/lib/api";
-import type { Transcript } from "@/types";
+import {
+  queryMentionTranscripts,
+  queryMentionDocuments,
+  type TranscriptResponse,
+  type DocumentMentionResult,
+} from "@/lib/api";
+import type { Transcript, MentionableItem } from "@/types";
 
 const MENTION_SEARCH_DEBOUNCE_MS = 140;
 
@@ -24,6 +29,7 @@ export function useMentionSearch(
   conversationId?: string
 ) {
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
+  const [items, setItems] = useState<MentionableItem[]>([]);
   const [mode, setMode] = useState<string>("global_only");
   const [tookMs, setTookMs] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +42,7 @@ export function useMentionSearch(
 
     if (!normalizedQuery) {
       setTranscripts([]);
+      setItems([]);
       setMode("global_only");
       setTookMs(null);
       setIsLoading(false);
@@ -48,24 +55,51 @@ export function useMentionSearch(
       try {
         setIsLoading(true);
         setError(null);
-        const response = await queryMentionTranscripts(normalizedQuery, {
-          projectId,
-          conversationId,
-          signal: controller.signal,
-        });
+
+        const [transcriptResponse, documentResponse] = await Promise.all([
+          queryMentionTranscripts(normalizedQuery, {
+            projectId,
+            conversationId,
+            signal: controller.signal,
+          }),
+          queryMentionDocuments(normalizedQuery, {
+            projectId,
+            conversationId,
+            signal: controller.signal,
+          }),
+        ]);
 
         if (sequence !== sequenceRef.current || controller.signal.aborted) {
           return;
         }
 
-        setTranscripts(response.transcripts.map(toTranscript));
-        setMode(response.mode);
-        setTookMs(response.tookMs);
+        const transcriptList = transcriptResponse.transcripts.map(toTranscript);
+        setTranscripts(transcriptList);
+        setMode(transcriptResponse.mode);
+        setTookMs(transcriptResponse.tookMs);
+
+        // Build merged MentionableItem list: transcripts first, then documents
+        const merged: MentionableItem[] = [
+          ...transcriptList.map((t) => ({ kind: "transcript" as const, item: t })),
+          ...documentResponse.documents.map((d: DocumentMentionResult) => ({
+            kind: "document" as const,
+            item: {
+              id: d.id,
+              title: d.title,
+              visibility_scope: d.visibility_scope,
+              project_id: d.project_id,
+              size_bytes: d.size_bytes,
+              created_at: d.created_at,
+            },
+          })),
+        ];
+        setItems(merged);
       } catch (err) {
         if (controller.signal.aborted || sequence !== sequenceRef.current) {
           return;
         }
         setTranscripts([]);
+        setItems([]);
         setMode("global_only");
         setTookMs(null);
         setError(err instanceof Error ? err.message : "Failed to search mentions");
@@ -84,6 +118,7 @@ export function useMentionSearch(
 
   return {
     transcripts,
+    items,
     mode,
     tookMs,
     isLoading,

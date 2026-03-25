@@ -6,6 +6,7 @@ export interface PromptMentionDocument {
   id: string;
   title: string;
   content: string;
+  sourceType?: 'transcript' | 'document';
 }
 
 export interface PromptTruncationInfo {
@@ -18,7 +19,7 @@ export interface PromptTruncationInfo {
 export interface PromptSourceInfo {
   doc_id: string;
   title: string;
-  type: 'mention' | 'overview';
+  type: 'mention' | 'overview' | 'document';
 }
 
 interface BuildPromptContextInput {
@@ -142,7 +143,7 @@ function appendReferencedDocumentsBlock(
     sources.push({
       doc_id: doc.id,
       title: safeTitle,
-      type: 'mention',
+      type: doc.sourceType === 'document' ? 'document' : 'mention',
     });
     truncationInfo.push({
       doc_id: doc.id,

@@ -7,6 +7,7 @@ import { chatAgentTask } from './chat-agent.js';
 import { generateTitleTask } from './generate-title.js';
 import { createTitleRuntime } from '../lib/runtime.js';
 import { filterVisibleTranscriptIdsForUser } from '../lib/transcript-visibility.js';
+import { filterVisibleDocumentIdsForUser } from '../lib/document-access.js';
 import { getProjectOverviewTask, type ProjectOverviewData } from './get-project-overview.js';
 import { AccessDeniedError, assertProjectAccess } from '../lib/acl.js';
 import type { PromptSourceInfo, PromptTruncationInfo } from '../lib/prompt-context.js';
@@ -89,12 +90,23 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       );
     }
 
+    let visibleDocumentMentionIds = parsed.documentMentionIds;
+    if (input.userId && parsed.documentMentionIds.length > 0) {
+      visibleDocumentMentionIds = await filterVisibleDocumentIdsForUser(
+        input.userId,
+        parsed.documentMentionIds
+      );
+    }
+
     // 3. Save user message
     const savedUser = await runTaskToCompletion(saveMessageTask, {
       conversationId: input.conversationId,
       role: 'user',
       content: input.content,
-      mentions: visibleMentionIds,
+      mentions: [
+        ...visibleMentionIds,
+        ...visibleDocumentMentionIds.map((id) => `doc:${id}`),
+      ],
     }, deps);
 
     // Generate title for first message (uses fast nano model)
@@ -119,6 +131,7 @@ export const chatPipelineTask = defineTask<ChatPipelineInput, ChatPipelineEvent>
       conversationMessages: conversation.messages,
       userContent: input.content,
       mentionIds: visibleMentionIds,
+      documentMentionIds: visibleDocumentMentionIds,
       userId: input.userId,
       userEmail: input.userEmail,
       userContext: input.userContext,

@@ -2,13 +2,14 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useMentionSearch } from "@/hooks/useMentionSearch";
-import { queryMentionTranscripts } from "@/lib/api";
+import { queryMentionTranscripts, queryMentionDocuments } from "@/lib/api";
 
 vi.mock("@/lib/api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api")>("@/lib/api");
   return {
     ...actual,
     queryMentionTranscripts: vi.fn(),
+    queryMentionDocuments: vi.fn().mockResolvedValue({ documents: [], mode: "global_only", tookMs: 0 }),
   };
 });
 

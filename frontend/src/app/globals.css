@@ -3972,6 +3972,109 @@ button.oxy-mark:focus-visible {
   box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
+/* Document upload dropzone */
+.oxy-admin-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-32, 8rem);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg, 0.75rem);
+  padding: var(--spacing-md, 1.5rem);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease;
+  text-align: center;
+}
+
+@media (hover: hover) {
+  .oxy-admin-dropzone:hover {
+    border-color: var(--focus);
+    background: var(--surface-overlay);
+  }
+}
+
+.oxy-admin-dropzone-active {
+  border-color: var(--focus);
+  background: var(--surface-overlay);
+}
+
+.oxy-admin-dropzone-uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.oxy-admin-file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* Document list */
+.oxy-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.oxy-admin-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.oxy-admin-list-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.oxy-admin-list-item-title {
+  font-size: var(--font-base);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oxy-admin-list-item-meta {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.oxy-admin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-base);
+  height: var(--size-base);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) {
+  .oxy-admin-icon-btn:hover {
+    color: var(--text-primary);
+    background: var(--surface-overlay);
+  }
+}
+
+/* Document mention badge */
+.oxy-mention-badge-doc {
+  background: var(--accent-muted, rgba(59, 130, 246, 0.15));
+  color: var(--accent-text, #3b82f6);
+}
+
 .oxy-admin-btn {
   display: inline-flex;
   align-items: center;

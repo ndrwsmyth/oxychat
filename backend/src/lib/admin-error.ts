@@ -45,6 +45,10 @@ export function adminConflict(c: Context, message: string, details?: AdminErrorD
   return adminError(c, 409, 'admin_conflict', message, details);
 }
 
+export function adminNotFound(c: Context, message: string, details?: AdminErrorDetails) {
+  return adminError(c, 404, 'admin_not_found', message, details);
+}
+
 export function adminInternalError(c: Context, message: string, details?: AdminErrorDetails) {
   return adminError(c, 500, 'admin_internal_error', message, details);
 }

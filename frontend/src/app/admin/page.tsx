@@ -5,14 +5,17 @@ import { ProjectsTableEditor } from "@/components/admin/ProjectsTableEditor";
 import { TranscriptLinkEditor } from "@/components/admin/TranscriptLinkEditor";
 import { ProjectOverviewEditor } from "@/components/admin/ProjectOverviewEditor";
 import { AdminAuditTimeline } from "@/components/admin/AdminAuditTimeline";
+import { DocumentUploader } from "@/components/admin/DocumentUploader";
+import { DocumentList } from "@/components/admin/DocumentList";
 import { useAdminConsoleData } from "@/hooks/useAdminConsoleData";
 import { toAdminErrorDisplayMessage } from "@/lib/admin-errors";
 
-type AdminTab = "projects" | "relink" | "audit";
+type AdminTab = "projects" | "relink" | "audit" | "documents";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("projects");
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [docRefreshKey, setDocRefreshKey] = useState(0);
   const {
     clients,
     projects,
@@ -75,6 +78,15 @@ export default function AdminPage() {
         >
           Audit
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("documents")}
+          aria-pressed={activeTab === "documents"}
+          data-testid="admin-tab-documents"
+          className="oxy-admin-tab"
+        >
+          Documents
+        </button>
       </nav>
 
       {activeTab === "projects" ? (
@@ -121,6 +133,47 @@ export default function AdminPage() {
             projects={projects}
             defaultProjectId={effectiveSelectedProjectId}
           />
+        </section>
+      ) : activeTab === "documents" ? (
+        <section data-testid="admin-documents-editor" aria-label="Documents">
+          <div className="oxy-admin-sections">
+            <div className="oxy-admin-card">
+              <h2 className="oxy-admin-card-title">Project Documents</h2>
+              <p className="oxy-admin-card-subtitle">
+                Upload markdown documents to make them available as @mentions in chat.
+              </p>
+              <div className="oxy-admin-form-stack oxy-admin-mt-base">
+                <label htmlFor="admin-doc-project-select" className="oxy-admin-label">
+                  Project
+                </label>
+                <select
+                  id="admin-doc-project-select"
+                  value={effectiveSelectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  data-testid="admin-doc-project-select"
+                  className="oxy-admin-select"
+                >
+                  {sortedProjects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="oxy-admin-mt-base">
+                <DocumentUploader
+                  projectId={effectiveSelectedProjectId}
+                  onUploaded={() => setDocRefreshKey((k) => k + 1)}
+                />
+              </div>
+              <div className="oxy-admin-mt-base">
+                <DocumentList
+                  projectId={effectiveSelectedProjectId}
+                  refreshKey={docRefreshKey}
+                />
+              </div>
+            </div>
+          </div>
         </section>
       ) : (
         <section data-testid="admin-audit-editor" aria-label="Audit editor">
