@@ -5,12 +5,17 @@ import {
   normalizeTitle,
 } from '../lib/transcript-normalization.js';
 import { getSupabase } from '../lib/supabase.js';
+import {
+  assertAutoTranscriptLinkSource,
+  assertTranscriptLinkSource,
+  type AutoTranscriptLinkSource,
+  type TranscriptLinkSource,
+} from '../types/transcript-link.js';
 
-export type TranscriptLinkSource =
-  | 'domain_match'
-  | 'title_alias'
-  | 'client_inbox_fallback'
-  | 'global_triage_fallback';
+interface ExistingLinkRow {
+  project_id: string;
+  link_source: string;
+}
 
 export interface ResolveProjectLinksInput {
   transcriptId: string;
@@ -33,7 +38,7 @@ export function chooseProjectLinkCandidate(input: {
   aliasMatch: ProjectCandidate | null;
   clientInboxMatch: ProjectCandidate | null;
   globalInboxMatch: ProjectCandidate | null;
-}): { candidate: ProjectCandidate | null; source: TranscriptLinkSource | null } {
+}): { candidate: ProjectCandidate | null; source: AutoTranscriptLinkSource | null } {
   if (input.domainMatch) {
     return { candidate: input.domainMatch, source: 'domain_match' };
   }
@@ -206,6 +211,23 @@ async function resolveGlobalTriageInbox(): Promise<ProjectCandidate | null> {
   };
 }
 
+async function insertPreservedAuditEvent(transcriptId: string, projectId: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.from('audit_events').insert({
+    event_type: 'transcript.routed.preserved',
+    entity_type: 'transcript',
+    entity_id: transcriptId,
+    payload: {
+      project_id: projectId,
+      link_source: 'admin_manual',
+    },
+  });
+
+  if (error) {
+    throw new Error(`Failed to write preserved routing audit event: ${error.message}`);
+  }
+}
+
 export const resolveProjectLinksTask = defineTask<ResolveProjectLinksInput, ResolveProjectLinksResult>(
   'resolve_project_links',
   async function* (input) {
@@ -247,6 +269,35 @@ export const resolveProjectLinksTask = defineTask<ResolveProjectLinksInput, Reso
         visibility: 'private',
         projectId: null,
         linkSource: null,
+      };
+      return;
+    }
+
+    const { data: existingLinkData, error: existingLinkError } = await supabase
+      .from('transcript_project_links')
+      .select('project_id, link_source')
+      .eq('transcript_id', input.transcriptId)
+      .maybeSingle();
+
+    if (existingLinkError) {
+      throw new Error(`Failed to load existing project link: ${existingLinkError.message}`);
+    }
+
+    const existingLink = existingLinkData
+      ? {
+          project_id: existingLinkData.project_id,
+          link_source: assertTranscriptLinkSource(existingLinkData.link_source),
+        }
+      : null;
+
+    if (existingLink?.link_source === 'admin_manual') {
+      await insertPreservedAuditEvent(input.transcriptId, existingLink.project_id);
+
+      yield {
+        transcriptId: input.transcriptId,
+        visibility: 'non_private',
+        projectId: existingLink.project_id,
+        linkSource: existingLink.link_source,
       };
       return;
     }
@@ -330,11 +381,13 @@ export const resolveProjectLinksTask = defineTask<ResolveProjectLinksInput, Reso
       throw new Error(`Failed to persist transcript project link: ${linkError.message}`);
     }
 
+    const persistedSource = assertAutoTranscriptLinkSource(link.link_source);
+
     yield {
       transcriptId: input.transcriptId,
       visibility: 'non_private',
       projectId: link.project_id,
-      linkSource: link.link_source as TranscriptLinkSource,
+      linkSource: persistedSource,
     };
   }
 );

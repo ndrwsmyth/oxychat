@@ -27,7 +27,7 @@ vi.mock('../../lib/acl.js', () => ({
   assertProjectAccess: vi.fn(async () => undefined),
   assertConversationOwnership: vi.fn(async () => ({
     id: 'conv-1',
-    model: 'gpt-5.2',
+    model: 'gpt-5.4',
     project_id: 'project-1',
   })),
 }));
@@ -159,7 +159,7 @@ describe('transcript visibility routes', () => {
     vi.mocked(assertProjectAccess).mockResolvedValue(undefined);
     vi.mocked(assertConversationOwnership).mockResolvedValue({
       id: 'conv-1',
-      model: 'gpt-5.2',
+      model: 'gpt-5.4',
       project_id: 'project-1',
     });
   });

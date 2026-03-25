@@ -37,9 +37,7 @@ export function AppLayout({ sidebar, main, rightPanel }: AppLayoutProps) {
 
       {/* Main Content Area */}
       <main className="oxy-main-content">
-        <div className="oxy-chat-container">
-          {main}
-        </div>
+        {main}
       </main>
 
       {/* Right Panel (Transcripts) - Fixed overlay, not part of grid */}

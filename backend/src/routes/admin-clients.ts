@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { getSupabase } from '../lib/supabase.js';
 import { writeAuditEvent } from '../lib/audit.js';
 import type { AppVariables } from '../types.js';
+import { adminBadRequest, adminInternalError } from '../lib/admin-error.js';
 
 export const adminClientsRouter = new Hono<{ Variables: AppVariables }>();
 
@@ -13,7 +14,7 @@ adminClientsRouter.get('/admin/clients', async (c) => {
     .order('name', { ascending: true });
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return adminInternalError(c, error.message);
   }
 
   return c.json(data ?? []);
@@ -26,7 +27,7 @@ adminClientsRouter.post('/admin/clients', async (c) => {
   const ownerUserId = typeof body.owner_user_id === 'string' ? body.owner_user_id : null;
 
   if (!name) {
-    return c.json({ error: 'name is required' }, 400);
+    return adminBadRequest(c, 'name is required');
   }
 
   const supabase = getSupabase();
@@ -41,7 +42,7 @@ adminClientsRouter.post('/admin/clients', async (c) => {
     .single();
 
   if (error || !data) {
-    return c.json({ error: error?.message ?? 'Failed to create client' }, 500);
+    return adminInternalError(c, error?.message ?? 'Failed to create client');
   }
 
   await writeAuditEvent({
@@ -66,7 +67,7 @@ adminClientsRouter.patch('/admin/clients/:id', async (c) => {
   if (typeof body.name === 'string') {
     const name = body.name.trim();
     if (!name) {
-      return c.json({ error: 'name cannot be empty' }, 400);
+      return adminBadRequest(c, 'name cannot be empty');
     }
     updates.name = name;
   }
@@ -88,7 +89,7 @@ adminClientsRouter.patch('/admin/clients/:id', async (c) => {
     .single();
 
   if (error || !data) {
-    return c.json({ error: error?.message ?? 'Failed to update client' }, 500);
+    return adminInternalError(c, error?.message ?? 'Failed to update client');
   }
 
   await writeAuditEvent({
@@ -111,7 +112,7 @@ adminClientsRouter.delete('/admin/clients/:id', async (c) => {
     .eq('id', id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return adminInternalError(c, error.message);
   }
 
   await writeAuditEvent({

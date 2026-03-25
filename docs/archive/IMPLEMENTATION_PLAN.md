@@ -9,7 +9,7 @@ This plan addresses multiple UX/UI improvements and backend architecture changes
 ## 1. Default Model Change
 
 **Current**: `gpt-5-nano` in `backend/app/constants.py`
-**Target**: `gpt-5.2`
+**Target**: `gpt-5.4`
 
 ### Files to modify:
 - `backend/app/constants.py` - Change `MODEL` constant
@@ -406,13 +406,13 @@ const handleScroll = (e) => {
 
 ## 11. Backend Multi-Model Architecture
 
-**Goal**: Unified interface for GPT-5.2, Claude, Grok with thinking token support
+**Goal**: Unified interface for GPT-5.4, Claude, Grok with thinking token support
 
 ### Research findings:
 - **LiteLLM** provides translation between OpenAI conventions (`reasoning_effort`) and Anthropic's native format
 - **LangChain** supports streaming with `stream_mode="messages"`
 - Claude thinking mode: `{"thinking": {"type": "enabled", "budget_tokens": 1024}}`
-- GPT-5.2 thinking: `reasoning_effort` parameter with values `low`, `medium`, `high`, `xhigh`
+- GPT-5.4 thinking: `reasoning_effort` parameter with values `low`, `medium`, `high`, `xhigh`
 
 ### Recommended approach: Interface-first
 
@@ -444,7 +444,7 @@ class StreamEvent:
 class OpenAIProvider(ModelProvider):
     async def stream_response(self, messages, context, thinking_enabled):
         response = await self.client.chat.completions.create(
-            model="gpt-5.2",
+            model="gpt-5.4",
             messages=full_messages,
             stream=True,
             reasoning_effort="medium" if thinking_enabled else None,
@@ -565,4 +565,4 @@ uv add litellm anthropic
 - [Sonner](https://sonner.emilkowal.ski/) - Toast notifications
 - [LiteLLM Anthropic](https://docs.litellm.ai/docs/providers/anthropic) - Multi-model abstraction
 - [Anthropic Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents) - Agent patterns
-- [OpenAI GPT-5.2 Guide](https://platform.openai.com/docs/models/gpt-5.2) - Reasoning tokens
+- [OpenAI GPT-5.4 Guide](https://platform.openai.com/docs/models/gpt-5.4) - Reasoning tokens

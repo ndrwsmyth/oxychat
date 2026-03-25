@@ -7,6 +7,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseMentions, queryMentionTranscripts, setAuthTokenGetter } from '../lib/api';
+import { parseAdminError } from '../lib/admin-errors';
 
 describe('parseMentions', () => {
   it('extracts mentions in @[Title] format', () => {
@@ -85,5 +86,37 @@ describe('queryMentionTranscripts', () => {
     expect(result.tookMs).toBe(12.3);
     expect(result.transcripts.map((item) => item.id)).toEqual(['p1', 'g1']);
     expect(result.transcripts.map((item) => item.scope_bucket)).toEqual(['project', 'global']);
+  });
+});
+
+describe('parseAdminError', () => {
+  it('parses typed admin error envelope', () => {
+    const parsed = parseAdminError(
+      {
+        error: {
+          code: 'admin_forbidden',
+          message: 'Admin access required',
+          details: { path: '/api/admin/projects' },
+        },
+      },
+      403
+    );
+
+    expect(parsed).toEqual({
+      code: 'admin_forbidden',
+      message: 'Admin access required',
+      details: { path: '/api/admin/projects' },
+      status: 403,
+    });
+  });
+
+  it('parses legacy admin error envelope', () => {
+    const parsed = parseAdminError({ error: 'Admin access required' }, 403);
+
+    expect(parsed).toEqual({
+      code: 'legacy_admin_error',
+      message: 'Admin access required',
+      status: 403,
+    });
   });
 });

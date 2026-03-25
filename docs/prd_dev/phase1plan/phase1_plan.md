@@ -161,7 +161,7 @@
 │ Verified model IDs (from official docs, January 2026):                                             │
 │ - Claude Opus 4.5: claude-opus-4-5-20251101 (alias: claude-opus-4-5)                               │
 │ - Claude Sonnet 4.5: claude-sonnet-4-5-20250929 (alias: claude-sonnet-4-5)                         │
-│ - GPT-5.2: gpt-5.2                                                                                 │
+│ - GPT-5.4: gpt-5.4                                                                                 │
 │                                                                                                    │
 │ import { Runtime } from 'sediment/core/runtime';                                                   │
 │ import { createAnthropicAdapter } from 'sediment/adapters/completions/anthropic';                  │
@@ -175,7 +175,7 @@
 │ const MODEL_CONFIG = {                                                                             │
 │   'claude-opus-4-5': { provider: 'anthropic', id: 'claude-opus-4-5-20251101' },                    │
 │   'claude-sonnet-4.5': { provider: 'anthropic', id: 'claude-sonnet-4-5-20250929' },                │
-│   'gpt-5.2': { provider: 'openai', id: 'gpt-5.2' },                                                │
+│   'gpt-5.4': { provider: 'openai', id: 'gpt-5.4' },                                                │
 │ } as const;                                                                                        │
 │                                                                                                    │
 │ // Singleton adapters (reused across requests — both ship with Sediment)                           │
@@ -264,7 +264,7 @@
 │                                                                                                    │
 │     // Stream via Sediment's CompletionsAdapter (works for both Anthropic + OpenAI)                │
 │     for await (const chunk of deps.completions.complete({                                          │
-│       model: input.modelId,  // e.g. 'claude-opus-4-5-20251101' or 'gpt-5.2'                       │
+│       model: input.modelId,  // e.g. 'claude-opus-4-5-20251101' or 'gpt-5.4'                       │
 │       messages,                                                                                    │
 │       maxTokens: 8192,                                                                             │
 │       tools: deps.tools.list(),  // tool definitions for search_knowledge, get_document            │

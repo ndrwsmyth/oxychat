@@ -47,7 +47,7 @@ function resolveModel(): ModelKey {
     return 'claude-sonnet-4-6';
   }
   if (process.env.OPENAI_API_KEY) {
-    return 'gpt-5.2';
+    return 'gpt-5.4';
   }
   throw new Error('Missing ANTHROPIC_API_KEY or OPENAI_API_KEY');
 }

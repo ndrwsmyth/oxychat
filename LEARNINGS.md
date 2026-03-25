@@ -52,3 +52,14 @@
 - Normalize `dev/build/start` script environments (`NODE_ENV`, clear `NODE_PATH`) to reduce shell-level resolver pollution and non-reproducible local failures.
 - Keep Next PostCSS config in supported shape (plugin object map). Invalid plugin shape can mask real resolver issues with generic “Malformed PostCSS Configuration.”
 - For “Can’t resolve 'tailwindcss'” traces, use the `using description file:` path as the primary signal; if it points at repo root instead of frontend root, debug root selection first.
+
+## Sprint Learnings - 2026-03-05 (Sprint 5 Admin UX Remediation)
+
+- Treat admin/operator deliverables as product UX, not endpoint exposure. A route is not done if it is undiscoverable from the core app.
+- Every privileged flow must include an explicit entry-point requirement in the sprint plan (where users find it) and a role-visibility acceptance test.
+- Direct-entry routes (like `/admin`) need first-load UX acceptance criteria: branded loading state, access-denied state, and recoverable session-error state.
+- Placeholder tabs do not satisfy operator readiness; hide non-functional sections from primary nav until the real workflow exists.
+- Avoid raw internal IDs as the default operator interface when the system already has searchable human labels.
+- Shared-environment readiness means more than schema + tests: include role bootstrap tooling and non-empty fixture data that makes the UI usable on first load.
+- Plan acceptance criteria must include manual UX signoff steps, not just lint/test/gate commands.
+- Add planning guardrails to both `LEARNINGS.md` and agent guidance so future AI plans include discoverability, usability, and seed realism by default.

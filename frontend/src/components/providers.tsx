@@ -4,10 +4,12 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { ReactNode } from "react";
+import { AuthTokenBridge } from "@/components/auth/AuthTokenBridge";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ClerkProvider>
+      <AuthTokenBridge />
       <NextThemesProvider
         attribute="class"
         defaultTheme="light"

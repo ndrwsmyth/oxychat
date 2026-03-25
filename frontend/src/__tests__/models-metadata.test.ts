@@ -20,8 +20,7 @@ function createModelsResponse() {
     models: [
       { key: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', provider: 'anthropic' },
       { key: 'claude-opus-4-6', label: 'Claude Opus 4.6', provider: 'anthropic' },
-      { key: 'gpt-5.2', label: 'GPT-5.2', provider: 'openai' },
-      { key: 'grok-4', label: 'Grok 4', provider: 'openai' },
+      { key: 'gpt-5.4', label: 'GPT-5.4', provider: 'openai' },
     ],
   };
 }
@@ -72,8 +71,7 @@ describe('useConversation model metadata behavior', () => {
     expect(latest?.modelOptions.map((option) => option.value)).toEqual([
       'claude-sonnet-4-6',
       'claude-opus-4-6',
-      'gpt-5.2',
-      'grok-4',
+      'gpt-5.4',
     ]);
 
     await act(async () => {

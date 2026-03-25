@@ -155,4 +155,23 @@ describe('admin projects overview_markdown support', () => {
     expect(updatedPayload?.['overview_markdown']).toBe('## Updated overview');
     expect(vi.mocked(writeAuditEvent)).toHaveBeenCalledTimes(2);
   });
+
+  it('returns typed admin error envelope for validation failures', async () => {
+    const app = createAuthedApp();
+    const response = await app.request('/api/admin/projects', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ client_id: '' }),
+    });
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body).toEqual({
+      error: {
+        code: 'admin_bad_request',
+        message: 'client_id and name are required',
+      },
+    });
+    expect(vi.mocked(getSupabase)).not.toHaveBeenCalled();
+  });
 });

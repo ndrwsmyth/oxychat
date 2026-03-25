@@ -46,6 +46,14 @@ describe('admin guard middleware', () => {
     const response = await app.request('/api/admin/clients');
 
     expect(response.status).toBe(403);
+    const body = await response.json();
+    expect(body).toEqual({
+      error: {
+        code: 'admin_forbidden',
+        message: 'Admin access required',
+        details: { path: '/api/admin/clients' },
+      },
+    });
     expect(vi.mocked(getSupabase)).not.toHaveBeenCalled();
   });
 

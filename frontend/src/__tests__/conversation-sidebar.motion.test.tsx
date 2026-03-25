@@ -10,6 +10,7 @@ const useSidebarMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
+  usePathname: () => "/",
 }));
 
 vi.mock("@/hooks/useSidebar", () => ({
@@ -48,10 +49,11 @@ const emptyConversations: GroupedConversations = {
   older: [],
 };
 
-function buildSidebar() {
+function buildSidebar(showAdminEntry = false) {
   return createElement(ConversationSidebar, {
     activeConversationId: null,
     selectedProjectId: null,
+    showAdminEntry,
     conversations: emptyConversations,
     workspaceClients: [],
     workspacesLoading: false,
@@ -149,5 +151,21 @@ describe("ConversationSidebar motion hardening", () => {
     await act(async () => {
       root.unmount();
     });
+  });
+
+  it("renders admin footer entry only when enabled", async () => {
+    await renderWithCollapsed(false);
+    expect(container.querySelector("[data-testid='sidebar-admin-entry']")).toBeNull();
+
+    useSidebarMock.mockReturnValue({
+      collapsed: false,
+      toggle: toggleMock,
+    });
+
+    await act(async () => {
+      root.render(buildSidebar(true));
+    });
+
+    expect(container.querySelector("[data-testid='sidebar-admin-entry']")).not.toBeNull();
   });
 });

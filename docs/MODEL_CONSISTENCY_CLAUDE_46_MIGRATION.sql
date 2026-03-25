@@ -43,8 +43,7 @@ WHERE model IS NULL
    OR model NOT IN (
      'claude-sonnet-4-6',
      'claude-opus-4-6',
-     'gpt-5.2',
-     'grok-4'
+     'gpt-5.4'
    );
 
 COMMIT;
@@ -68,13 +67,13 @@ COMMIT;
 -- FROM conversations
 -- WHERE model IS NULL
 --    OR btrim(model) = ''
---    OR model NOT IN ('claude-sonnet-4-6', 'claude-opus-4-6', 'gpt-5.2', 'grok-4');
+--    OR model NOT IN ('claude-sonnet-4-6', 'claude-opus-4-6', 'gpt-5.4');
 
 -- ----------------------------------------------------------------------------
 -- Rollback guidance (manual)
 -- ----------------------------------------------------------------------------
 -- If rollback is required:
 -- 1) Restore previous default explicitly:
---    ALTER TABLE conversations ALTER COLUMN model SET DEFAULT 'gpt-5.2';
+--    ALTER TABLE conversations ALTER COLUMN model SET DEFAULT 'gpt-5.4';
 -- 2) Restore row values from backup/snapshot taken before this migration.
 --    (Do not attempt automatic reverse mapping without a pre-migration backup.)

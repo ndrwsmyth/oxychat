@@ -39,3 +39,6 @@ out/
 
 # Chroma vector database
 backend/chroma_data/
+
+# Claude Code
+claude.md

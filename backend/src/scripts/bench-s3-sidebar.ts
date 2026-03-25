@@ -151,7 +151,7 @@ async function ensureBenchData(): Promise<BenchConversation[]> {
     conversations.map((conversation) => ({
       ...conversation,
       user_id: BENCH_ADMIN_USER_ID,
-      model: 'gpt-5.2',
+      model: 'gpt-5.4',
     })),
     { onConflict: 'id' }
   );

@@ -13,7 +13,7 @@ OxyChat is the internal "Operating System" for our company's intelligence. It is
 2.  **Query** internal knowledge (Sales calls, internal meeting transcripts) with precision.
 3.  **Dispatch** autonomous agents to perform background research or operational tasks.
 
-It is built on the **Sediment Framework**, ensuring that every interaction is observable, replayable, and composable. Supported models: GPT-5.2, Claude Sonnet 4.5, Claude Opus 4.5.
+It is built on the **Sediment Framework**, ensuring that every interaction is observable, replayable, and composable. Supported models: GPT-5.4, Claude Sonnet 4.6, Claude Opus 4.6.
 
 ## 2. Goals & Scope
 

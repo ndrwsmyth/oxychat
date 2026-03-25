@@ -7,7 +7,12 @@ import {
   normalizeAttendee,
   normalizeTitle,
 } from './transcript-normalization.js';
-import type { TranscriptLinkSource } from '../tasks/resolve-project-links.js';
+import {
+  assertAutoTranscriptLinkSource,
+  assertTranscriptLinkSource,
+  type AutoTranscriptLinkSource,
+  type TranscriptLinkSource,
+} from '../types/transcript-link.js';
 
 interface ProjectCandidate {
   projectId: string;
@@ -22,7 +27,7 @@ interface ExistingClassification {
 
 interface ExistingLink {
   project_id: string;
-  link_source: TranscriptLinkSource;
+  link_source: string;
 }
 
 export interface IngestEnvelopeInput {
@@ -171,7 +176,7 @@ async function resolveProjectLink(
   transcriptTitle: string,
   attendeeDomains: string[],
   attendeeDomainRoots: string[]
-): Promise<{ candidate: ProjectCandidate | null; source: TranscriptLinkSource | null }> {
+): Promise<{ candidate: ProjectCandidate | null; source: AutoTranscriptLinkSource | null }> {
   const domainMatch = await resolveProjectByDomain(client, attendeeDomains);
   if (domainMatch) {
     return { candidate: domainMatch, source: 'domain_match' };
@@ -346,46 +351,61 @@ export async function ingestTranscriptEnvelope(input: IngestEnvelopeInput): Prom
         `,
         [transcriptId]
       );
-      const existingLink = existingLinkResult.rows[0] ?? null;
+      const existingLinkData = existingLinkResult.rows[0] ?? null;
+      const existingLink = existingLinkData
+        ? {
+            project_id: existingLinkData.project_id,
+            link_source: assertTranscriptLinkSource(existingLinkData.link_source),
+          }
+        : null;
 
       let projectId: string | null = null;
       let linkSource: TranscriptLinkSource | null = null;
+      let manualLinkPreserved = false;
 
       if (classification.visibility === 'non_private') {
-        const attendeeDomains = [
-          ...new Set(
-            normalizedAttendees
-              .map((attendee) => attendee.domain)
-              .filter((domain): domain is string => typeof domain === 'string' && domain.length > 0)
-          ),
-        ];
-        const attendeeDomainRoots = [...new Set(attendeeDomains.map((domain) => extractDomainRoot(domain)))];
+        if (existingLink?.link_source === 'admin_manual') {
+          projectId = existingLink.project_id;
+          linkSource = existingLink.link_source;
+          manualLinkPreserved = true;
+        } else {
+          const attendeeDomains = [
+            ...new Set(
+              normalizedAttendees
+                .map((attendee) => attendee.domain)
+                .filter((domain): domain is string => typeof domain === 'string' && domain.length > 0)
+            ),
+          ];
+          const attendeeDomainRoots = [...new Set(attendeeDomains.map((domain) => extractDomainRoot(domain)))];
 
-        const resolved = await resolveProjectLink(
-          client,
-          transcript.title,
-          attendeeDomains,
-          attendeeDomainRoots
-        );
-
-        await client.query('DELETE FROM transcript_project_links WHERE transcript_id = $1::uuid', [transcriptId]);
-
-        if (resolved.candidate && resolved.source) {
-          await client.query(
-            `
-              INSERT INTO transcript_project_links (
-                transcript_id,
-                project_id,
-                link_source,
-                updated_at
-              )
-              VALUES ($1::uuid, $2::uuid, $3, now())
-            `,
-            [transcriptId, resolved.candidate.projectId, resolved.source]
+          const resolved = await resolveProjectLink(
+            client,
+            transcript.title,
+            attendeeDomains,
+            attendeeDomainRoots
           );
 
-          projectId = resolved.candidate.projectId;
-          linkSource = resolved.source;
+          await client.query('DELETE FROM transcript_project_links WHERE transcript_id = $1::uuid', [transcriptId]);
+
+          if (resolved.candidate && resolved.source) {
+            const resolvedSource = assertAutoTranscriptLinkSource(resolved.source);
+
+            await client.query(
+              `
+                INSERT INTO transcript_project_links (
+                  transcript_id,
+                  project_id,
+                  link_source,
+                  updated_at
+                )
+                VALUES ($1::uuid, $2::uuid, $3, now())
+              `,
+              [transcriptId, resolved.candidate.projectId, resolvedSource]
+            );
+
+            projectId = resolved.candidate.projectId;
+            linkSource = resolvedSource;
+          }
         }
       } else {
         await client.query('DELETE FROM transcript_project_links WHERE transcript_id = $1::uuid', [transcriptId]);
@@ -416,6 +436,19 @@ export async function ingestTranscriptEnvelope(input: IngestEnvelopeInput): Prom
             visibility: classification.visibility,
             reason: classification.reason,
             is_weekly_exception: classification.isWeeklyException,
+          },
+          input.requestId
+        );
+      }
+
+      if (manualLinkPreserved && projectId) {
+        await insertAuditEvent(
+          client,
+          'transcript.routed.preserved',
+          transcriptId,
+          {
+            project_id: projectId,
+            link_source: linkSource,
           },
           input.requestId
         );

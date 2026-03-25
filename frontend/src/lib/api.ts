@@ -10,6 +10,7 @@ import type {
   WorkspaceTreeClient,
 } from "@/types";
 import { toast } from "sonner";
+import { parseAdminError } from "@/lib/admin-errors";
 
 type RawConversation = Omit<Conversation, 'pinned_at' | 'created_at' | 'updated_at'> & {
   pinned_at: string | null;
@@ -176,6 +177,74 @@ export interface WorkspacesTreeResponse {
   clients: WorkspaceTreeClient[];
 }
 
+export interface AdminSessionResponse {
+  user: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+  role: "admin" | "member";
+}
+
+export interface AdminProject {
+  id: string;
+  client_id: string;
+  name: string;
+  scope: "personal" | "client" | "global";
+  owner_user_id: string | null;
+  is_inbox: boolean;
+  overview_markdown: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminClient {
+  id: string;
+  name: string;
+  scope: "personal" | "client" | "global";
+  owner_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminTranscriptRelinkResponse {
+  transcript_id: string;
+  project_id: string;
+  link_source: "admin_manual";
+  updated_at: string;
+}
+
+export interface AdminAuditEventView {
+  id: string;
+  actor_user_id: string | null;
+  event_type: string;
+  entity_type: string;
+  entity_id: string | null;
+  request_id: string | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+  redacted: boolean;
+  redaction_reason: "private_transcript_not_attendee" | null;
+}
+
+export interface AdminAuditResponse {
+  items: AdminAuditEventView[];
+  next_cursor: string | null;
+}
+
+async function parseAdminResponse<T>(response: Response): Promise<T> {
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    const parsed = parseAdminError(payload, response.status);
+    const error = new Error(parsed.message) as Error & { code?: string; status?: number };
+    error.code = parsed.code;
+    error.status = parsed.status;
+    throw error;
+  }
+  return payload as T;
+}
+
 export interface ConversationWithMessagesResponse {
   messages: Message[];
   projectId: string | null;
@@ -202,8 +271,7 @@ const FALLBACK_MODELS_RESPONSE: ModelsResponse = {
   models: [
     { key: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", provider: "anthropic" },
     { key: "claude-opus-4-6", label: "Claude Opus 4.6", provider: "anthropic" },
-    { key: "gpt-5.2", label: "GPT-5.2", provider: "openai" },
-    { key: "grok-4", label: "Grok 4", provider: "openai" },
+    { key: "gpt-5.4", label: "GPT-5.4", provider: "openai" },
   ],
 };
 
@@ -271,6 +339,114 @@ export async function fetchWorkspaces(): Promise<WorkspacesTreeResponse> {
   const response = await fetchWithAuth(`${API_BASE_URL}/api/workspaces/tree`);
   if (!response.ok) throw new Error("Failed to fetch workspaces");
   return response.json();
+}
+
+export async function fetchAdminSession(): Promise<AdminSessionResponse> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/me`);
+  return parseAdminResponse<AdminSessionResponse>(response);
+}
+
+export async function fetchAdminClients(): Promise<AdminClient[]> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/clients`);
+  return parseAdminResponse<AdminClient[]>(response);
+}
+
+export async function fetchAdminProjects(clientId?: string): Promise<AdminProject[]> {
+  const url = new URL(`${API_BASE_URL}/api/admin/projects`);
+  if (clientId) {
+    url.searchParams.set("client_id", clientId);
+  }
+  const response = await fetchWithAuth(url.toString());
+  return parseAdminResponse<AdminProject[]>(response);
+}
+
+export async function createAdminProject(input: {
+  client_id: string;
+  name: string;
+  scope?: "personal" | "client" | "global";
+  owner_user_id?: string | null;
+  is_inbox?: boolean;
+  overview_markdown?: string | null;
+}): Promise<AdminProject> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/projects`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return parseAdminResponse<AdminProject>(response);
+}
+
+export async function updateAdminProject(
+  projectId: string,
+  input: Partial<{
+    client_id: string;
+    name: string;
+    scope: "personal" | "client" | "global";
+    owner_user_id: string | null;
+    is_inbox: boolean;
+    overview_markdown: string | null;
+  }>
+): Promise<AdminProject> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/projects/${projectId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+  return parseAdminResponse<AdminProject>(response);
+}
+
+export async function deleteAdminProject(projectId: string): Promise<void> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/projects/${projectId}`, {
+    method: "DELETE",
+  });
+  await parseAdminResponse<{ ok: true }>(response);
+}
+
+export async function relinkAdminTranscript(
+  transcriptId: string,
+  projectId: string
+): Promise<AdminTranscriptRelinkResponse> {
+  const response = await fetchWithAuth(`${API_BASE_URL}/api/admin/transcripts/${transcriptId}/relink`, {
+    method: "POST",
+    body: JSON.stringify({
+      project_id: projectId,
+    }),
+  });
+  return parseAdminResponse<AdminTranscriptRelinkResponse>(response);
+}
+
+export async function searchAdminTranscripts(query: string): Promise<TranscriptResponse[]> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const url = new URL(`${API_BASE_URL}/api/documents/search`);
+  url.searchParams.set("q", trimmed);
+  const response = await fetchWithAuth(url.toString());
+  if (!response.ok) {
+    throw new Error("Failed to search transcripts");
+  }
+
+  return response.json() as Promise<TranscriptResponse[]>;
+}
+
+export async function fetchAdminAudit(options: {
+  limit?: number;
+  cursor?: string | null;
+  includeBench?: boolean;
+} = {}): Promise<AdminAuditResponse> {
+  const url = new URL(`${API_BASE_URL}/api/admin/audit`);
+  if (typeof options.limit === "number") {
+    url.searchParams.set("limit", String(options.limit));
+  }
+  if (options.cursor) {
+    url.searchParams.set("cursor", options.cursor);
+  }
+  if (options.includeBench) {
+    url.searchParams.set("include_bench", "1");
+  }
+
+  const response = await fetchWithAuth(url.toString());
+  return parseAdminResponse<AdminAuditResponse>(response);
 }
 
 export async function streamChat({

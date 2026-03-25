@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { getSupabase } from '../lib/supabase.js';
 import { writeAuditEvent } from '../lib/audit.js';
 import type { AppVariables } from '../types.js';
+import { adminBadRequest, adminInternalError } from '../lib/admin-error.js';
 
 export const adminRoutingRouter = new Hono<{ Variables: AppVariables }>();
 
@@ -11,7 +12,7 @@ adminRoutingRouter.post('/admin/projects/:projectId/aliases', async (c) => {
   const alias = typeof body.alias === 'string' ? body.alias.trim() : '';
 
   if (!alias) {
-    return c.json({ error: 'alias is required' }, 400);
+    return adminBadRequest(c, 'alias is required');
   }
 
   const supabase = getSupabase();
@@ -22,7 +23,7 @@ adminRoutingRouter.post('/admin/projects/:projectId/aliases', async (c) => {
     .single();
 
   if (error || !data) {
-    return c.json({ error: error?.message ?? 'Failed to create alias' }, 500);
+    return adminInternalError(c, error?.message ?? 'Failed to create alias');
   }
 
   await writeAuditEvent({
@@ -46,7 +47,7 @@ adminRoutingRouter.delete('/admin/project-aliases/:id', async (c) => {
     .eq('id', id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return adminInternalError(c, error.message);
   }
 
   await writeAuditEvent({
@@ -65,7 +66,7 @@ adminRoutingRouter.post('/admin/projects/:projectId/domains', async (c) => {
   const domain = typeof body.domain === 'string' ? body.domain.trim() : '';
 
   if (!domain) {
-    return c.json({ error: 'domain is required' }, 400);
+    return adminBadRequest(c, 'domain is required');
   }
 
   const supabase = getSupabase();
@@ -76,7 +77,7 @@ adminRoutingRouter.post('/admin/projects/:projectId/domains', async (c) => {
     .single();
 
   if (error || !data) {
-    return c.json({ error: error?.message ?? 'Failed to create domain' }, 500);
+    return adminInternalError(c, error?.message ?? 'Failed to create domain');
   }
 
   await writeAuditEvent({
@@ -100,7 +101,7 @@ adminRoutingRouter.delete('/admin/project-domains/:id', async (c) => {
     .eq('id', id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return adminInternalError(c, error.message);
   }
 
   await writeAuditEvent({

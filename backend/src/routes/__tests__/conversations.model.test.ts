@@ -79,20 +79,20 @@ describe('conversations model behavior', () => {
   });
 
   it('creates a conversation with explicit model', async () => {
-    const { supabase, getInsertPayload } = createConversationsInsertSupabaseMock('gpt-5.2');
+    const { supabase, getInsertPayload } = createConversationsInsertSupabaseMock('gpt-5.4');
     vi.mocked(getSupabase).mockReturnValue(supabase as never);
 
     const app = createAuthedApp();
     const response = await app.request('/api/conversations', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-5.2' }),
+      body: JSON.stringify({ model: 'gpt-5.4' }),
     });
 
     expect(response.status).toBe(201);
     expect(getInsertPayload()).toMatchObject({
       user_id: mockUser.id,
-      model: 'gpt-5.2',
+      model: 'gpt-5.4',
       project_id: 'project-1',
     });
   });

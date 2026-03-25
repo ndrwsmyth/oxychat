@@ -2,18 +2,21 @@
 
 import { useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Settings, Keyboard, LogOut } from "lucide-react";
+import { Settings, Keyboard, LogOut, Shield } from "lucide-react";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { KeyboardShortcutsModal } from "@/components/modals/KeyboardShortcutsModal";
 
 interface UserAvatarProps {
   collapsed?: boolean;
+  showAdminEntry?: boolean;
 }
 
-export function UserAvatar({ collapsed }: UserAvatarProps) {
+export function UserAvatar({ collapsed, showAdminEntry = false }: UserAvatarProps) {
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
+  const router = useRouter();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -104,6 +107,18 @@ export function UserAvatar({ collapsed }: UserAvatarProps) {
             <Keyboard size={16} />
             <span>Keyboard shortcuts</span>
           </button>
+
+          {showAdminEntry ? (
+            <button
+              type="button"
+              className="oxy-user-menu-item"
+              onClick={closePopoverAnd(() => router.push("/admin"))}
+              data-testid="user-menu-admin-entry"
+            >
+              <Shield size={16} />
+              <span>Admin Console</span>
+            </button>
+          ) : null}
 
           {/* Menu divider */}
           <div className="oxy-user-menu-divider" />

@@ -3755,6 +3755,731 @@ button.oxy-mark:focus-visible {
   background: var(--surface);
 }
 
+/* Admin content container for embedded layout */
+.oxy-admin-container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--spacing-xl) var(--spacing-xl);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.oxy-admin-breadcrumb {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--blue-600, #2563eb);
+  margin-bottom: var(--spacing-xs);
+}
+
+.oxy-admin-page-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.oxy-admin-page-desc {
+  font-size: var(--font-md);
+  color: var(--text-secondary);
+  margin-top: var(--spacing-2xs);
+  margin-bottom: var(--spacing-lg);
+}
+
+.oxy-admin-heading {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.oxy-admin-muted {
+  color: var(--text-secondary);
+}
+
+.oxy-admin-guard {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-base);
+  background: var(--surface);
+}
+
+.oxy-admin-guard-card {
+  width: min(560px, 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  display: grid;
+  gap: var(--spacing-3);
+}
+
+.oxy-admin-actions {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+}
+
+/* ========================================
+   ADMIN DESIGN SYSTEM
+   ======================================== */
+
+.oxy-admin-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  padding: var(--spacing-lg);
+}
+
+.oxy-admin-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-base);
+}
+
+.oxy-admin-card-title,
+.oxy-admin-section-title {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-2xs);
+}
+
+.oxy-admin-card-subtitle,
+.oxy-admin-section-desc {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.oxy-admin-sections {
+  display: grid;
+  gap: var(--spacing-xl);
+}
+
+.oxy-admin-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+.oxy-admin-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  min-height: var(--size-touch-target);
+  padding: var(--spacing-sm) var(--spacing-base);
+  font-size: var(--font-md);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.oxy-admin-tab[aria-pressed="true"] {
+  background: none;
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .oxy-admin-tab:hover {
+    color: var(--text-primary);
+    background: none;
+  }
+}
+
+.oxy-admin-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.oxy-admin-input {
+  min-height: var(--size-base);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  padding: 0 var(--spacing-xs);
+  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+  .oxy-admin-input:hover {
+    background: var(--surface-overlay);
+  }
+}
+
+.oxy-admin-input:focus {
+  outline: none;
+  border-color: var(--focus);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.oxy-admin-input::placeholder {
+  color: var(--text-faint);
+}
+
+.oxy-admin-input-bordered {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.oxy-admin-select {
+  min-height: var(--size-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  padding: 0 var(--spacing-sm);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.oxy-admin-select:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.oxy-admin-textarea {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: var(--font-base);
+  min-height: 240px;
+  line-height: 1.6;
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: var(--spacing-sm);
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.oxy-admin-textarea:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.oxy-admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--size-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: var(--font-base);
+  font-weight: 500;
+  padding: 0 var(--spacing-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+  .oxy-admin-btn:hover {
+    background: var(--surface-overlay);
+    box-shadow: var(--shadow-xs);
+  }
+}
+
+.oxy-admin-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.oxy-admin-btn-sm {
+  min-height: var(--size-sm);
+  font-size: var(--font-sm);
+  padding: 0 var(--spacing-xs);
+}
+
+.oxy-admin-btn-primary {
+  background: var(--text-primary);
+  color: var(--surface);
+  border-color: transparent;
+}
+
+@media (hover: hover) {
+  .oxy-admin-btn-primary:hover {
+    opacity: 0.85;
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.oxy-admin-btn-danger {
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #dc2626;
+  background: var(--surface);
+}
+
+@media (hover: hover) {
+  .oxy-admin-btn-danger:hover {
+    background: rgba(220, 38, 38, 0.06);
+    border-color: rgba(220, 38, 38, 0.5);
+  }
+}
+
+.oxy-admin-form-row {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.oxy-admin-form-stack {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.oxy-admin-label {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.oxy-admin-status {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.oxy-admin-error {
+  font-size: var(--font-sm);
+  color: #dc2626;
+}
+
+.oxy-admin-table-header {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px 100px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.oxy-admin-project-list {
+  display: grid;
+  gap: 0;
+}
+
+.oxy-admin-project-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px 100px;
+  gap: var(--spacing-sm);
+  align-items: center;
+  min-height: var(--size-touch-target);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+@media (hover: hover) {
+  .oxy-admin-project-row:hover {
+    background: var(--surface-overlay);
+  }
+}
+
+.oxy-admin-audit-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.oxy-admin-audit-item {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: var(--spacing-sm) 0;
+  transition: background var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+  .oxy-admin-audit-item:hover {
+    background: var(--surface-overlay);
+  }
+}
+
+.oxy-admin-audit-type {
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.oxy-admin-audit-time {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+}
+
+.oxy-admin-audit-redacted {
+  font-size: var(--font-sm);
+  font-style: italic;
+  color: var(--text-tertiary);
+  margin-top: var(--spacing-2xs);
+}
+
+.oxy-admin-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-height: var(--size-touch-target);
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.oxy-admin-collapsible summary {
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: var(--spacing-xs) 0;
+}
+
+.oxy-admin-collapsible summary:hover {
+  color: var(--text-primary);
+}
+
+/* Active state for sidebar rail buttons */
+.oxy-rail-btn[data-active] {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+}
+
+/* Utility spacing classes for admin components */
+.oxy-admin-mt-sm { margin-top: var(--spacing-sm); }
+.oxy-admin-mt-base { margin-top: var(--spacing-base); }
+
+/* ----------------------------------------
+   ADMIN DATA TABLE
+   ---------------------------------------- */
+
+.oxy-admin-search-wrap {
+  position: relative;
+  margin-top: var(--spacing-base);
+  margin-bottom: var(--spacing-base);
+}
+
+.oxy-admin-search-icon {
+  position: absolute;
+  left: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+.oxy-admin-search-input {
+  width: 100%;
+  min-height: var(--size-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  padding: 0 var(--spacing-sm) 0 var(--spacing-xl);
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.oxy-admin-search-input:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.oxy-admin-search-input::placeholder {
+  color: var(--text-faint);
+}
+
+.oxy-admin-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-md);
+}
+
+.oxy-admin-data-table th {
+  text-align: left;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-tertiary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.oxy-admin-data-table th[data-sortable="true"] {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .oxy-admin-data-table th[data-sortable="true"]:hover {
+    color: var(--text-primary);
+  }
+}
+
+.oxy-admin-data-table td {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.oxy-admin-data-table tbody tr {
+  transition: background var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+  .oxy-admin-data-table tbody tr:hover {
+    background: var(--surface-overlay);
+  }
+}
+
+.oxy-admin-table-cell-editable {
+  cursor: pointer;
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease;
+  display: inline-block;
+  min-width: 60px;
+}
+
+@media (hover: hover) {
+  .oxy-admin-table-cell-editable:hover {
+    background: var(--surface-overlay);
+    border-color: var(--border);
+  }
+}
+
+.oxy-admin-table-cell-editable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.oxy-admin-table-cell-input {
+  width: 100%;
+  min-height: var(--size-sm);
+  border: 1px solid var(--focus);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  padding: 0 var(--spacing-xs);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+.oxy-admin-table-cell-input:focus {
+  outline: none;
+}
+
+.oxy-admin-table-cell-select {
+  min-height: var(--size-sm);
+  border: 1px solid var(--focus);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  padding: 0 var(--spacing-xs);
+  box-shadow: 0 0 0 2px var(--focus-ring);
+  cursor: pointer;
+}
+
+.oxy-admin-table-cell-select:focus {
+  outline: none;
+}
+
+/* Scope badges */
+.oxy-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-xs);
+  font-weight: 500;
+  padding: 2px var(--spacing-xs);
+  border-radius: 9999px;
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+
+.oxy-admin-badge-blue {
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+
+.oxy-admin-badge-amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.dark .oxy-admin-badge-amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.oxy-admin-badge-gray {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.dark .oxy-admin-badge-gray {
+  background: var(--gray-800);
+  color: var(--gray-400);
+}
+
+/* Button icon left margin */
+.oxy-admin-btn-icon-left {
+  margin-right: var(--spacing-2xs);
+}
+
+/* Muted table cell */
+.oxy-admin-table-cell-muted {
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+}
+
+/* Inline link-style button */
+.oxy-admin-link-btn {
+  color: var(--blue-600);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+}
+
+@media (hover: hover) {
+  .oxy-admin-link-btn:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Icon-only button (three-dot trigger) */
+.oxy-admin-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-sm);
+  height: var(--size-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+  .oxy-admin-btn-icon:hover {
+    background: var(--surface-overlay);
+    color: var(--text-primary);
+  }
+}
+
+.oxy-admin-btn-icon:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+/* Row actions popover menu */
+.oxy-admin-actions-menu {
+  width: 200px !important;
+  padding: var(--spacing-2xs) !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.oxy-admin-actions-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--duration-fast) ease;
+}
+
+@media (hover: hover) {
+  .oxy-admin-actions-menu-item:hover {
+    background: var(--surface-overlay);
+  }
+}
+
+.oxy-admin-actions-menu-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.oxy-admin-actions-menu-danger {
+  color: #dc2626 !important;
+}
+
+/* Sort indicator */
+.oxy-admin-sort-indicator {
+  display: inline-flex;
+  margin-left: var(--spacing-2xs);
+  font-size: var(--font-xs);
+}
+
+/* Empty state */
+.oxy-admin-empty-state {
+  text-align: center;
+  padding: var(--spacing-xl) var(--spacing-base);
+  color: var(--text-secondary);
+}
+
+.oxy-admin-empty-state-title {
+  font-size: var(--font-md);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-2xs);
+}
+
+.oxy-admin-empty-state-desc {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+/* Create row highlight */
+.oxy-admin-create-row td {
+  background: var(--surface-overlay);
+}
+
+/* Table count */
+.oxy-admin-table-count {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  margin-left: var(--spacing-xs);
+  font-weight: 400;
+}
+
+@media (max-width: 860px) {
+  .oxy-admin-data-table th:nth-child(4),
+  .oxy-admin-data-table td:nth-child(4) {
+    display: none;
+  }
+}
+
 /* Clerk component overrides */
 .oxy-clerk-root {
   --clerk-font-family: inherit;
@@ -3793,6 +4518,21 @@ button.oxy-mark:focus-visible {
 
 .oxy-clerk-link {
   color: var(--text-secondary) !important;
+}
+
+@media (max-width: 860px) {
+  .oxy-admin-container {
+    padding: var(--spacing-lg) var(--spacing-base);
+  }
+
+  .oxy-admin-table-header {
+    display: none;
+  }
+
+  .oxy-admin-project-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
 }
 
 /* User Avatar */

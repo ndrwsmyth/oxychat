@@ -47,4 +47,22 @@ describe('assertTranscriptRelinkAllowed', () => {
 
     await expect(assertTranscriptRelinkAllowed('t-public')).resolves.toBeUndefined();
   });
+
+  it('throws when transcript classification is missing', async () => {
+    const query = {
+      eq: vi.fn(() => query),
+      maybeSingle: vi.fn(async () => ({
+        data: null,
+        error: null,
+      })),
+    };
+
+    vi.mocked(getSupabase).mockReturnValue({
+      from: vi.fn(() => ({
+        select: vi.fn(() => query),
+      })),
+    } as never);
+
+    await expect(assertTranscriptRelinkAllowed('t-missing')).rejects.toBeInstanceOf(AccessDeniedError);
+  });
 });

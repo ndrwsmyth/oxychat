@@ -13,7 +13,7 @@ export async function assertTranscriptRelinkAllowed(transcriptId: string): Promi
     throw new Error(`Failed to load transcript classification: ${error.message}`);
   }
 
-  if (classification?.visibility === 'private') {
+  if (!classification || classification.visibility === 'private') {
     throw new AccessDeniedError('Private transcripts cannot be relinked');
   }
 }

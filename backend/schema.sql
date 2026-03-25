@@ -192,7 +192,7 @@ CREATE TABLE conversations (
 -- SET model = 'claude-sonnet-4-6'
 -- WHERE model IS NULL
 --   OR model = ''
---   OR model NOT IN ('claude-sonnet-4-6', 'claude-opus-4-6', 'gpt-5.2', 'grok-4');
+--   OR model NOT IN ('claude-sonnet-4-6', 'claude-opus-4-6', 'gpt-5.4');
 
 CREATE INDEX idx_conversations_user ON conversations(user_id, deleted_at, updated_at DESC);
 CREATE INDEX idx_conversations_pinned ON conversations(user_id, pinned, pinned_at DESC) WHERE pinned = true;
@@ -226,6 +226,39 @@ CREATE TABLE message_feedback (
 );
 
 CREATE INDEX idx_message_feedback_message ON message_feedback(message_id);
+
+-- Audit events (append-only)
+CREATE TABLE audit_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_user_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
+  event_type TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id UUID,
+  request_id TEXT,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_audit_events_cursor
+  ON audit_events(created_at DESC, id DESC);
+
+CREATE INDEX idx_audit_events_entity
+  ON audit_events(entity_type, entity_id);
+
+CREATE OR REPLACE FUNCTION prevent_audit_events_mutation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'audit_events is append-only';
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_audit_events_append_only ON audit_events;
+CREATE TRIGGER trg_audit_events_append_only
+BEFORE UPDATE OR DELETE ON audit_events
+FOR EACH ROW
+EXECUTE FUNCTION prevent_audit_events_mutation();
 
 -- Transcripts
 CREATE TABLE transcripts (
@@ -293,12 +326,13 @@ CREATE TABLE transcript_project_links (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   transcript_id UUID NOT NULL REFERENCES transcripts(id) ON DELETE CASCADE,
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE RESTRICT,
-  link_source TEXT NOT NULL CHECK (
+  link_source TEXT NOT NULL CONSTRAINT transcript_project_links_link_source_check CHECK (
     link_source IN (
       'domain_match',
       'title_alias',
       'client_inbox_fallback',
-      'global_triage_fallback'
+      'global_triage_fallback',
+      'admin_manual'
     )
   ),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -312,6 +346,18 @@ CREATE UNIQUE INDEX idx_transcript_project_links_transcript_unique
 CREATE INDEX idx_transcript_project_links_project
   ON transcript_project_links(project_id);
 
+-- Relink locks (admin transcript relink contention control)
+CREATE TABLE transcript_relink_locks (
+  transcript_id UUID PRIMARY KEY REFERENCES transcripts(id) ON DELETE CASCADE,
+  locked_by UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_transcript_relink_locks_expires_at
+  ON transcript_relink_locks(expires_at);
+
 CREATE OR REPLACE FUNCTION prevent_private_transcript_relink()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -324,8 +370,8 @@ BEGIN
   FROM transcript_classification
   WHERE transcript_id = NEW.transcript_id;
 
-  IF transcript_visibility = 'private' THEN
-    RAISE EXCEPTION 'Cannot relink private transcript'
+  IF transcript_visibility IS NULL OR transcript_visibility = 'private' THEN
+    RAISE EXCEPTION 'Cannot relink private or unclassified transcript'
       USING ERRCODE = '42501';
   END IF;
 

@@ -88,8 +88,7 @@ export function getSystemPrompt(): string {
 export const MODEL_CONFIG = {
   'claude-opus-4-6': { provider: 'anthropic' as const, id: 'claude-opus-4-6' },
   'claude-sonnet-4-6': { provider: 'anthropic' as const, id: 'claude-sonnet-4-6' },
-  'gpt-5.2': { provider: 'openai' as const, id: 'gpt-5.2' },
-  'grok-4': { provider: 'openai' as const, id: 'grok-4' },
+  'gpt-5.4': { provider: 'openai' as const, id: 'gpt-5.4' },
 } as const;
 
 export type ModelKey = keyof typeof MODEL_CONFIG;
@@ -103,8 +102,7 @@ export interface ModelMetadata {
 export const MODEL_LABELS: Record<ModelKey, string> = {
   'claude-opus-4-6': 'Claude Opus 4.6',
   'claude-sonnet-4-6': 'Claude Sonnet 4.6',
-  'gpt-5.2': 'GPT-5.2',
-  'grok-4': 'Grok 4',
+  'gpt-5.4': 'GPT-5.4',
 };
 
 export const DEFAULT_MODEL: ModelKey = 'claude-sonnet-4-6';
@@ -112,15 +110,13 @@ export const DEFAULT_MODEL: ModelKey = 'claude-sonnet-4-6';
 export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   'claude-sonnet-4-6': 180_000,
   'claude-opus-4-6': 180_000,
-  'gpt-5.2': 100_000,
-  'grok-4': 100_000,
+  'gpt-5.4': 100_000,
 };
 
 export const MAX_MENTIONS_PER_MODEL: Record<string, number> = {
   'claude-sonnet-4-6': 10,
   'claude-opus-4-6': 10,
-  'gpt-5.2': 5,
-  'grok-4': 5,
+  'gpt-5.4': 5,
 };
 
 export const CHARS_PER_TOKEN = 4;
@@ -158,7 +154,6 @@ import type { PricingTable } from '@ndrwsmyth/sediment';
 export const OXYCHAT_PRICING: PricingTable = {
   'claude-opus-4-6': { inputTokenCostPer1m: 15, outputTokenCostPer1m: 75 },
   'claude-sonnet-4-6': { inputTokenCostPer1m: 3, outputTokenCostPer1m: 15 },
-  'gpt-5.2': { inputTokenCostPer1m: 2.5, outputTokenCostPer1m: 10 },
-  'grok-4': { inputTokenCostPer1m: 3, outputTokenCostPer1m: 15 },
+  'gpt-5.4': { inputTokenCostPer1m: 2.5, outputTokenCostPer1m: 10 },
   'gpt-4.1-nano': { inputTokenCostPer1m: 0.1, outputTokenCostPer1m: 0.4 },
 };

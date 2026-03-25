@@ -1,0 +1,203 @@
+{
+  "clients": [
+    {
+      "id": "10000000-0000-0000-0000-000000000006",
+      "name": "Northstar Labs",
+      "scope": "client"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000007",
+      "name": "Helix Global",
+      "scope": "client"
+    }
+  ],
+  "projects": [
+    {
+      "id": "20000000-0000-0000-0000-000000000006",
+      "client_id": "10000000-0000-0000-0000-000000000006",
+      "name": "Northstar Platform",
+      "scope": "client",
+      "is_inbox": false
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000007",
+      "client_id": "10000000-0000-0000-0000-000000000007",
+      "name": "Helix Growth",
+      "scope": "client",
+      "is_inbox": false
+    }
+  ],
+  "project_overviews": [
+    {
+      "project_id": "20000000-0000-0000-0000-000000000006",
+      "overview_markdown": "## Northstar Platform\n- Goal: unify routing and release controls.\n- Audience: project admins and operators.\n- Current sprint focus: admin UX reliability."
+    },
+    {
+      "project_id": "20000000-0000-0000-0000-000000000007",
+      "overview_markdown": "## Helix Growth\n- Goal: improve cross-team planning visibility.\n- Notes: keep transcript routing and audit review predictable."
+    }
+  ],
+  "transcripts": [
+    {
+      "id": "40000000-0000-0000-0000-000000000009",
+      "source_id": "fixture:s5:manual-link:1",
+      "title": "Sprint 5 Manual Relink Fixture",
+      "content": "Transcript fixture for Sprint 5 manual relink and preservation checks.",
+      "summary": "Manual relink fixture transcript",
+      "date": "2026-03-01T08:00:00.000Z",
+      "raw_json": {
+        "id": 9,
+        "attendees": [
+          { "name": "Admin Fixture", "email": "admin@oxy.so" },
+          { "name": "Acme Stakeholder", "email": "owner@acme.com" }
+        ]
+      },
+      "attendees": [
+        { "name": "Admin Fixture", "email": "admin@oxy.so" },
+        { "name": "Acme Stakeholder", "email": "owner@acme.com" }
+      ],
+      "classification": {
+        "visibility": "non_private",
+        "classification_reason": "external_attendee",
+        "is_weekly_exception": false
+      },
+      "link": {
+        "project_id": "20000000-0000-0000-0000-000000000001",
+        "link_source": "admin_manual"
+      }
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000010",
+      "source_id": "fixture:s5:private:1",
+      "title": "Sprint 5 Private Audit Redaction Fixture",
+      "content": "Private transcript fixture for audit redaction attendee checks.",
+      "summary": "Private redaction fixture transcript",
+      "date": "2026-03-01T09:00:00.000Z",
+      "raw_json": {
+        "id": 10,
+        "attendees": [
+          { "name": "Admin Fixture", "email": "admin@oxy.so" }
+        ]
+      },
+      "attendees": [
+        { "name": "Admin Fixture", "email": "admin@oxy.so" }
+      ],
+      "classification": {
+        "visibility": "private",
+        "classification_reason": "internal_attendees_only",
+        "is_weekly_exception": false
+      },
+      "link": null
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000011",
+      "source_id": "fixture:s5:unclassified:1",
+      "title": "Sprint 5 Unclassified Fixture",
+      "content": "Unclassified transcript fixture for fail-closed relink checks.",
+      "summary": "Unclassified fail-closed fixture transcript",
+      "date": "2026-03-01T10:00:00.000Z",
+      "raw_json": {
+        "id": 11,
+        "attendees": []
+      },
+      "attendees": [],
+      "classification": null,
+      "link": null
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000012",
+      "source_id": "fixture:s5:northstar:1",
+      "title": "Northstar Weekly Routing Review",
+      "content": "Northstar weekly routing review transcript for admin table and relink usability checks.",
+      "summary": "Northstar routing review transcript",
+      "date": "2026-03-02T15:30:00.000Z",
+      "raw_json": {
+        "id": 12,
+        "attendees": [
+          { "name": "Admin Fixture", "email": "admin@oxy.so" },
+          { "name": "Northstar Lead", "email": "lead@northstarlabs.com" }
+        ]
+      },
+      "attendees": [
+        { "name": "Admin Fixture", "email": "admin@oxy.so" },
+        { "name": "Northstar Lead", "email": "lead@northstarlabs.com" }
+      ],
+      "classification": {
+        "visibility": "non_private",
+        "classification_reason": "external_attendee",
+        "is_weekly_exception": false
+      },
+      "link": {
+        "project_id": "20000000-0000-0000-0000-000000000006",
+        "link_source": "domain_match"
+      }
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000013",
+      "source_id": "fixture:s5:helix:1",
+      "title": "Helix Growth Planning Readout",
+      "content": "Helix growth planning transcript for admin and audit timeline visibility checks.",
+      "summary": "Helix growth planning transcript",
+      "date": "2026-03-03T16:00:00.000Z",
+      "raw_json": {
+        "id": 13,
+        "attendees": [
+          { "name": "Admin Fixture", "email": "admin@oxy.so" },
+          { "name": "Helix PM", "email": "pm@helixglobal.com" }
+        ]
+      },
+      "attendees": [
+        { "name": "Admin Fixture", "email": "admin@oxy.so" },
+        { "name": "Helix PM", "email": "pm@helixglobal.com" }
+      ],
+      "classification": {
+        "visibility": "non_private",
+        "classification_reason": "external_attendee",
+        "is_weekly_exception": false
+      },
+      "link": {
+        "project_id": "20000000-0000-0000-0000-000000000007",
+        "link_source": "title_alias"
+      }
+    }
+  ],
+  "audit_events": [
+    {
+      "id": "60000000-0000-0000-0000-000000000001",
+      "actor_user_id": "00000000-0000-0000-0000-0000000000a1",
+      "event_type": "transcript.routed",
+      "entity_type": "transcript",
+      "entity_id": "40000000-0000-0000-0000-000000000012",
+      "request_id": "fixture-s5-routed-001",
+      "payload": {
+        "project_id": "20000000-0000-0000-0000-000000000006",
+        "link_source": "admin_manual"
+      },
+      "created_at": "2026-03-04T10:00:00.000Z"
+    },
+    {
+      "id": "60000000-0000-0000-0000-000000000002",
+      "actor_user_id": "00000000-0000-0000-0000-0000000000a1",
+      "event_type": "transcript.routed.preserved",
+      "entity_type": "transcript",
+      "entity_id": "40000000-0000-0000-0000-000000000009",
+      "request_id": "fixture-s5-preserved-001",
+      "payload": {
+        "reason": "existing_admin_manual_link"
+      },
+      "created_at": "2026-03-04T10:01:00.000Z"
+    },
+    {
+      "id": "60000000-0000-0000-0000-000000000003",
+      "actor_user_id": "00000000-0000-0000-0000-0000000000a1",
+      "event_type": "project.updated",
+      "entity_type": "project",
+      "entity_id": "20000000-0000-0000-0000-000000000006",
+      "request_id": "fixture-s5-project-001",
+      "payload": {
+        "field": "overview_markdown"
+      },
+      "created_at": "2026-03-04T10:02:00.000Z"
+    }
+  ]
+}

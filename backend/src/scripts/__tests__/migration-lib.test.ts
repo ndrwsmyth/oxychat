@@ -6,7 +6,7 @@ describe('migration lib', () => {
     const migrations = await loadMigrationFiles();
     expect(migrations.length).toBeGreaterThan(0);
     expect(migrations[0].id).toBe('0001_s1_t00b_user_profiles_clerk_context');
-    expect(migrations[migrations.length - 1].id).toBe('0020_s4_t01_projects_overview_markdown');
+    expect(migrations[migrations.length - 1].id).toBe('0023_s5_t08_audit_cursor_index');
   });
 
   it('parses --step with default fallback', () => {

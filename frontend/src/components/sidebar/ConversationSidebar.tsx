@@ -1,12 +1,12 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useSidebar } from "@/hooks/useSidebar";
 import { ConversationGroup } from "./ConversationGroup";
 import { WorkspaceTree } from "./WorkspaceTree";
 import { IOSThemeToggle } from "./IOSThemeToggle";
 import { UserAvatar } from "./UserAvatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, PanelLeftClose } from "lucide-react";
+import { Plus, Search, PanelLeftClose, Shield } from "lucide-react";
 import type { Conversation, GroupedConversations, WorkspaceTreeClient } from "@/types";
 
 // Conversation group configuration for rendering
@@ -47,6 +47,7 @@ function OxyLogo({ size = 20 }: { size?: number }) {
 interface ConversationSidebarProps {
   activeConversationId: string | null;
   selectedProjectId: string | null;
+  showAdminEntry?: boolean;
   debugLayout?: boolean;
   onOpenSearch?: () => void;
   conversations: GroupedConversations;
@@ -63,6 +64,7 @@ interface ConversationSidebarProps {
 export function ConversationSidebar({
   activeConversationId,
   selectedProjectId,
+  showAdminEntry = false,
   debugLayout = false,
   onOpenSearch,
   conversations,
@@ -76,6 +78,8 @@ export function ConversationSidebar({
   onTogglePin,
 }: ConversationSidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isOnAdmin = pathname === "/admin" || pathname?.startsWith("/admin/");
   const { collapsed, toggle } = useSidebar();
   const handleToggleSidebar = () => {
     toggle();
@@ -138,6 +142,24 @@ export function ConversationSidebar({
           <span className="oxy-rail-label">Search</span>
           <kbd className="oxy-rail-kbd">⌘K</kbd>
         </button>
+
+        {/* Admin */}
+        {showAdminEntry ? (
+          <button
+            type="button"
+            onClick={() => router.push("/admin")}
+            className="oxy-rail-btn"
+            data-active={isOnAdmin || undefined}
+            aria-label="Open admin console"
+            title="Admin Console"
+            data-testid="sidebar-admin-entry"
+          >
+            <span className="oxy-rail-icon">
+              <Shield size={18} />
+            </span>
+            <span className="oxy-rail-label">Admin</span>
+          </button>
+        ) : null}
       </div>
 
       <div className="oxy-rail-expanded-region">
@@ -179,7 +201,7 @@ export function ConversationSidebar({
 
       <div className="oxy-rail-footer">
         <div className="oxy-rail-footer-avatar">
-          <UserAvatar collapsed={collapsed} />
+          <UserAvatar collapsed={collapsed} showAdminEntry={showAdminEntry} />
         </div>
         <div className="oxy-rail-footer-theme">
           <IOSThemeToggle />

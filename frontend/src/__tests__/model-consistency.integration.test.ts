@@ -50,9 +50,9 @@ describe('model consistency API integration', () => {
   });
 
   it('new conversation includes selected project scope in create payload', async () => {
-    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue(createConversationResponse('gpt-5.2'));
+    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue(createConversationResponse('gpt-5.4'));
 
-    await createConversation(undefined, 'gpt-5.2', 'project-2');
+    await createConversation(undefined, 'gpt-5.4', 'project-2');
 
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(String(init?.body));
@@ -67,7 +67,7 @@ describe('model consistency API integration', () => {
     await streamChat({
       conversationId: 'conv-existing',
       messages: [{ role: 'user', content: 'hello' }],
-      model: 'grok-4',
+      model: 'gpt-5.4',
       onChunk: () => {},
       onComplete,
       onError,
@@ -79,7 +79,7 @@ describe('model consistency API integration', () => {
     const [url, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(String(init?.body));
     expect(String(url)).toContain('/api/conversations/conv-existing/messages');
-    expect(body.model).toBe('grok-4');
+    expect(body.model).toBe('gpt-5.4');
   });
 
   it('fresh-start flow keeps selected model on create and first message send', async () => {

@@ -55,7 +55,7 @@ describe('chat model resolution', () => {
     } as never);
     vi.mocked(assertConversationOwnership).mockResolvedValue({
       id: 'conv-1',
-      model: 'gpt-5.2',
+      model: 'gpt-5.4',
       project_id: 'project-1',
     });
   });
@@ -66,12 +66,12 @@ describe('chat model resolution', () => {
     const response = await app.request('/api/conversations/conv-1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'hello', model: 'grok-4' }),
+      body: JSON.stringify({ content: 'hello', model: 'gpt-5.4' }),
     });
 
     expect(response.status).toBe(200);
     expect(vi.mocked(createChatRuntime)).toHaveBeenCalledWith({
-      model: 'grok-4',
+      model: 'gpt-5.4',
       conversationId: 'conv-1',
     });
     expect(vi.mocked(chatPipelineTask.execute).mock.calls[0]?.[0]).toEqual(
@@ -82,7 +82,7 @@ describe('chat model resolution', () => {
   it('uses conversation.model when request.model is missing', async () => {
     vi.mocked(assertConversationOwnership).mockResolvedValue({
       id: 'conv-1',
-      model: 'gpt-5.2',
+      model: 'gpt-5.4',
       project_id: 'project-1',
     });
     const app = createAuthedApp();
@@ -95,7 +95,7 @@ describe('chat model resolution', () => {
 
     expect(response.status).toBe(200);
     expect(vi.mocked(createChatRuntime)).toHaveBeenCalledWith({
-      model: 'gpt-5.2',
+      model: 'gpt-5.4',
       conversationId: 'conv-1',
     });
   });
@@ -138,7 +138,7 @@ describe('chat model resolution', () => {
   it('passes undefined projectId when conversation has no project assignment', async () => {
     vi.mocked(assertConversationOwnership).mockResolvedValue({
       id: 'conv-1',
-      model: 'gpt-5.2',
+      model: 'gpt-5.4',
       project_id: null,
     });
     const app = createAuthedApp();

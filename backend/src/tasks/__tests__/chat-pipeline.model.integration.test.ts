@@ -40,7 +40,7 @@ interface MessageRow {
 function createInMemorySupabase() {
   const conversation: ConversationRow = {
     id: 'conv-1',
-    model: 'gpt-5.2',
+    model: 'gpt-5.4',
     user_id: 'user-1',
     project_id: 'project-1',
     updated_at: new Date().toISOString(),
@@ -189,7 +189,7 @@ describe('chatPipelineTask model persistence', () => {
         conversationId: 'conv-1',
         content: 'What changed?',
         mentionIds: [],
-        model: 'grok-4',
+        model: 'gpt-5.4',
         requestId: 'req-123',
       },
       deps as never
@@ -198,9 +198,9 @@ describe('chatPipelineTask model persistence', () => {
     }
 
     const assistantInsert = inserts.find((payload) => payload.role === 'assistant');
-    expect(assistantInsert?.model).toBe('grok-4');
-    expect(updates).toContainEqual(expect.objectContaining({ model: 'grok-4' }));
-    expect(conversation.model).toBe('grok-4');
+    expect(assistantInsert?.model).toBe('gpt-5.4');
+    expect(updates).toContainEqual(expect.objectContaining({ model: 'gpt-5.4' }));
+    expect(conversation.model).toBe('gpt-5.4');
     expect(events.some((event) => event.type === 'done')).toBe(true);
   });
 
@@ -222,7 +222,7 @@ describe('chatPipelineTask model persistence', () => {
         conversationId: 'conv-1',
         content: 'Use this guessed mention',
         mentionIds: ['private-id'],
-        model: 'grok-4',
+        model: 'gpt-5.4',
         userId: 'user-1',
         userEmail: 'member@oxy.so',
       },
@@ -254,7 +254,7 @@ describe('chatPipelineTask model persistence', () => {
         projectId: 'project-1',
         content: 'Use project context',
         mentionIds: [],
-        model: 'grok-4',
+        model: 'gpt-5.4',
       },
       deps as never
     )) {
@@ -286,7 +286,7 @@ describe('chatPipelineTask model persistence', () => {
         projectId: 'project-1',
         content: 'Use project context',
         mentionIds: [],
-        model: 'grok-4',
+        model: 'gpt-5.4',
         userId: 'user-1',
       },
       deps as never

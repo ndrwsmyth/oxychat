@@ -101,6 +101,28 @@ If you also want Sprint 1 fixtures:
 pnpm --dir backend db:reset:seed
 ```
 
+For a shared non-prod environment that includes admin UX data:
+
+```bash
+pnpm --dir backend run seed:s5
+```
+
+### Shared-Env Admin Bootstrap
+
+Real Clerk users are auto-provisioned into `user_profiles`, but admin UI access requires `user_roles.role = 'admin'`.
+
+Grant admin role by email:
+
+```bash
+pnpm --dir backend run grant:admin -- --email your.name@oxy.so
+```
+
+Grant admin role by Clerk id:
+
+```bash
+pnpm --dir backend run grant:admin -- --clerk-id user_abc123
+```
+
 ### Clerk Migration
 
 Run in SQL Editor:
